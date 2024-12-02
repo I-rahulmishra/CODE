@@ -249,3 +249,26 @@ export const submitRequest = (
 
 appData.applicationdata.application.notification_required = true;
           appData.applicationdata.application.is_save_to_pega = 'Yes';
+
+const patchUserInputOnPayload = () => {
+  const fieldUpdate = JSON.parse(JSON.stringify(stageSelector));
+  for (let key in applicantsSelector) {
+    fieldUpdate.stageInfo.applicants[key] = applicantsSelector[key];
+  }
+
+  // Add additional keys under application
+  if (!fieldUpdate.stageInfo.appData) {
+    fieldUpdate.stageInfo.appData = {};
+  }
+  if (!fieldUpdate.stageInfo.appData.applicationdata) {
+    fieldUpdate.stageInfo.appData.applicationdata = {};
+  }
+  if (!fieldUpdate.stageInfo.appData.applicationdata.application) {
+    fieldUpdate.stageInfo.appData.applicationdata.application = {};
+  }
+
+  fieldUpdate.stageInfo.appData.applicationdata.application.notification_required = true;
+  fieldUpdate.stageInfo.appData.applicationdata.application.is_save_to_pega = "Yes";
+
+  return fieldUpdate;
+};
