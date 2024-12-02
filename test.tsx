@@ -879,3 +879,91 @@ const Fields = (props: KeyWithAnyModel) => {
 };
  
 export default React.memo(Fields);
+
+
+
+Sure! When writing RTL (React Testing Library) test cases, it's common to mock parts like `useSelector` from React Redux, especially if you're not using a provider. Below are examples illustrating how to mock `useSelector` and render a component using RTL.
+
+### Example Component
+Assume we have a simple component that uses `useSelector` to fetch some data.
+
+```javascript
+// MyComponent.js
+import React from 'react';
+import { useSelector } from 'react-redux';
+
+const MyComponent = () => {
+  const data = useSelector((state) => state.data);
+  
+  return (
+    <div>
+      <h1>{data.title}</h1>
+      <p>{data.description}</p>
+    </div>
+  );
+};
+
+export default MyComponent;
+```
+
+### RTL Test Cases
+Here’s how you can write test cases for this component while mocking `useSelector`.
+
+```javascript
+// MyComponent.test.js
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import MyComponent from './MyComponent';
+import { useSelector } from 'react-redux';
+
+// Mocking the useSelector hook
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useSelector: jest.fn(),
+}));
+
+describe('MyComponent', () => {
+  beforeEach(() => {
+    useSelector.mockClear(); // Clear any previous mock data
+  });
+
+  test('renders correctly with title and description', () => {
+    // Mock the return value of useSelector
+    useSelector.mockReturnValue({
+      title: 'Test Title',
+      description: 'Test Description',
+    });
+
+    render(<MyComponent />);
+
+    // Assert that the title and description are in the document
+    expect(screen.getByRole('heading')).toHaveTextContent('Test Title');
+    expect(screen.getByText('Test Description')).toBeInTheDocument();
+  });
+
+  test('renders without data', () => {
+    // Mock to return default values (empty strings)
+    useSelector.mockReturnValue({
+      title: '',
+      description: '',
+    });
+
+    render(<MyComponent />);
+
+    // Assert that empty state is handled
+    expect(screen.getByRole('heading')).toHaveTextContent('');
+    expect(screen.getByText('')).toBeInTheDocument();
+  });
+});
+```
+
+### Explanation:
+1. **Mocking useSelector**: We override `useSelector` with a mock function using `jest.mock()`, ensuring it returns controlled, predictable values.
+  
+2. **Tests**:
+   - The first test checks whether the component renders correctly with given data.
+   - The second test verifies how the component behaves when there's no data.
+
+3. **beforeEach**: This clears the mock data before each test to avoid state leakage.
+
+This is a straightforward approach to testing Redux-connected components in isolation without a provider, enabling clean and effective component testing.
