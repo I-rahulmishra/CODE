@@ -185,3 +185,23 @@ export const Phone = (props: KeyWithAnyModel) => {
 };
 
 export default Phone;
+
+
+
+
+const phoneValidation = (fieldName: string, value: string, validity: any) => {
+  if ((props.data.mandatory === "Yes" || props.data.mandatory === "Conditional") && value.length < 1) {
+    setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
+  } else if (props.data.mandatory !== "Yes" && value.length === 0) {
+    // No error for non-mandatory fields when the value is empty
+    setError('');
+  } else if (fieldName === "mobile_number" && !(value[0] === '8' || value[0] === '9')) {
+    setError(`${errorMsg.sgMobile}`);
+  } else if (props.data.min_length && `${value}`.length < props.data.min_length) {
+    setError(`${errorMsg.minLength} ${props.data.min_length} digits`);
+  } else if (props.data.regex && !(`${value}`.match(props.data.regex))) {
+    setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+  } else if (validity) {
+    setError(!validity.valid ? `${errorMsg.patterns} ${props.data.rwb_label_name}` : '');
+  }
+};
