@@ -109,3 +109,36 @@ const addUserInput = (data: any) => {
     </div>
   </div>
 )}
+
+
+const addUserInput = (data: any) => {
+  if (data.CODE_VALUE === "9999") {
+    // Enable "Name of Employer (if others)"
+    const stageComponents = dispatch(
+      getFields(stageSelector, null, "name_of_employer_other")
+    );
+    setField(stageComponents);
+
+    const otherVal = {
+      CODE_DESC: "Others",
+      CODE_VALUE: "9999",
+    };
+    setSelectedValue([otherVal]);
+  } else {
+    // Clear "Name of Employer (if others)" field when a new option is selected
+    setField([]);
+    setSelectedValue([data]);
+  }
+
+  // Hide dropdown and options after selection
+  hide(false);
+  setShowOption(false);
+
+  // Dispatch value update action
+  dispatch(
+    ValueUpdateAction.getChangeUpdate({
+      id: stageSelector[0].stageId,
+      changes: true,
+    })
+  );
+};
