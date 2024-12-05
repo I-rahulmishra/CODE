@@ -5,17 +5,25 @@ useEffect(() => {
         .then((res: any) => {
           let fetchedData = res.data;
 
-          // Add "Others" only if it does not already exist in the fetched data
+          // Define the "Others" option explicitly
           const othersOption = { CODE_DESC: "Others", CODE_VALUE: "9999", checked: false };
 
-          if (
-            !fetchedData.some(
-              (item: LovInputValModel) => item.CODE_DESC.toLowerCase() === "others"
-            )
-          ) {
-            fetchedData = [...fetchedData, othersOption];
+          // Check if "Others" already exists in the fetched data
+          const hasOthers = fetchedData.some(
+            (item: LovInputValModel) => item.CODE_DESC.toLowerCase() === "others"
+          );
+
+          // If "Others" does not exist, append it
+          if (!hasOthers) {
+            fetchedData.push(othersOption);
           }
 
+          // If the user explicitly searches "Others", show only "Others"
+          if (search.toLowerCase() === "others") {
+            fetchedData = [othersOption];
+          }
+
+          // Update state
           if (!(fetchedData.length > 0)) {
             setShowOption(false);
           } else {
