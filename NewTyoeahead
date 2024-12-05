@@ -1,88 +1,46 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { AxiosError } from "axios";
-import { getLovData } from "./actions"; // Replace with your action path
-import { defaultError } from "./utils"; // Replace with your utility path
-import { LovInputValModel } from "./models"; // Replace with your model path
+useEffect(() => {
+  if (search.length > 2) {
+    const getData = setTimeout(() => {
+      dispatch(getLovData("name_of_employer", search))
+        .then((res: any) => {
+          let fetchedData = res.data;
 
-const TypeAhead: React.FC = () => {
-  const [search, setSearch] = useState<string>(""); // Controlled input state
-  const [selectedOption, setSelectedOption] = useState<LovInputValModel[]>([]); // Dropdown options
-  const [showOption, setShowOption] = useState<boolean>(false); // Show/Hide options
+          // Define the "Others" option explicitly
+          const othersOption = { CODE_DESC: "Others", CODE_VALUE: "9999", checked: false };
 
-  const dispatch = useDispatch();
+          // Remove any existing duplicates of "Others"
+          fetchedData = fetchedData.filter(
+            (item: LovInputValModel) => item.CODE_DESC.toLowerCase() !== "others"
+          );
 
-  useEffect(() => {
-    if (search.length > 2) {
-      const getData = setTimeout(() => {
-        dispatch(getLovData("name_of_employer", search))
-          .then((res: any) => {
-            let fetchedData = res.data;
+          // Append "Others" if not explicitly searched
+          if (search.toLowerCase() !== "others") {
+            fetchedData.push(othersOption);
+          } else {
+            fetchedData = [othersOption];
+          }
 
-            // Define the "Others" option explicitly
-            const othersOption = { CODE_DESC: "Others", CODE_VALUE: "9999", checked: false };
+          // Update state
+          if (fetchedData.length > 0) {
+            setShowOption(true);
+            setSelectedOption(fetchedData);
+          } else {
+            setShowOption(false);
+          }
+        })
+        .catch((error: AxiosError) => {
+          defaultError();
+          return Promise.reject(error);
+        });
+    }, 500);
+    return () => clearTimeout(getData);
+  }
+}, [search, dispatch])
 
-            // Remove any existing duplicates of "Others"
-            fetchedData = fetchedData.filter(
-              (item: LovInputValModel) => item.CODE_DESC.toLowerCase() !== "others"
-            );
 
-            // Append "Others" if not explicitly searched
-            if (search.toLowerCase() !== "others") {
-              fetchedData.push(othersOption);
-            } else {
-              fetchedData = [othersOption];
-            }
-
-            // Update state
-            if (fetchedData.length > 0) {
-              setShowOption(true);
-              setSelectedOption(fetchedData);
-            } else {
-              setShowOption(false);
-            }
-          })
-          .catch((error: AxiosError) => {
-            defaultError();
-            return Promise.reject(error);
-          });
-      }, 500);
-
-      return () => clearTimeout(getData); // Cleanup timeout
-    }
-  }, [search, dispatch]);
-
-  const handleOptionClick = (option: LovInputValModel) => {
-    setSearch(option.CODE_DESC); // Update input field with the selected option
-    setShowOption(false); // Hide options after selection
-  };
-
-  return (
-    <div className="typeahead">
-      {/* Search Input */}
-      <input
-        type="text"
-        value={search || ""} // Controlled input to prevent uncontrolled warnings
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search Name of Employer"
-      />
-
-      {/* Dropdown Options */}
-      {showOption && selectedOption.length > 0 && (
-        <ul className="dropdown">
-          {selectedOption.map((option) => (
-            <li
-              key={option.CODE_VALUE}
-              onClick={() => handleOptionClick(option)}
-              className="dropdown-item"
-            >
-              {option.CODE_DESC}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
-
-export default TypeAhead;
+<input
+  type="text"
+  value={search || ""} // Ensure 'search' is always defined
+  onChange={(e) => setSearch(e.target.value)}
+  placeholder="Search..."
+/>
