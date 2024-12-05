@@ -167,3 +167,45 @@ const TypeAhead = (props: KeyWithAnyModel) => {
 };
 
 export default TypeAhead;
+
+
+
+useEffect(() => {
+  if (search.length > 2) {
+    const getData = setTimeout(() => {
+      dispatch(getLovData("name_of_employer", search))
+        .then((res: any) => {
+          let fetchedData = res.data;
+
+          // Check if "Others" is part of the search
+          if (search.toLowerCase() === "others") {
+            fetchedData = [
+              ...fetchedData,
+              { CODE_DESC: "Others", CODE_VALUE: "9999", checked: false },
+            ];
+          } else if (
+            !fetchedData.some(
+              (item: LovInputValModel) => item.CODE_DESC.toLowerCase() === "others"
+            )
+          ) {
+            fetchedData = [
+              ...fetchedData,
+              { CODE_DESC: "Others", CODE_VALUE: "9999", checked: false },
+            ];
+          }
+
+          if (!(fetchedData.length > 0)) {
+            setShowOption(false);
+          } else {
+            setShowOption(true);
+            setSelectedOption(fetchedData);
+          }
+        })
+        .catch((error: AxiosError) => {
+          defaultError();
+          return Promise.reject(error);
+        });
+    }, 500);
+    return () => clearTimeout(getData);
+  }
+}, [search, dispatch]);
