@@ -5,12 +5,13 @@ useEffect(() => {
         .then((res: any) => {
           let options = res.data;
 
-          // Ensure "Others" is added only once
-          const hasOthers = options.some(
-            (option: LovInputValModel) => option.CODE_VALUE === "9999"
+          // Filter out any duplicate "Others" options
+          options = options.filter(
+            (option: LovInputValModel) => option.CODE_VALUE !== "9999"
           );
 
-          if (search.toLowerCase() === "others" && !hasOthers) {
+          // If search matches "others", add it explicitly
+          if (search.toLowerCase() === "others") {
             const otherOption = {
               CODE_DESC: "Others",
               CODE_VALUE: "9999",
@@ -39,6 +40,7 @@ useEffect(() => {
 
 const addUserInput = (data: any) => {
   if (data.CODE_VALUE === "9999") {
+    // Enable "Name of Employer (if others)"
     const stageComponents = dispatch(
       getFields(stageSelector, null, "name_of_employer_other")
     );
@@ -53,22 +55,57 @@ const addUserInput = (data: any) => {
     setSelectedValue([data]);
   }
 
+  // Hide dropdown and options after selection
   hide(false);
   setShowOption(false);
 
-  // Trigger update action if "Others" is selected
-  const valueChange =
-    data.CODE_VALUE === "9999" ||
-    selectedOption.some(
-      (item) => item.CODE_VALUE === data.CODE_VALUE && data.checked === false
-    );
-
-  if (valueChange) {
-    dispatch(
-      ValueUpdateAction.getChangeUpdate({
-        id: stageSelector[0].stageId,
-        changes: true,
-      })
-    );
-  }
+  // Dispatch value update action
+  dispatch(
+    ValueUpdateAction.getChangeUpdate({
+      id: stageSelector[0].stageId,
+      changes: true,
+    })
+  );
 };
+
+
+{show && selectedOption && (
+  <div className="typeahead__background">
+    <div className="typeahead__popup">
+      <div className="typeahead__header">
+        <div>{props.data.rwb_label_name}</div>
+        <div className="close" onClick={close}></div>
+      </div>
+
+      <div className="typeahead__search">
+        <input
+          autoFocus
+          name="search"
+          className="typeahead__search"
+          type="search"
+          placeholder="Type here to search"
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </div>
+      <div className="typeahead__expand">
+        {!showOption && (
+          <div data-testid="no-data">No Data Found. Please try again.</div>
+        )}
+        {showOption &&
+          selectedOption.map((item: LovInputValModel, index: number) => (
+            <div key={index} className="typeahead__item">
+              <input
+                type="radio"
+                checked={item.CODE_VALUE === selectedValue[0]?.CODE_VALUE}
+                onClick={() => addUserInput(item)}
+                onChange={() => {}}
+                value={item.CODE_VALUE}
+                id={item.CODE_VALUE}
+              />
+              <label htmlFor={item.CODE_VALUE}>{item.CODE_DESC}</label>
+            </div>
+          ))}
+      </div>
+    </div>
+  </div>
+)}
