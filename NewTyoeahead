@@ -5,8 +5,12 @@ useEffect(() => {
         .then((res: any) => {
           let options = res.data;
 
-          // Add "Others" manually if the search term matches "others"
-          if (search.toLowerCase() === "others") {
+          // Ensure "Others" is added only once
+          const hasOthers = options.some(
+            (option: LovInputValModel) => option.CODE_VALUE === "9999"
+          );
+
+          if (search.toLowerCase() === "others" && !hasOthers) {
             const otherOption = {
               CODE_DESC: "Others",
               CODE_VALUE: "9999",
@@ -30,3 +34,41 @@ useEffect(() => {
     return () => clearTimeout(getData);
   }
 }, [search, dispatch]);
+
+
+
+const addUserInput = (data: any) => {
+  if (data.CODE_VALUE === "9999") {
+    const stageComponents = dispatch(
+      getFields(stageSelector, null, "name_of_employer_other")
+    );
+    setField(stageComponents);
+
+    const otherVal = {
+      CODE_DESC: "Others",
+      CODE_VALUE: "9999",
+    };
+    setSelectedValue([otherVal]);
+  } else {
+    setSelectedValue([data]);
+  }
+
+  hide(false);
+  setShowOption(false);
+
+  // Trigger update action if "Others" is selected
+  const valueChange =
+    data.CODE_VALUE === "9999" ||
+    selectedOption.some(
+      (item) => item.CODE_VALUE === data.CODE_VALUE && data.checked === false
+    );
+
+  if (valueChange) {
+    dispatch(
+      ValueUpdateAction.getChangeUpdate({
+        id: stageSelector[0].stageId,
+        changes: true,
+      })
+    );
+  }
+};
