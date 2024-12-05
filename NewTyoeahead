@@ -3,29 +3,23 @@ useEffect(() => {
     const getData = setTimeout(() => {
       dispatch(getLovData("name_of_employer", search))
         .then((res: any) => {
-          let fetchedData = res.data;
+          let options = res.data;
 
-          // Define the "Others" option explicitly
-          const othersOption = { CODE_DESC: "Others", CODE_VALUE: "9999", checked: false };
-
-          // Remove any existing duplicates of "Others"
-          fetchedData = fetchedData.filter(
-            (item: LovInputValModel) => item.CODE_DESC.toLowerCase() !== "others"
-          );
-
-          // Append "Others" if not explicitly searched
-          if (search.toLowerCase() !== "others") {
-            fetchedData.push(othersOption);
-          } else {
-            fetchedData = [othersOption];
+          // Add "Others" manually if the search term matches "others"
+          if (search.toLowerCase() === "others") {
+            const otherOption = {
+              CODE_DESC: "Others",
+              CODE_VALUE: "9999",
+              checked: false,
+            };
+            options = [...options, otherOption];
           }
 
-          // Update state
-          if (fetchedData.length > 0) {
-            setShowOption(true);
-            setSelectedOption(fetchedData);
-          } else {
+          if (!(options.length > 0)) {
             setShowOption(false);
+          } else {
+            setShowOption(true);
+            setSelectedOption(options);
           }
         })
         .catch((error: AxiosError) => {
@@ -35,12 +29,4 @@ useEffect(() => {
     }, 500);
     return () => clearTimeout(getData);
   }
-}, [search, dispatch])
-
-
-<input
-  type="text"
-  value={search || ""} // Ensure 'search' is always defined
-  onChange={(e) => setSearch(e.target.value)}
-  placeholder="Search..."
-/>
+}, [search, dispatch]);
