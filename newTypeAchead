@@ -269,3 +269,33 @@ const TypeAhead = (props: KeyWithAnyModel) => {
 };
 
 export default TypeAhead;
+
+
+
+
+
+{!showOption && (
+  <div
+    className="typeahead__item"
+    data-testid="others-option"
+    onClick={() => {
+      const otherOption = {
+        CODE_DESC: "Others",
+        CODE_VALUE: "9999",
+        checked: false,
+      };
+      addUserInput(otherOption);
+    }}
+  >
+    <input
+      type="radio"
+      checked={selectedValue[0]?.CODE_VALUE === "9999"}
+      onChange={() => {
+        // do nothing
+      }}
+      value="9999"
+      id="others"
+    />
+    <label htmlFor="others">Others</label>
+  </div>
+)}
