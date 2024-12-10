@@ -248,12 +248,10 @@ export default Close;
 
 
 
-
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useDispatch, useSelector } from "react-redux";
 import Close from "./Close";
-import closeInfo from "../../../assets/_json/close.json";
 import trackEvents from "../../../services/track-events";
 
 jest.mock("react-redux", () => ({
@@ -294,9 +292,6 @@ describe("Close Component", () => {
           },
         ];
       }
-      if (selectorFn.toString().includes("state.stages.userInput")) {
-        return {};
-      }
       return null;
     });
   });
@@ -305,12 +300,83 @@ describe("Close Component", () => {
     jest.clearAllMocks();
   });
 
-  it("should render Close component correctly", () => {
-    render(<Close authType="resume" />);
+  it("should render the close button", () => {
+  render(<Close authType="default" />);
+  const closeButton = screen.getByRole("button", { name: /close/i });
+  expect(closeButton).toBeInTheDocument();
+});
 
-    const closeButton = screen.getByText("Cancel:formAbandonment");
-    expect(closeButton).toBeInTheDocument();
-  });
+         it("should trigger logout action and display the popup", () => {
+  render(<Close authType="default" />);
+  const closeButton = screen.getByRole("button", { name: /close/i });
+  fireEvent.click(closeButton);
 
-  
+  expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
+    "ctaClick",
+    "Close:formAbandonment"
+  );
+
+  const popup = screen.getByText(/exit app/i);
+  expect(popup).toBeInTheDocument();
+});
+
+
+
+         it("should trigger 'withoutSaveAndExit' logic correctly", () => {
+  render(<Close authType="default" />);
+  fireEvent.click(screen.getByRole("button", { name: /close/i }));
+
+  const withoutSaveButton = screen.getByRole("button", { name: /yes/i });
+  fireEvent.click(withoutSaveButton);
+
+  expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
+    "formAbandonment",
+    "Exit"
+  );
+});
+
+
+         it("should dispatch 'withSaveAndExit' logic on button click", async () => {
+  const mockSubmitRequest = jest.fn().mockResolvedValue(true);
+  jest.mock("../../../modules/dashboard/fields/fields.utils", () => ({
+    submitRequest: mockSubmitRequest,
+  }));
+
+  render(<Close authType="default" />);
+  fireEvent.click(screen.getByRole("button", { name: /close/i }));
+
+  const withSaveButton = screen.getByRole("button", { name: /exit/i });
+  fireEvent.click(withSaveButton);
+
+  expect(mockDispatch).toHaveBeenCalled();
+  expect(mockSubmitRequest).toHaveBeenCalled();
+});
+
+it("should close the popup on cancel button click", () => {
+  render(<Close authType="default" />);
+  fireEvent.click(screen.getByRole("button", { name: /close/i }));
+
+  const cancelButton = screen.getByRole("button", { name: /cancel/i });
+  fireEvent.click(cancelButton);
+
+  expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
+    "ctaClick",
+    "Cancel:formAbandonment"
+  );
+
+  expect(screen.queryByText(/exit app/i)).not.toBeInTheDocument();
+});
+
+
+         it("should display user details when available", () => {
+  render(<Close authType="default" />);
+  fireEvent.click(screen.getByRole("button", { name: /close/i }));
+
+  const email = screen.getByText(/email: test@example.com/i);
+  const mobile = screen.getByText(/mobile: \+1234567890/i);
+  const appRef = screen.getByText(/ref no: APP123/i);
+
+  expect(email).toBeInTheDocument();
+  expect(mobile).toBeInTheDocument();
+  expect(appRef).toBeInTheDocument();
 });
