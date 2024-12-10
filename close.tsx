@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+eeimport React, { useState, useEffect } from "react";
 import "./close.scss";
 import PopupModel from "../popup-model/popup-model";
 import { useDispatch, useSelector } from "react-redux";
@@ -684,3 +684,39 @@ Time:        1.553 s
 Ran all test suites matching /close/i.
 
 Watch Usage: Press w to show more.
+
+
+
+
+  import { useSelector } from 'react-redux';
+
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useSelector: jest.fn(),
+}));
+
+describe('Close Component', () => {
+  beforeEach(() => {
+    // Reset mock for each test
+    (useSelector as jest.Mock).mockReset();
+  });
+
+  it('should render correctly with mocked stageSelector', () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.name === 'stageSelector') {
+        return [
+          {
+            stageInfo: {
+              application: {
+                applicationRefNo: '123456789', // Mocked value
+              },
+            },
+          },
+        ];
+      }
+      return null;
+    });
+
+    // Render the component and add assertions
+  });
+});
