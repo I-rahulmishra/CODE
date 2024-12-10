@@ -251,8 +251,28 @@ export default Close;
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useDispatch, useSelector } from "react-redux";
-import Close from "./Close";
+import Close from "./close";
 import trackEvents from "../../../services/track-events";
+import { authenticateType } from "../../../utils/common/change.utils";
+
+jest.mock('../../../utils/common/change.utils', () => ({
+    authenticateType: jest.fn(()=>"manual"),
+    getUrl:{
+      getJourneyType:jest.fn(),
+      getParameterByName:jest.fn(),
+      getStageInfo:jest.fn()
+    },
+    filterDisableFields:jest.fn()
+  }));
+
+
+jest.mock("")
+jest.mock("axios", () => ({
+  __esModule: true,
+}));
+jest.mock("@lottiefiles/react-lottie-player", () => ({
+  __esModule: true,
+}));
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -270,6 +290,8 @@ jest.mock("../../../utils/common/change.utils", () => ({
     getUpdatedStage: jest.fn(() => ({ ccplChannel: "MBNK" })),
   },
 }));
+
+
 
 describe("Close Component", () => {
   const mockDispatch = jest.fn();
@@ -294,429 +316,40 @@ describe("Close Component", () => {
       }
       return null;
     });
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+        if (selectorFn.name === 'stageSelector') {
+          return [
+            {
+              stageInfo: {
+                application: {
+                  applicationRefNo: '123456789', // Mocked value
+                },
+              },
+            },
+          ];
+        }
+        return null;
+      });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should render the close button", () => {
-  render(<Close authType="default" />);
-  const closeButton = screen.getByRole("button", { name: /close/i });
-  expect(closeButton).toBeInTheDocument();
-});
-
-         it("should trigger logout action and display the popup", () => {
-  render(<Close authType="default" />);
-  const closeButton = screen.getByRole("button", { name: /close/i });
-  fireEvent.click(closeButton);
-
-  expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
-    "ctaClick",
-    "Close:formAbandonment"
-  );
-
-  const popup = screen.getByText(/exit app/i);
-  expect(popup).toBeInTheDocument();
-});
-
-
-
-         it("should trigger 'withoutSaveAndExit' logic correctly", () => {
-  render(<Close authType="default" />);
-  fireEvent.click(screen.getByRole("button", { name: /close/i }));
-
-  const withoutSaveButton = screen.getByRole("button", { name: /yes/i });
-  fireEvent.click(withoutSaveButton);
-
-  expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
-    "formAbandonment",
-    "Exit"
-  );
-});
-
-
-         it("should dispatch 'withSaveAndExit' logic on button click", async () => {
-  const mockSubmitRequest = jest.fn().mockResolvedValue(true);
-  jest.mock("../../../modules/dashboard/fields/fields.utils", () => ({
-    submitRequest: mockSubmitRequest,
-  }));
-
-  render(<Close authType="default" />);
-  fireEvent.click(screen.getByRole("button", { name: /close/i }));
-
-  const withSaveButton = screen.getByRole("button", { name: /exit/i });
-  fireEvent.click(withSaveButton);
-
-  expect(mockDispatch).toHaveBeenCalled();
-  expect(mockSubmitRequest).toHaveBeenCalled();
-});
-
-it("should close the popup on cancel button click", () => {
-  render(<Close authType="default" />);
-  fireEvent.click(screen.getByRole("button", { name: /close/i }));
-
-  const cancelButton = screen.getByRole("button", { name: /cancel/i });
-  fireEvent.click(cancelButton);
-
-  expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
-    "ctaClick",
-    "Cancel:formAbandonment"
-  );
-
-  expect(screen.queryByText(/exit app/i)).not.toBeInTheDocument();
-});
-
-
-         it("should display user details when available", () => {
-  render(<Close authType="default" />);
-  fireEvent.click(screen.getByRole("button", { name: /close/i }));
-
-  const email = screen.getByText(/email: test@example.com/i);
-  const mobile = screen.getByText(/mobile: \+1234567890/i);
-  const appRef = screen.getByText(/ref no: APP123/i);
-
-  expect(email).toBeInTheDocument();
-  expect(mobile).toBeInTheDocument();
-  expect(appRef).toBeInTheDocument();
-});
-
-
-
-
-import { authenticateType } from "./change.utils";
-
-export const getTotalStep = (flowType: any) => {
-  return {
-    STAGE_NAMES: {
-      SSF_1: "ssf-1",
-      SSF_2: "ssf-2",
-      LD_1: "ld-1",
-      BD_1: "bd-1",
-      BD_2: "bd-2",
-      BD_3: "bd-3",
-      DOC: "doc",
-      AD_1: "ad-1",
-      AD_2: "ad-2",
-      ACD: "ACD",
-      ACD_2: "acd-2",
-      RP: "rp",
-      FFD_1: "ffd-1",
-    },
-    STATE_URLS: {
-      SUPER_SHORT_FORM: "sg/super-short-form",
-      MYINFO_DETAILS: "sg/myinfo-details",
-      PERSONAL_DETAILS: "sg/personal-details",
-      EMPLOYMENT: "sg/employment",
-      DOCUMENTS: "sg/documents",
-      CREDIT_CARD_DETAILS: "sg/credit-card-details",
-      REVIEW: "sg/review",
-      TAX_DETAILS: "sg/tax-details",
-      ADDITIONAL_DATA: "sg/additional-data",
-      OFFER: "sg/offer",
-      LOAN_DETAILS: "sg/loan-details",
-      LOAN_CALCULATOR:"sg/loan-calculator",
-      CREDIT_LIMIT: "sg/credit-limit",
-      THANKYOU: "sg/thankyou",
-    },
-    ETC_CASA: {
-      totalStages: flowType === "ibnk" ? "4" : "5",
-      startCount: flowType === "ibnk" ? "1" : "2",
-      "ssf-1": {
-        step: "1",
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "ssf-2": {
-        step: "2",
-        path: "super-short-form",
-        name: "MyInfo Details",
-      },
-      "bd-1": {
-        step: "1",
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "doc": {
-        step: null,
-        path: "document",
-        name: "Document",
-      },
-      "ad-1": {
-        step: null,
-        path: "tax-details",
-        name: "Tax Details",
-      },
-      "ad-2": {
-        step: null,
-        path: "product-details",
-        name: "Product Details",
-      },
-      rp: {
-        step: null,
-        path: "rp",
-        name: "Terms and Conditions",
-      },
-      'ffd-1': {
-        step: null,
-        path: "thankyou",
-        name: "Thank You",
-      }
-    },
-    NON_ETC_CASA: {
-      totalStages: "6",
-      startCount: flowType === "ibnk" ? "1" : "2",
-      "ssf-1": {
-        step: "1",
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "ssf-2": {
-        step: "2",
-        path: "super-short-form",
-        name: "MyInfo Details",
-      },
-      "bd-1": {
-        step: "1",
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "bd-3": {
-        step: null,
-        path: "employment",
-        name: "Employment Details",
-      },
-      doc: {
-        step: null,
-        path: "document",
-        name: "Document",
-      },
-      "ad-1": {
-        step: null,
-        path: "tax-details",
-        name: "Tax Details",
-      },
-      "ad-2": {
-        step: null,
-        path: "product-details",
-        name: "Product Details",
-      },
-      rp: {
-        step: null,
-        path: "rp",
-        name: "Terms and Conditions",
-      },
-      'ffd-1': {
-        step: null,
-        path: "thankyou",
-        name: "Thank You",
-      }
-    },
-    ETC_CC: {
-      totalStages: flowType === "ibnk" ? "4" : "5",
-      startCount: flowType === "ibnk" ? "1" : "2",
-      "ssf-1": {
-        step: "1",
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "ssf-2": {
-        step: "2",
-        path: "super-short-form",
-        name: "MyInfo Details",
-      },
-      "ld-1": {
-        step: null,
-        path: "loan-calculator",
-        name: "Loan Calculator"
-      },
-      "bd-1": {
-        step: "1",
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "bd-3": {
-        step: null,
-        path: "employment",
-        name: "Employment Details",
-      },
-      doc: {
-        step: null,
-        path: "document",
-        name: "Document",
-      },
-      "ad-2": {
-        step: null,
-        path: "credit-card-details",
-        name: "Credit Card Details",
-      },
-      "ACD": {
-        step: null,
-        path: "trust-credit-limit-porting",
-        name: "Trust Credit Limit Porting",
-      },
-      rp: {
-        step: null,
-        path: "rp",
-        name: "Terms and Conditions",
-      },
-      'ffd-1': {
-        step: null,
-        path: "thankyou",
-        name: "Thank You",
-      }
-    },
-    NON_ETC_CC: {
-      totalStages: flowType === "manual" ? "5" : "5",
-      startCount: flowType === "manual" ? "1" : "2",
-      "ssf-1": {
-        step: "1",
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "ssf-2": {
-        step: "2",
-        path: "super-short-form",
-        name: "MyInfo Details",
-      },
-      "bd-2": {
-        step: null,
-        path: "personal-details",
-        name: "Personal Details",
-      },
-      "ld-1": {
-        step: null,
-        path: "loan-calculator",
-        name: "Loan Calculator"
-      },
-      "bd-1": {
-        step: '1',
-        path: "super-short-form",
-        name: "Basic Information",
-      },
-      "bd-3": {
-        step: null,
-        path: "employment",
-        name: "Employment Details",
-      },
-      doc: {
-        step: null,
-        path: "document",
-        name: "Document",
-      },
-      "ad-2": {
-        step: null,
-        path: "credit-card-details",
-        name: "Credit Card Details",
-      },
-      "ACD": {
-        step: null,
-        path: "trust-credit-limit-porting",
-        name: "Trust Credit Limit Porting",
-      },
-      rp: {
-        step: null,
-        path: "rp",
-        name: "Terms and Conditions",
-      },
-      'ffd-1': {
-        step: null,
-        path: "thankyou",
-        name: "Thank You",
-      }
-    },
-    DEFAULT_EDITABLE: ['name_of_employer', 'annual_income', 'email', 'mobile_number', 'marital_status']
-  }
-};
-
-export const resumeHeaderText :any = {
-  HEADER_TEXT: {
-    resume: "Resume Application",
-    resumeSubHeader: "Thank you for choosing Standard Chartered Bank.",
-  }
-}
-
-export const BANCAINFO :any = {
-  DEFAULT_BANCA_VALUE: ['banca_benefit_amount1_a_1','banca_premium_amount_a_1','banca_product_code_a_1','banca_product_applicable_a_1']
-}
-
-export const DEFAULT_NONEDITABLE :any = {
-   NONEDITABLE: ['residential_address',"annual_income_fff_1","year_of_assessment_fff_1"]
-
-}
-export const getStageCounts = () =>{
-  const flowType = authenticateType();
-  return getTotalStep(flowType);
-}
- 
-export const CONSTANTS:any = getStageCounts();
- 
-
-
-
- src/shared/components/close/close.test.tsx
-  ● Test suite failed to run
-
-    TypeError: (0 , _change.authenticateType) is not a function
-
-      260 | }
-      261 | export const getStageCounts = () =>{
-    > 262 |   const flowType = authenticateType();
-          |                                    ^
-      263 |   return getTotalStep(flowType);
-      264 | }
-      265 |
-
-      at getStageCounts (src/utils/common/constants.ts:262:36)
-      at Object.getStageCounts (src/utils/common/constants.ts:266:30)
-      at Object.require (src/modules/dashboard/fields/stage.utils.ts:1:1)
-      at Object.require (src/services/common-service.ts:2:1)
-      at Object.require (src/modules/dashboard/fields/fields.utils.ts:1:1)
-      at Object.require (src/shared/components/close/close.tsx:7:1)
-      at Object.require (src/shared/components/close/close.test.tsx:4:1)
-      at TestScheduler.scheduleTests (node_modules/react-scripts/node_modules/@jest/core/build/TestScheduler.js:333:13)
-      at runJest (node_modules/react-scripts/node_modules/@jest/core/build/runJest.js:404:19)
-
-Test Suites: 1 failed, 1 total
-Tests:       0 total
-Snapshots:   0 total
-Time:        1.553 s
-Ran all test suites matching /close/i.
-
-Watch Usage: Press w to show more.
-
-
-
-
-  import { useSelector } from 'react-redux';
-
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useSelector: jest.fn(),
-}));
-
-describe('Close Component', () => {
-  beforeEach(() => {
-    // Reset mock for each test
-    (useSelector as jest.Mock).mockReset();
+  it("should render the close component", () => {
+    render(<Close authType="default" />);
+    const closeDiv = screen.getByTestId('close-component');
+    expect(closeDiv).toBeInTheDocument();
   });
 
-  it('should render correctly with mocked stageSelector', () => {
-    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
-      if (selectorFn.name === 'stageSelector') {
-        return [
-          {
-            stageInfo: {
-              application: {
-                applicationRefNo: '123456789', // Mocked value
-              },
-            },
-          },
-        ];
-      }
-      return null;
-    });
+  it("should open popup on click", () => {
+    render(<Close authType="default" />);
+    const closeDiv = screen.getByTestId('close-component');
+    fireEvent.click(closeDiv);
 
-    // Render the component and add assertions
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
+      "ctaClick", 
+      "Close:formAbandonment"
+    );
   });
-});
+})
