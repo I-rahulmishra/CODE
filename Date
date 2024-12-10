@@ -325,3 +325,76 @@ const changeHandler = (
     setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
   }
 };
+
+
+
+
+const changeHandler = (
+  data: React.ChangeEvent<HTMLInputElement>,
+  type: string
+) => {
+  setError("");
+  const fieldName = props.data.logical_field_name;
+  if (type === "YYYY") {
+    date["YYYY"] = data.target.value;
+  } else if (type === "MM") {
+    date["MM"] = data.target.value;
+    if (date["MM"].length === 2) {
+      yearRef.current?.focus();
+    }
+  } else if (type === "DD") {
+    date["DD"] = data.target.value;
+    if (date["DD"].length === 2) {
+      monthRef.current?.focus();
+    }
+  }
+
+  const userValue = date["YYYY"] + "-" + date["MM"] + "-" + date["DD"];
+  props.handleCallback(props.data, userValue);
+
+  if (date["DD"] !== "" || date["MM"] !== "" || date["YYYY"] !== "") {
+    if (
+      date["YYYY"].length > 3 &&
+      date["DD"].length > 1 &&
+      date["MM"].length > 1
+    ) {
+      if (validateService.isValidDate(userValue)) {
+        const age = validateService.calculateAge(userValue);
+        const ageInValid = validateService.validateAge(
+          age,
+          stageSelector[0].stageInfo.products[0].product_type,
+          stageSelector[0].stageInfo.products[0].product_category
+        );
+
+        if (ageInValid) {
+          const ageInvalidMessage = validateService.getValidationMsg(
+            stageSelector[0].stageInfo.products[0].product_type,
+            stageSelector[0].stageInfo.products[0].product_category
+          );
+
+          setError(`${props.data.rwb_label_name} ${ageInvalidMessage}`);
+
+          if (age < 21) {
+            // Clear all date fields
+            setDate({ DD: "", MM: "", YYYY: "" });
+            // Focus on the DD field
+            setTimeout(() => {
+              document.querySelector(`input[placeholder="DD"]`)?.focus();
+            }, 0);
+          }
+        } else {
+          dispatch(isFieldUpdate(props, userValue, fieldName));
+        }
+      } else {
+        setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+      }
+    } else {
+      setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+    }
+  } else if (
+    props.data.mandatory === "Yes" ||
+    props.data.mandatory === "Conditional"
+  ) {
+    setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
+  }
+};
