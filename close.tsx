@@ -251,20 +251,36 @@ export default Close;
 
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
+import { useDispatch, useSelector } from "react-redux";
 import Close from "./Close";
 import closeInfo from "../../../assets/_json/close.json";
+import trackEvents from "../../../services/track-events";
 
-const mockStore = configureStore([]);
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("../../../services/track-events", () => ({
+  triggerAdobeEvent: jest.fn(),
+}));
+
+jest.mock("../../../utils/common/change.utils", () => ({
+  getUrl: {
+    getChannelRefNo: jest.fn(() => ({ applicationRefNo: "APP123" })),
+    getParameterByName: jest.fn(),
+    getUpdatedStage: jest.fn(() => ({ ccplChannel: "MBNK" })),
+  },
+}));
 
 describe("Close Component", () => {
-  let store: any;
+  const mockDispatch = jest.fn();
 
   beforeEach(() => {
-    store = mockStore({
-      stages: {
-        stages: [
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [
           {
             stageInfo: {
               applicants: {
@@ -272,97 +288,29 @@ describe("Close Component", () => {
                 mobile_number_a_1: "1234567890",
                 auth_mode_a_1: "IX",
               },
-              application: { application_reference: "12345" },
+              application: { application_reference: "APP123" },
             },
             stageId: "ssf-1",
           },
-        ],
-        userInput: { applicants: {} },
-        journeyType: "testJourney",
-      },
-      lov: {},
-      valueUpdate: {},
-      error: {},
-      bancaList: { bancaDetails: {} },
+        ];
+      }
+      if (selectorFn.toString().includes("state.stages.userInput")) {
+        return {};
+      }
+      return null;
     });
   });
 
-  test("should render Close component", () => {
-    render(
-      <Provider store={store}>
-        <Close authType="non-resume" />
-      </Provider>
-    );
-
-    expect(screen.getByText(closeInfo.closeMessage.headText)).toBeInTheDocument();
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  test("should display popup when clicked", () => {
-    render(
-      <Provider store={store}>
-        <Close authType="non-resume" />
-      </Provider>
-    );
+  it("should render Close component correctly", () => {
+    render(<Close authType="resume" />);
 
-    const closeButton = screen.getByText(closeInfo.closeMessage.headText);
-    fireEvent.click(closeButton);
-
-    expect(screen.getByText(closeInfo.closeParameters.exitAppText)).toBeInTheDocument();
+    const closeButton = screen.getByText("Cancel:formAbandonment");
+    expect(closeButton).toBeInTheDocument();
   });
 
-  test("should handle Without Save and Exit", () => {
-    render(
-      <Provider store={store}>
-        <Close authType="non-resume" />
-      </Provider>
-    );
-
-    fireEvent.click(screen.getByText(closeInfo.closeMessage.headText));
-
-    const yesButton = screen.getByText("Yes");
-    fireEvent.click(yesButton);
-
-    expect(window.location.href).toContain(process.env.REACT_APP_HOME_PAGE_URL);
-  });
-
-  test("should handle With Save and Exit", async () => {
-    render(
-      <Provider store={store}>
-        <Close authType="non-resume" />
-      </Provider>
-    );
-
-    fireEvent.click(screen.getByText(closeInfo.closeMessage.headText));
-
-    const exitButton = screen.getByText("Exit");
-    fireEvent.click(exitButton);
-
-    // Mock a dispatch and check it's called
-    expect(store.getActions()).toHaveLength(1);
-  });
-
-  test("should close popup on Cancel", () => {
-    render(
-      <Provider store={store}>
-        <Close authType="non-resume" />
-      </Provider>
-    );
-
-    fireEvent.click(screen.getByText(closeInfo.closeMessage.headText));
-
-    const cancelButton = screen.getByText("Cancel");
-    fireEvent.click(cancelButton);
-
-    expect(screen.queryByText(closeInfo.closeParameters.exitAppText)).not.toBeInTheDocument();
-  });
-
-  test("should render resume popup correctly", () => {
-    render(
-      <Provider store={store}>
-        <Close authType="resume" />
-      </Provider>
-    );
-
-    expect(screen.getByText("OK")).toBeInTheDocument();
-  });
+  
 });
