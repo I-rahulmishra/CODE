@@ -1,0 +1,22 @@
+  const roomFloorBlockValidation = (fieldProps: KeyWithAnyModel, childValue: string | number | null) => {
+    debugger
+    console.log(madatoryFieldSelector, 'madatory inside roomFLoorblock')
+    if (fieldProps.logical_field_name === "res_room_flat" && childValue !== null) {
+      // delete madatoryFieldSelector['res_block'];
+      // delete madatoryFieldSelector['res_floor'];
+      fieldErrorAction.removeMandatoryFields(['res_block','res_floor']);
+    } 
+    if (fieldProps.logical_field_name === "res_block" && childValue !== null) {
+      // delete madatoryFieldSelector["res_room_flat"];
+      // delete madatoryFieldSelector["res_floor"];
+      fieldErrorAction.removeMandatoryFields(['res_room_flat'])
+    }
+    else if (fieldProps.logical_field_name === "res_floor" && childValue !== null) {
+      // delete madatoryFieldSelector["res_room_flat"];
+      // delete madatoryFieldSelector["res_block"];
+      fieldErrorAction.removeMandatoryFields(['res_room_flat'])
+    } else if (userInputSelector.applicants[0].res_room_flat === "" && userInputSelector.applicants[0].res_floor === "" && userInputSelector.applicants[0].res_block === "") {
+      fieldErrorAction.getMandatoryFields(['res_room_flat'])
+    }
+  }
+  console.log(madatoryFieldSelector, 'mdada')
