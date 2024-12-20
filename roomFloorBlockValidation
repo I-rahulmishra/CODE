@@ -20,3 +20,33 @@
     }
   }
   console.log(madatoryFieldSelector, 'mdada')
+
+
+
+
+const roomFloorBlockValidation = (fieldProps: KeyWithAnyModel, childValue: string | number | null) => {
+  // Destructure the logical field name for readability
+  const { logical_field_name } = fieldProps;
+
+  // Define the relationships
+  const relatedFields = {
+    res_room_flat: ["res_block", "res_floor"],
+    res_block: ["res_room_flat", "res_floor"],
+    res_floor: ["res_room_flat", "res_block"],
+  };
+
+  // If a field is updated (not null), remove related fields from mandatory
+  if (childValue !== null && relatedFields[logical_field_name]) {
+    const fieldsToRemove = relatedFields[logical_field_name];
+    fieldErrorAction.removeMandatoryFields(fieldsToRemove);
+  }
+
+  // If all fields are empty, make all fields mandatory
+  const applicants = userInputSelector.applicants[0];
+  const isAllFieldsEmpty =
+    !applicants.res_room_flat && !applicants.res_block && !applicants.res_floor;
+
+  if (isAllFieldsEmpty) {
+    fieldErrorAction.getMandatoryFields(["res_room_flat", "res_block", "res_floor"]);
+  }
+};
