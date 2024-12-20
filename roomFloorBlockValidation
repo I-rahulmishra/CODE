@@ -50,3 +50,27 @@ const roomFloorBlockValidation = (fieldProps: KeyWithAnyModel, childValue: strin
     fieldErrorAction.getMandatoryFields(["res_room_flat", "res_block", "res_floor"]);
   }
 };
+
+
+
+0
+: 
+"res_room_flat"
+1
+: 
+"res_floor"
+2
+: 
+"res_block"
+3
+: 
+"res_building_estate_pt"
+4
+: 
+"res_district"
+5
+: 
+"res_city"
+6
+: 
+"res_country"
