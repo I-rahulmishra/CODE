@@ -1183,3 +1183,38 @@ const Fields = (props: KeyWithAnyModel) => {
 };
 
 export default React.memo(Fields);
+
+
+
+
+if (stageId === CONSTANTS.STAGE_NAMES.BD_1) {
+  // Check if any of the fields (res_floor, res_room_flat, res_block) are filled
+  const applicants = userInputSelector.applicants[0];
+  const resFloorValue = applicants.res_floor;
+  const resRoomFlatValue = applicants.res_room_flat;
+  const resBlockValue = applicants.res_block;
+
+  // Remove the other two fields if res_floor is filled
+  if (resFloorValue) {
+    mandatoryFields = mandatoryFields.filter(
+      (item) => item !== "res_room_flat" && item !== "res_block"
+    );
+  }
+  // Remove the other two fields if res_room_flat is filled
+  else if (resRoomFlatValue) {
+    mandatoryFields = mandatoryFields.filter(
+      (item) => item !== "res_floor" && item !== "res_block"
+    );
+  }
+  // Remove the other two fields if res_block is filled
+  else if (resBlockValue) {
+    mandatoryFields = mandatoryFields.filter(
+      (item) => item !== "res_room_flat" && item !== "res_floor"
+    );
+  }
+
+  // Add all three back to mandatory if none are filled
+  if (!resFloorValue && !resRoomFlatValue && !resBlockValue) {
+    mandatoryFields = [...mandatoryFields, "res_room_flat", "res_floor", "res_block"];
+  }
+}
