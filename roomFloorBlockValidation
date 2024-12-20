@@ -74,3 +74,42 @@ const roomFloorBlockValidation = (fieldProps: KeyWithAnyModel, childValue: strin
 6
 : 
 "res_country"
+
+
+
+const roomFloorBlockValidation = (fieldProps: KeyWithAnyModel, childValue: string | number | null) => {
+  const { logical_field_name } = fieldProps;
+
+  // Relationships between fields
+  const relatedFields = {
+    res_room_flat: ["res_block", "res_floor"],
+    res_block: ["res_room_flat", "res_floor"],
+    res_floor: ["res_room_flat", "res_block"],
+  };
+
+  // Get the current state of the applicants
+  const applicants = userInputSelector.applicants[0];
+
+  // Check if the field is updated
+  if (childValue !== null && relatedFields[logical_field_name]) {
+    const fieldsToRemove = relatedFields[logical_field_name];
+    dispatch(fieldErrorAction.removeMandatoryFields(fieldsToRemove));
+  }
+
+  // If all fields are empty, all should be mandatory
+  const isAllFieldsEmpty =
+    !applicants.res_room_flat &&
+    !applicants.res_block &&
+    !applicants.res_floor;
+
+  if (isAllFieldsEmpty) {
+    dispatch(fieldErrorAction.getMandatoryFields([
+      "res_room_flat",
+      "res_block",
+      "res_floor",
+    ]));
+  }
+
+  // Log the current state for debugging
+  console.log("Updated mandatoryFields:", madatoryFieldSelector);
+};
