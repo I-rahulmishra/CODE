@@ -99,3 +99,63 @@ if (
     setError('');
   }
 }
+
+
+
+To implement the functionality you described—where errors for the two other fields are cleared when one field is filled, and an error message is shown below the Room field when all fields are empty—you can adjust your logic like this:
+
+1. **Clear Errors on Non-Empty Input:** When one of the fields is filled, clear errors for the other two fields.
+2. **Show Error If All Are Empty:** If all fields are empty, show a specific error message below the Room field.
+
+Here's an updated version of your logic to reflect these changes:
+
+```javascript
+if (
+  fieldName === 'res_room_flat' ||
+  fieldName === 'res_floor' ||
+  fieldName === 'res_block'
+) {
+  // Get the values of the fields
+  const roomFlatValue = (document.querySelector('[name="res_room_flat"]') as HTMLInputElement)?.value || '';
+  const floorValue = (document.querySelector('[name="res_floor"]') as HTMLInputElement)?.value || '';
+  const blockValue = (document.querySelector('[name="res_block"]') as HTMLInputElement)?.value || '';
+
+  // Check if all fields are empty
+  const isAllFieldsEmpty = !roomFlatValue && !floorValue && !blockValue;
+  
+  // Check if the current field being updated is empty
+  const isCurrentFieldEmpty = event.target.value.length === 0;
+
+  // If all fields are empty, show error message
+  if (isAllFieldsEmpty) {
+    setError(`${errorMsg.roomRequired}`); // Error on Room field
+  } else {
+    // Clear error for Room field as at least one field is filled
+    setError('');
+  }
+
+  // Clear errors on other fields if current input is filled
+  if (event.target.value.length > 0) {
+    if (fieldName === 'res_room_flat' && (floorValue || blockValue)) {
+      setError(''); // Clear errors on Floor and Block
+    } else if (fieldName === 'res_floor' && (roomFlatValue || blockValue)) {
+      setError(''); // Clear errors on Room and Block
+    } else if (fieldName === 'res_block' && (roomFlatValue || floorValue)) {
+      setError(''); // Clear errors on Room and Floor
+    }
+  }
+}
+```
+
+### Explanation:
+1. **Error Handling:**
+   - The error message is set if all fields are empty.
+   - Otherwise, if at least one field is filled, any existing error is removed.
+
+2. **Field Change Detection:**
+   - The last block checks if the currently edited field is filled and, if so, clears errors in the other fields.
+
+**Usage:**
+- To adjust the error messages shown under the Room field, make sure the `errorMsg.roomRequired` contains the appropriate text you want to display.
+
+This modifications will ensure that users have a clear indication of errors while maintaining usability, leading to a better user experience.
