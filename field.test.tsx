@@ -115,3 +115,45 @@ if (
 ) {
   setError(`${language === CONSTANTS.LANG_EN ? "All fields are required" : "All fields are required in the selected language"}`);
 }
+
+
+
+const validateFields = () => {
+  const logicalFieldName = props?.data?.logical_field_name;
+  const fieldValue = event.target.value;
+
+  if (!fieldValue) {
+    if (logicalFieldName === "res_room_flat") {
+      setError(
+        `${language === CONSTANTS.LANG_EN ? errorMsg.roomRequiredSplChar : language === CONSTANTS.LANG_CN ? errorMsg.roomRequiredSplChar_CN : errorMsg.roomRequiredSplChar_HK}`
+      );
+    }
+    return;
+  }
+
+  // Validations for each field
+  let roomValid = regexAlphaNumeric.test(fieldValue) && logicalFieldName === "res_room_flat";
+  let floorValid = regexAlphaNumeric.test(fieldValue) && logicalFieldName === "res_floor";
+  let blockValid = regexAlphaNumeric.test(fieldValue) && logicalFieldName === "res_block";
+
+  // If any of the fields is valid, clear the error
+  if (roomValid || floorValid || blockValid) {
+    setError('');
+    return;
+  }
+
+  // Display error for invalid input
+  if (logicalFieldName === "res_room_flat") {
+    setError(
+      `${language === CONSTANTS.LANG_EN ? errorMsg.roomRequiredSplChar : language === CONSTANTS.LANG_CN ? errorMsg.roomRequiredSplChar_CN : errorMsg.roomRequiredSplChar_HK}`
+    );
+  } else if (logicalFieldName === "res_floor") {
+    setError(
+      `${language === CONSTANTS.LANG_EN ? errorMsg.floorRequiredSplChar : language === CONSTANTS.LANG_CN ? errorMsg.floorRequiredSplChar_CN : errorMsg.floorRequiredSplChar_HK}`
+    );
+  } else if (logicalFieldName === "res_block") {
+    setError(
+      `${language === CONSTANTS.LANG_EN ? errorMsg.blockRequiredSplChar : language === CONSTANTS.LANG_CN ? errorMsg.blockRequiredSplChar_CN : errorMsg.blockRequiredSplChar_HK}`
+    );
+  }
+};
