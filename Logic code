@@ -64,3 +64,38 @@ if (
     setError('');
   }
 }
+
+
+
+if (
+  fieldName === 'res_room_flat' ||
+  fieldName === 'res_floor' ||
+  fieldName === 'res_block'
+) {
+  // Get the values of all three fields
+  const roomFlatValue = (document.querySelector('[name="res_room_flat"]') as HTMLInputElement)?.value || '';
+  const floorValue = (document.querySelector('[name="res_floor"]') as HTMLInputElement)?.value || '';
+  const blockValue = (document.querySelector('[name="res_block"]') as HTMLInputElement)?.value || '';
+
+  // Check if all fields are empty
+  const isAllFieldsEmpty = !roomFlatValue && !floorValue && !blockValue;
+
+  // Check if the current field being updated is empty
+  const isCurrentFieldEmpty = event.target.value.length === 0;
+
+  if (isAllFieldsEmpty && isCurrentFieldEmpty) {
+    // If all fields are empty, show error on logical_field_name
+    setError(`${errorMsg.roomRequired}`);
+  } else if (isCurrentFieldEmpty && (!roomFlatValue || !floorValue || !blockValue)) {
+    // If the current field is cleared but at least one field is filled, clear the error
+    setError('');
+  } else {
+    // If the current field has a value, clear the error
+    setError('');
+  }
+
+  // If at least one field is filled, no errors should appear for the other fields
+  if (roomFlatValue || floorValue || blockValue) {
+    setError('');
+  }
+}
