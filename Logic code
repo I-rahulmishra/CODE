@@ -159,3 +159,68 @@ if (
 - To adjust the error messages shown under the Room field, make sure the `errorMsg.roomRequired` contains the appropriate text you want to display.
 
 This modifications will ensure that users have a clear indication of errors while maintaining usability, leading to a better user experience.
+
+
+
+It sounds like you're encountering a couple of issues with the form validation logic on your application. Here’s a breakdown of the specific problems and potential solutions:
+
+1. **Error Message Display Logic**:
+   - **Current Issue**: The error message appears for all fields when you click outside after typing something and clearing it, rather than just for the "Room" field.
+   - **Ideal Behavior**: The error should only show for the "Room" field if it's empty (when it's required) and not affect the others.
+
+   **Solution**: 
+   - Modify your validation logic to only trigger an error message for the "Room" field if it is the only required field that is not filled when the user clicks outside of it. You may need to update the form validation event to specifically check the status of the "Room" field and the others separately.
+
+2. **Error Clear Logic**:
+   - **Current Issue**: The error message for "Block" does not go away when the user fills in the "Floor" or any other field.
+   - **Ideal Behavior**: When a user fills in any valid input in one of the fields, any accompanying error messages for the other fields should disappear.
+
+   **Solution**:
+   - Implement an event listener that triggers whenever any of the input fields are filled or changed. The listener should validate the inputs and clear any error messages based on the current valid state of each respective field.
+
+### Implementation Example (JavaScript Pseudo-code):
+
+```javascript
+const roomField = document.getElementById("room");
+const floorField = document.getElementById("floor");
+const blockField = document.getElementById("block");
+const errorMessages = {
+    room: "Please enter a valid Room.",
+    floor: "Please enter a valid Floor.",
+    block: "Please enter a valid Block."
+};
+
+// Validate only Room field on blur
+roomField.addEventListener("blur", () => {
+    if (roomField.value === "") {
+        showError("room", errorMessages.room);
+    } else {
+        clearError("room");
+    }
+});
+
+// Validate all fields on input
+function validateFields() {
+    if (roomField.value !== "") clearError("room");
+    if (floorField.value !== "") clearError("floor");
+    if (blockField.value !== "") clearError("block");
+}
+
+floorField.addEventListener("input", validateFields);
+blockField.addEventListener("input", validateFields);
+
+// Function to show error
+function showError(field, message) {
+    // Code to display error message and highlight the field
+}
+
+// Function to clear error
+function clearError(field) {
+    // Code to hide error message and remove highlight from the field
+}
+```
+
+### Key Takeaways:
+- Separate validation logic for individual fields.
+- Ensure error messages are displayed and cleared appropriately based on user input.
+- This should create a smoother user experience and prevent confusion with multiple error messages.
