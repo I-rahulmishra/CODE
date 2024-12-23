@@ -1,0 +1,30 @@
+if (['res_room_flat', 'res_floor', 'res_block'].includes(props?.data?.logical_field_name)) {
+  const relatedFields = ['res_room_flat', 'res_floor', 'res_block'];
+
+  // Check if at least one of the related fields is filled
+  const isAnyFieldFilled = relatedFields.some(field =>
+    field !== props?.data?.logical_field_name && props?.formValues?.[field]?.length > 0
+  );
+
+  // Show error only if all related fields are empty and the current field is cleared
+  if (!isAnyFieldFilled && event.target.value.length === 0) {
+    setError(errorMsg.roomRequired);
+  } else {
+    setError('');
+  }
+
+  // Once one of the related fields is filled, clear the errors for the other fields
+  if (event.target.value.length > 0) {
+    relatedFields.forEach(field => {
+      if (field !== props?.data?.logical_field_name) {
+        props.clearError(field); // Example function to clear error for a specific field
+      }
+    });
+  }
+
+  // Update the field value
+  props.handleCallback(props.data, event.target.value);
+  dispatch(isFieldValueUpdate(props, stageSelector, event.target.value));
+  dispatch(isFieldUpdate(props, event.target.value, fieldName));
+  return;
+}
