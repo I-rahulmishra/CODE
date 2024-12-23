@@ -18,3 +18,58 @@ else if (props?.data?.logical_field_name === "res_room_flat" && (event.target.va
         return
       }
     }
+
+
+const handleValidation = (logicalFieldName: string, value: string) => {
+  const fieldErrorMessages: { [key: string]: { [key: string]: string } } = {
+    res_room_flat: {
+      [CONSTANTS.LANG_EN]: errorMsg.roomRequiredSplChar,
+      [CONSTANTS.LANG_CN]: errorMsg.roomRequiredSplChar_CN,
+      [CONSTANTS.LANG_HK]: errorMsg.roomRequiredSplChar_HK,
+    },
+    res_floor: {
+      [CONSTANTS.LANG_EN]: errorMsg.floorRequiredSplChar,
+      [CONSTANTS.LANG_CN]: errorMsg.floorRequiredSplChar_CN,
+      [CONSTANTS.LANG_HK]: errorMsg.floorRequiredSplChar_HK,
+    },
+    res_block: {
+      [CONSTANTS.LANG_EN]: errorMsg.blockRequiredSplChar,
+      [CONSTANTS.LANG_CN]: errorMsg.blockRequiredSplChar_CN,
+      [CONSTANTS.LANG_HK]: errorMsg.blockRequiredSplChar_HK,
+    },
+  };
+
+  // Fields and values
+  const roomValue = userInputSelector.applicants[0].res_room_flat || "";
+  const floorValue = userInputSelector.applicants[0].res_floor || "";
+  const blockValue = userInputSelector.applicants[0].res_block || "";
+
+  // If the current field is invalid
+  if (!regexAlphaNumeric.test(value)) {
+    setError(fieldErrorMessages[logicalFieldName]?.[language] || "Invalid input");
+    return;
+  }
+
+  // Validation logic for all three fields
+  if (roomValue && floorValue && blockValue) {
+    // All fields filled, clear errors
+    setError("");
+  } else if (roomValue || floorValue || blockValue) {
+    // At least one field filled, remove errors from others
+    if (logicalFieldName === "res_room_flat") {
+      setError("");
+    } else if (logicalFieldName === "res_floor") {
+      setError("");
+    } else if (logicalFieldName === "res_block") {
+      setError("");
+    }
+  } else {
+    // All fields empty, throw error for all
+    setError(fieldErrorMessages[logicalFieldName]?.[language] || "Field is required");
+  }
+};
+
+// Usage
+if (props?.data?.logical_field_name && event.target.value) {
+  handleValidation(props.data.logical_field_name, event.target.value);
+}
