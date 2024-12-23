@@ -73,3 +73,45 @@ const handleValidation = (logicalFieldName: string, value: string) => {
 if (props?.data?.logical_field_name && event.target.value) {
   handleValidation(props.data.logical_field_name, event.target.value);
 }
+
+
+
+
+else if (props?.data?.logical_field_name === "res_room_flat" && (event.target.value)) {
+  if (!regexAlphaNumeric.test(event.target.value)) {
+    setError(`${language === CONSTANTS.LANG_EN ? errorMsg.roomRequiredSplChar : language === CONSTANTS.LANG_CN ? errorMsg.roomRequiredSplChar_CN : errorMsg.roomRequiredSplChar_HK}`);
+    return;
+  } else {
+    // Clear error for other fields when this one is filled
+    setError("");
+  }
+}
+
+else if (props?.data?.logical_field_name === "res_floor" && (event.target.value)) {
+  if (!regexAlphaNumeric.test(event.target.value)) {
+    setError(`${language === CONSTANTS.LANG_EN ? errorMsg.floorRequiredSplChar : language === CONSTANTS.LANG_CN ? errorMsg.floorRequiredSplChar_CN : errorMsg.floorRequiredSplChar_HK}`);
+    return;
+  } else {
+    // Clear error for other fields when this one is filled
+    setError("");
+  }
+}
+
+else if (props?.data?.logical_field_name === "res_block" && (event.target.value)) {
+  if (!regexAlphaNumeric.test(event.target.value)) {
+    setError(`${language === CONSTANTS.LANG_EN ? errorMsg.blockRequiredSplChar : language === CONSTANTS.LANG_CN ? errorMsg.blockRequiredSplChar_CN : errorMsg.blockRequiredSplChar_HK}`);
+    return;
+  } else {
+    // Clear error for other fields when this one is filled
+    setError("");
+  }
+}
+
+// If all fields are empty
+if (
+  !userInputSelector.applicants[0].res_room_flat &&
+  !userInputSelector.applicants[0].res_floor &&
+  !userInputSelector.applicants[0].res_block
+) {
+  setError(`${language === CONSTANTS.LANG_EN ? "All fields are required" : "All fields are required in the selected language"}`);
+}
