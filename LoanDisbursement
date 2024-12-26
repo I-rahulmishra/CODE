@@ -676,3 +676,60 @@ describe('LoanDisbursement Component', () => {
     expect(screen.getByText(/Prepayment \/ Early Settlement \/ Redemption Fee:/i)).toBeInTheDocument();
   });
 });
+
+
+beforeEach(() => {
+  store = mockStore({
+    stages: {
+      stages: [
+        {
+          stageInfo: {
+            products: [
+              {
+                product_category: 'PL',
+                offer_details: [
+                  {
+                    offer_status: '1004',
+                    approved_amount: '50000',
+                    approved_tenor: '12',
+                    apr: '1.5',
+                    flatRate: '0.5',
+                    repaymentAmount: '4200',
+                    approved_amount_currency: 'USD', // Add this property
+                    bestOffer: 'Y',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+});
+
+it('displays the best offer section if bestOffer is "Y"', () => {
+  render(
+    <Provider store={store}>
+      <LoanDisbursement />
+    </Provider>
+  );
+
+  // Check if the best offer section is rendered
+  expect(screen.getByText(/Preliminary approved loan amount/i)).toBeInTheDocument();
+  expect(screen.getByText('USD')).toBeInTheDocument(); // Currency check
+  expect(screen.getByText('50000')).toBeInTheDocument(); // Approved amount
+});
+
+it('renders remarks section correctly', () => {
+  render(
+    <Provider store={store}>
+      <LoanDisbursement />
+    </Provider>
+  );
+
+  // Check if the remarks section is rendered
+  expect(
+    screen.getByText(/Prepayment \/ Early Settlement \/ Redemption Fee:/i)
+  ).toBeInTheDocument();
+});
