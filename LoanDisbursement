@@ -765,3 +765,48 @@ it('handles successful nextStage call', async () => {
     });
   });
 });
+
+
+
+
+it('handles successful nextStage call', async () => {
+  // Mock services.getOffer
+  jest.spyOn(services, 'getOffer').mockResolvedValue({
+    status: 200,
+    data: {
+      application: {
+        response_type: "INFO",
+        response_action: "SUCCESS",
+      },
+      products: [
+        {
+          product_category: "PL",
+          offer_details: {
+            offer_status: "1003",
+            approved_amount: "50000",
+            approved_tenor: "12",
+            apr: "1.5",
+            flatRate: "0.5",
+            repaymentAmount: "4200",
+            approved_amount_currency: "USD",
+            bestOffer: "Y",
+          },
+        },
+      ],
+    },
+  });
+
+  render(
+    <Provider store={store}>
+      <LoanDisbursement />
+    </Provider>
+  );
+
+  const continueButton = screen.getByTestId('continue-form-valid');
+  fireEvent.click(continueButton);
+
+  await waitFor(() => {
+    expect(services.getOffer).toHaveBeenCalledTimes(1); // Ensure one call
+    expect(services.getOffer).toHaveBeenCalledWith(expectedParams); // Validate parameters
+  });
+});
