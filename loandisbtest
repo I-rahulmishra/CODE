@@ -338,3 +338,87 @@ describe('LoanDisbursement Component', () => {
   
 
 });
+
+
+
+
+it('calls nextStage and proceeds to the next step', () => {
+  const mockNextStage = jest.fn();
+  render(
+    <Provider store={store}>
+      <LoanDisbursement nextStage={mockNextStage} />
+    </Provider>
+  );
+
+  const nextButton = screen.getByRole('button', { name: /Next/i });
+  fireEvent.click(nextButton);
+
+  expect(mockNextStage).toHaveBeenCalled();
+});
+
+
+it('handles change in slider value correctly', () => {
+  render(
+    <Provider store={store}>
+      <LoanDisbursement />
+    </Provider>
+  );
+
+  const slider = screen.getByRole('slider');
+  fireEvent.change(slider, { target: { value: '60000' } });
+
+  expect(slider).toHaveValue('60000'); // Ensure the value is updated
+});
+
+
+it('calls calculateOffer and updates the UI on success', async () => {
+  jest.spyOn(services, 'getOfferCalulated').mockResolvedValue({
+    data: {
+      apr: '1.8',
+      monthly_flat_rate: '0.6',
+      repayment_amount: '4500',
+      response_action: 'CONTINUE',
+    },
+  });
+
+  render(
+    <Provider store={store}>
+      <LoanDisbursement />
+    </Provider>
+  );
+
+  const slider = screen.getByRole('slider');
+  fireEvent.change(slider, { target: { value: '60000' } });
+
+  await waitFor(() => {
+    expect(services.getOfferCalulated).toHaveBeenCalledWith({
+      requested_amount: '60000',
+      requested_tenure: expect.any(String), // Or the expected value
+    });
+  });
+
+  // Check for updated UI based on the mock response
+  expect(screen.getByText(/1.8/i)).toBeInTheDocument(); // APR displayed
+  expect(screen.getByText(/4500/i)).toBeInTheDocument(); // Repayment amount displayed
+});
+
+
+it('handles error in calculateOffer gracefully', async () => {
+  jest.spyOn(services, 'getOfferCalulated').mockRejectedValue(new Error('API Error'));
+
+  render(
+    <Provider store={store}>
+      <LoanDisbursement />
+    </Provider>
+  );
+
+  const slider = screen.getByRole('slider');
+  fireEvent.change(slider, { target: { value: '60000' } });
+
+  await waitFor(() => {
+    expect(services.getOfferCalulated).toHaveBeenCalled();
+  });
+
+  // Check for error handling, e.g., displaying an error message
+  expect(screen.getByText(/Unable to calculate offer/i)).toBeInTheDocument();
+});
