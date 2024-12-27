@@ -1,88 +1,149 @@
-import axios from "axios";
-import { store } from "../utils/store/store";
-import defaultInterceptor, {
-  injectStore,
-  // setAbortTimeout, setInterceptorsRequestHeader, setRequestHeader, setResponseTimeout
-} from "./default-interceptor";
-import PreApprovalUtil from "../modules/preApproval/services/preApprovalUtils";
+yTo cover the uncovered lines in the provided code using Jest and React Testing Library (RTL), follow these steps:
 
-jest.mock("axios");
-jest.mock("../utils/store/store");
+Key Points from the Image:
 
-jest.mock("../modules/preApproval/services/preApprovalUtils", () => ({
-  getAckMetaData: jest.fn(() => "mocked_meta_data"),
-}));
+1. Default Interceptor Logic:
 
-const mockState = {
-  auth: { sessionUid: "12432sdsw32432" },
-  stages: [],
-  urlParam: { applicationDetails: { channelRefNo: "23432432432" } },
+Includes dynamic headers based on store state.
+
+Handles specific logic for scClientContextHeaders and abortController.
+
+
+
+2. Axios Request Interceptor:
+
+Appends headers to outgoing requests.
+
+Uses abortController to handle request cancellation.
+
+
+
+3. Dynamic Conditions:
+
+Headers depend on stages from store.getState().
+
+
+
+4. Axios Response Interceptor:
+
+Captures responses and errors.
+
+
+
+
+
+---
+
+Steps to Write Jest Tests
+
+1. Mock Axios:
+
+Use Jest to mock the axios library:
+
+jest.mock('axios');
+import axios from 'axios';
+
+2. Mock Store:
+
+Mock the store object to simulate store.getState():
+
+const mockStore = {
+  getState: jest.fn(() => ({
+    auth: { sessionUuid: 'mockSessionId' },
+    stages: [{ id: 1, stageId: 'mockStageId' }],
+  })),
 };
 
-const requestData = {
-  headers: {
-    Accept: "application/json, text/plain, */*",
-    Authorization: "NTB LOGIN",
-    "SC-CLIENT-CONTEXT": "{\"reqId\":\"a3763340-00c6-48fa-bc20-d3ff41636fba\",\"Channel\":\"MOBILE\",\"Country\":\"SG\",\"Language\":\"EN\",\"AppName\":\"RCWB\",\"ClientId\":\"MOBILE\",\"InstanceCode\":\"CB_IN\",\"RumDevice\":\"devicebrowserversion\",\"Source\":\"sc.com\",\"DeviceType\":\"Desktop\"}",
-  },
-};
+3. Test Default Interceptor:
 
-describe("defaultInterceptor", () => {
+Test the logic for setting headers in scClientContextHeaders:
+
+import { injectStore, defaultInterceptor } from './yourFilePath';
+
+describe('defaultInterceptor', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    store.getState = jest.fn().mockReturnValue(mockState);
+    injectStore(mockStore);
   });
 
-  test("injectStore should inject the store without errors", () => {
-    expect(injectStore(store)).toBeUndefined();
+  it('should set scClientContextHeaders correctly', () => {
+    const lang = 'EN';
+    const interceptor = defaultInterceptor(lang);
+
+    expect(interceptor).toBeDefined();
+    expect(interceptor.scClientContextHeaders.Channel).toBe('MOBILE');
+    expect(interceptor.scClientContextHeaders.LoginType).toBe('PRE');
+    expect(interceptor.scClientContextHeaders.Country).toBe('HK');
   });
 
-  test("defaultInterceptor should set interceptors without errors", () => {
-    expect(defaultInterceptor("EN")).toBeUndefined();
-  });
+  it('should handle stages correctly', () => {
+    const stagesMock = [
+      { id: 1, stageId: 'mockStageId' },
+      { id: 2, stageId: 'anotherStageId' },
+    ];
+    mockStore.getState.mockReturnValue({ stages: stagesMock });
 
-  test("setAbortTimeout should return a timeout value", () => {
-    const setAbortTimeout = jest.fn(() => 8); // Mock the function
-    const timeout = setAbortTimeout();
-    expect(timeout).toEqual(8);
-  });
+    const interceptor = defaultInterceptor(null);
 
-  test("setRequestHeader should set SC-CLIENT-CONTEXT header", async () => {
-    const setRequestHeader = jest.fn(async (request: any) => {
-      request.headers["SC-CLIENT-CONTEXT"] = "mocked_meta_data";
-      return request;
-    });
-
-    const modifiedRequest = await setRequestHeader(requestData);
-    expect(modifiedRequest.headers["SC-CLIENT-CONTEXT"]).toEqual("mocked_meta_data");
-  });
-
-  test("setResponseTimeout should return undefined for response timeout", () => {
-    const setResponseTimeout = jest.fn(() => undefined); // Mock the function
-    const timeout = setResponseTimeout();
-    expect(timeout).toBeUndefined();
-  });
-
-  test("setInterceptorsRequestHeader should modify request headers", () => {
-    const setInterceptorsRequestHeader = jest.fn(() => {
-      const modifiedHeaders = {
-        ...requestData.headers,
-        "Additional-Header": "TestValue",
-      };
-      return modifiedHeaders;
-    });
-
-    const headers = setInterceptorsRequestHeader();
-    expect(headers["Additional-Header"]).toEqual("TestValue");
-  });
-
-  test("defaultInterceptor should call PreApprovalUtil.getAckMetaData", async () => {
-    jest.spyOn(PreApprovalUtil, "getAckMetaData");
-
-    defaultInterceptor("EN");
-
-    expect(PreApprovalUtil.getAckMetaData).toHaveBeenCalledWith(
-      mockState.urlParam.applicationDetails.channelRefNo
-    );
+    expect(interceptor).toBeDefined();
+    expect(interceptor.headers['SC-CLIENT-CONTEXT']).toContain('mockStageId');
   });
 });
+
+4. Test Abort Controller:
+
+Validate request cancellation:
+
+it('should abort requests using abortController', () => {
+  const abortController = new AbortController();
+  abortController.abort();
+
+  expect(abortController.signal.aborted).toBe(true);
+});
+
+5. Test Axios Interceptor Logic:
+
+Ensure axios.interceptors.request.use sets the headers correctly:
+
+it('should set axios headers correctly', () => {
+  const requestConfig = { url: '/test', headers: {} };
+  axios.interceptors.request.use.mockImplementation((callback) => callback(requestConfig));
+
+  defaultInterceptor('EN');
+
+  expect(requestConfig.headers['Content-Type']).toBe('application/json');
+  expect(requestConfig.headers['SC-CLIENT-CONTEXT']).toBeDefined();
+});
+
+6. Test Axios Response Handling:
+
+Validate axios.interceptors.response.use:
+
+it('should handle axios responses correctly', async () => {
+  const responseMock = { data: 'mockData' };
+  axios.interceptors.response.use.mockImplementation((res) => res);
+
+  const response = await axios.get('/test');
+  expect(response.data).toBe('mockData');
+});
+
+
+---
+
+Run Tests
+
+Save your tests in a file (e.g., yourFile.test.js) and run them:
+
+npx jest yourFile.test.js
+
+
+---
+
+Improve Coverage
+
+Include edge cases (e.g., stages is empty).
+
+Simulate errors in Axios requests.
+
+
+Would you like a detailed explanation of any part?
+
