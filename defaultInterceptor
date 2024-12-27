@@ -377,8 +377,13 @@ describe("defaultInterceptor extended tests", () => {
 test("abortController should abort the request after timeout", async () => {
   jest.useFakeTimers(); // Use fake timers to simulate timeout behavior
 
-  const mockAbortController = { signal: {}, abort: jest.fn() };
-  global.AbortController = jest.fn(() => mockAbortController); // Mock the AbortController
+  // Create a proper mock for AbortController
+  const mockAbortController = {
+    signal: {} as AbortSignal, // Mock the signal property as AbortSignal
+    abort: jest.fn(),         // Mock the abort method
+  };
+  
+  global.AbortController = jest.fn(() => mockAbortController as unknown as AbortController);
 
   await defaultInterceptor("EN"); // Call the interceptor to set up logic
 
