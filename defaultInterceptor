@@ -392,3 +392,27 @@ test("abortController should abort the request after timeout", async () => {
 
   jest.useRealTimers(); // Restore real timers
 });
+
+
+test("axios.interceptors.request.use modifies request headers correctly", async () => {
+  await defaultInterceptor("EN"); // Call the interceptor to set up the request interceptor
+
+  // Mock the axios request interceptor function
+  const interceptorFn = axios.interceptors.request.use.mock.calls[0][0];
+  const mockRequest = { url: "/test-endpoint", headers: {} }; // Simulated request
+
+  const modifiedRequest = await interceptorFn(mockRequest); // Call the interceptor logic
+
+  // Assertions to verify the request was modified correctly
+  expect(modifiedRequest.headers["SC-CLIENT-CONTEXT"]).toEqual("mocked_meta_data"); // Ensure SC-CLIENT-CONTEXT is set
+  expect(modifiedRequest.headers["Content-Type"]).toEqual("application/json;charset=UTF-8"); // Content-Type header
+  expect(modifiedRequest.signal).toBeDefined(); // Check if the abortController's signal is attached
+  expect(modifiedRequest).toEqual(
+    expect.objectContaining({
+      headers: expect.objectContaining({
+        "SC-CLIENT-CONTEXT": "mocked_meta_data",
+        "Content-Type": "application/json;charset=UTF-8",
+      }),
+    })
+  );
+});
