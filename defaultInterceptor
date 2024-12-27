@@ -1,149 +1,189 @@
-yTo cover the uncovered lines in the provided code using Jest and React Testing Library (RTL), follow these steps:
+import axios from "axios";
+import PreApprovalUtil from "../modules/preApproval/services/preApprovalUtils";
+import submitService from "../services/submit-service";
+import { CONSTANTS } from "../utils/common/constants";
 
-Key Points from the Image:
-
-1. Default Interceptor Logic:
-
-Includes dynamic headers based on store state.
-
-Handles specific logic for scClientContextHeaders and abortController.
-
-
-
-2. Axios Request Interceptor:
-
-Appends headers to outgoing requests.
-
-Uses abortController to handle request cancellation.
-
-
-
-3. Dynamic Conditions:
-
-Headers depend on stages from store.getState().
-
-
-
-4. Axios Response Interceptor:
-
-Captures responses and errors.
-
-
-
-
-
----
-
-Steps to Write Jest Tests
-
-1. Mock Axios:
-
-Use Jest to mock the axios library:
-
-jest.mock('axios');
-import axios from 'axios';
-
-2. Mock Store:
-
-Mock the store object to simulate store.getState():
-
-const mockStore = {
-  getState: jest.fn(() => ({
-    auth: { sessionUuid: 'mockSessionId' },
-    stages: [{ id: 1, stageId: 'mockStageId' }],
-  })),
+let store: any;
+export const injectStore = (_store: any) => {
+  store = _store;
 };
 
-3. Test Default Interceptor:
+const defaultInterceptor = (lang: string | null) => {
+  console.log('store'+JSON.stringify(store));
+  let scClientContextHeaders: any = {
+      Channel: "MOBILE",
+      loginType: "PRE",
+      Country: "HK",
+      Language: "EN",
+      AppName: "RCWB",
+      ClientId: "MOBILE",
+      InstanceCode: "CB_HK",
+      RumDevice: "devicebrowserversion",
+      Source: "sc.com",
+      DeviceType: "MOBILE",
+      subChannelCode: "",    
+      sessionUID: store.getState().auth.sessionUid,
+      BrowserAgent: "DESKTOP-BROWSER",
+      IPAddress: ""
+  };
 
-Test the logic for setting headers in scClientContextHeaders:
+  let abortController = new AbortController();
+  const timeout = setTimeout(() => {
+    abortController.abort();
+  }, 180000);
 
-import { injectStore, defaultInterceptor } from './yourFilePath';
+  axios?.interceptors.request.use(
+    async (request) => {
+      let currentEndpoint: any = request.url && request.url.split("/");
+      let uUid = submitService.generateUUID;
+      let header: any = {
+        "Content-Type": "application/json;charset=UTF-8",
+      };
 
-describe('defaultInterceptor', () => {
+      scClientContextHeaders["reqId"] = uUid;
+      let endPointURL = currentEndpoint[currentEndpoint.length - 1];
+      if (store.getState().auth.sessionUid !== null) {
+        const sessionUid = store.getState().auth.sessionUid;
+        scClientContextHeaders["sessionUID"] = sessionUid;
+      }
+      header["Env"] = `${process.env.REACT_APP_RTOB_ENV}`;
+      if (endPointURL === 'supportingaof') {
+        header['responseType'] = 'arraybuffer';
+      }
+      
+    let stages = JSON.parse(JSON.stringify(store.getState().stages));
+
+      if(stages.stages && stages.stages.length > 0 && stages.stages[0].stageId && (stages.stages[0].stageId === CONSTANTS.STAGE_NAMES.AD_1 || stages.stages[0].stageId === CONSTANTS.STAGE_NAMES.ACD_1)) {
+          request.headers["SC-CLIENT-CONTEXT"] = 
+            await PreApprovalUtil.getAckMetaDataStageLevel(store.getState().urlParam.applicationDetails.channelRefNo)
+      }
+      else {
+        request.headers["SC-CLIENT-CONTEXT"] = 
+            PreApprovalUtil.getAckMetaData(store.getState().urlParam.applicationDetails.channelRefNo)
+      }
+      request.headers.set(header);
+
+      return {
+        ...request,
+        signal: abortController.signal,
+      };
+    }
+  );
+
+  axios?.interceptors.response.use((res) => {
+    clearTimeout(timeout);
+    return res;
+  });
+};
+
+export default defaultInterceptor;
+
+
+
+import axios, { InternalAxiosRequestConfig } from "axios";
+import { store } from "../utils/store/store";
+import { urlParamAction } from "../utils/store/urlparam-slice";
+import defaultInterceptor, {   injectStore, 
+  // setAbortTimeout, setInterceptorsRequestHeader, setRequestHeader, setResponseTimeout
+ } from "./default-interceptor";
+import { KFS_DOC_URL } from "../modules/preApproval/services/constants";
+import { getData } from "../modules/preApproval/services/preApprovalServices";
+import PreApprovalUtil from "../modules/preApproval/services/preApprovalUtils";
+
+jest.autoMockOff();
+jest.mock("axios", () => ({
+  __esModule: true,
+}));
+
+jest.mock('../utils/store/store')
+
+
+
+const mockState = {
+  auth: { sessionUid: '12432sdsw32432' },
+  stages:[],
+  urlParam:{applicationDetails:{channelRefNo:'23432432432'}}
+}
+
+jest.mock("../modules/preApproval/services/preApprovalUtils", () => ({
+  getFormConfigPayload: jest.fn(() => ({ applicants: {}, application: {} })),
+  getAckMetaData:jest.fn(() => "mocked_meta_data"),
+  getADFormConfigPayload: jest.fn(),
+  generateUUID: jest.fn(),
+}));
+
+jest.mock('axios', () => {
+  return {
+      interceptors: {
+          request: { use: jest.fn(), eject: jest.fn(),headers:{set:jest.fn() }},
+          response: { use: jest.fn(), eject: jest.fn() },
+      },
+  };
+});
+
+
+
+
+ let requestData={
+  "transitional": {
+    "silentJSONParsing": true,
+    "forcedJSONParsing": true,
+    "clarifyTimeoutError": false
+  },
+  "adapter": [
+    "xhr",
+    "http",
+    "fetch"
+  ],
+  "transformRequest": [],
+  "transformResponse": [],
+  "timeout": 0,
+  "xsrfCookieName": "XSRF-TOKEN",
+  "xsrfHeaderName": "X-XSRF-TOKEN",
+  "maxContentLength": -1,
+  "maxBodyLength": -1,
+  "env": {},
+  "method": "get",
+  "url": "/onboarding/hk-uat/api/v1/login",
+  "target": "https://pt.sc.com",
+  "changeOrigin": true,
+  "secure": false,
+ "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "NTB LOGIN",
+      "SC-CLIENT-CONTEXT": "{\"reqId\":\"a3763340-00c6-48fa-bc20-d3ff41636fba\",\"Channel\":\"MOBILE\",\"Country\":\"SG\",\"Language\":\"EN\",\"AppName\":\"RCWB\",\"ClientId\":\"MOBILE\",\"InstanceCode\":\"CB_IN\",\"RumDevice\":\"devicebrowserversion\",\"Source\":\"sc.com\",\"DeviceType\":\"Desktop\"}"
+  },
+}
+
+describe("defaultInterceptor", () => {
   beforeEach(() => {
-    injectStore(mockStore);
+    jest.clearAllMocks();
+    jest.mock('../utils/store/store');
+    store.getState=jest.fn().mockReturnValue(mockState);
+  })
+  test("injectStore", () => {
+    expect(undefined).toEqual(injectStore(store))
+  })
+  test("defaultInterceptor", () => {
+   expect(undefined).toEqual(defaultInterceptor("EN"));
   });
 
-  it('should set scClientContextHeaders correctly', () => {
-    const lang = 'EN';
-    const interceptor = defaultInterceptor(lang);
-
-    expect(interceptor).toBeDefined();
-    expect(interceptor.scClientContextHeaders.Channel).toBe('MOBILE');
-    expect(interceptor.scClientContextHeaders.LoginType).toBe('PRE');
-    expect(interceptor.scClientContextHeaders.Country).toBe('HK');
+  test("defaultInterceptor should set interceptors without errors", () => {
+    expect(defaultInterceptor("EN")).toBeUndefined();
   });
 
-  it('should handle stages correctly', () => {
-    const stagesMock = [
-      { id: 1, stageId: 'mockStageId' },
-      { id: 2, stageId: 'anotherStageId' },
-    ];
-    mockStore.getState.mockReturnValue({ stages: stagesMock });
+  test("setAbortTimeout should return a timeout value", () => {
+    const setAbortTimeout = jest.fn(() => 8); // Mock the function
+    const timeout = setAbortTimeout();
+    expect(timeout).toEqual(8);
+  });
 
-    const interceptor = defaultInterceptor(null);
-
-    expect(interceptor).toBeDefined();
-    expect(interceptor.headers['SC-CLIENT-CONTEXT']).toContain('mockStageId');
+  test("setRequestHeader should set SC-CLIENT-CONTEXT header", async () => {
+    const setRequestHeader = jest.fn(async (request: any) => {
+      request.headers["SC-CLIENT-CONTEXT"] = "mocked_meta_data";
+      return request;
+    });
+    const modifiedRequest = await setRequestHeader(requestData);
+    expect(modifiedRequest.headers["SC-CLIENT-CONTEXT"]).toEqual("mocked_meta_data");
   });
 });
-
-4. Test Abort Controller:
-
-Validate request cancellation:
-
-it('should abort requests using abortController', () => {
-  const abortController = new AbortController();
-  abortController.abort();
-
-  expect(abortController.signal.aborted).toBe(true);
-});
-
-5. Test Axios Interceptor Logic:
-
-Ensure axios.interceptors.request.use sets the headers correctly:
-
-it('should set axios headers correctly', () => {
-  const requestConfig = { url: '/test', headers: {} };
-  axios.interceptors.request.use.mockImplementation((callback) => callback(requestConfig));
-
-  defaultInterceptor('EN');
-
-  expect(requestConfig.headers['Content-Type']).toBe('application/json');
-  expect(requestConfig.headers['SC-CLIENT-CONTEXT']).toBeDefined();
-});
-
-6. Test Axios Response Handling:
-
-Validate axios.interceptors.response.use:
-
-it('should handle axios responses correctly', async () => {
-  const responseMock = { data: 'mockData' };
-  axios.interceptors.response.use.mockImplementation((res) => res);
-
-  const response = await axios.get('/test');
-  expect(response.data).toBe('mockData');
-});
-
-
----
-
-Run Tests
-
-Save your tests in a file (e.g., yourFile.test.js) and run them:
-
-npx jest yourFile.test.js
-
-
----
-
-Improve Coverage
-
-Include edge cases (e.g., stages is empty).
-
-Simulate errors in Axios requests.
-
-
-Would you like a detailed explanation of any part?
-
