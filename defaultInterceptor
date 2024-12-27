@@ -320,3 +320,145 @@ describe("defaultInterceptor", () => {
     expect(response.data.success).toBe(true);
   });
 });
+
+
+
+import axios, { InternalAxiosRequestConfig } from "axios";
+import { store } from "../utils/store/store";
+import { urlParamAction } from "../utils/store/urlparam-slice";
+import defaultInterceptor, {   injectStore, 
+  // setAbortTimeout, setInterceptorsRequestHeader, setRequestHeader, setResponseTimeout
+ } from "./default-interceptor";
+import { KFS_DOC_URL } from "../modules/preApproval/services/constants";
+import { getData } from "../modules/preApproval/services/preApprovalServices";
+import PreApprovalUtil from "../modules/preApproval/services/preApprovalUtils";
+
+jest.autoMockOff();
+jest.mock("axios", () => ({
+  __esModule: true,
+}));
+
+jest.mock('../utils/store/store')
+
+
+
+const mockState = {
+  auth: { sessionUid: '12432sdsw32432' },
+  stages:[],
+  urlParam:{applicationDetails:{channelRefNo:'23432432432'}}
+}
+
+jest.mock("../modules/preApproval/services/preApprovalUtils", () => ({
+  getFormConfigPayload: jest.fn(() => ({ applicants: {}, application: {} })),
+  getAckMetaData:jest.fn(() => "mocked_meta_data"),
+  
+  //jest.fn(() => "mocked_meta_data"),
+  getADFormConfigPayload: jest.fn(),
+  generateUUID: jest.fn(),
+}));
+
+// jest.mock('../modules/preApproval/services/preApprovalUtils', () => {
+//   getAckMetaData:jest.fn().mockResolvedValue(() => Promise.resolve());
+// });
+
+//jest.spyOn(PreApprovalUtil, 'getAckMetaData').mockResolvedValue( Promise.resolve("AckMetaData"));
+// const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+jest.mock('axios', () => {
+  return {
+      interceptors: {
+          request: { use: jest.fn(), eject: jest.fn(),headers:{set:jest.fn() }},
+          response: { use: jest.fn(), eject: jest.fn() },
+      },
+  };
+});
+
+
+
+
+ let requestData={
+  "transitional": {
+    "silentJSONParsing": true,
+    "forcedJSONParsing": true,
+    "clarifyTimeoutError": false
+  },
+  "adapter": [
+    "xhr",
+    "http",
+    "fetch"
+  ],
+  "transformRequest": [],
+  "transformResponse": [],
+  "timeout": 0,
+  "xsrfCookieName": "XSRF-TOKEN",
+  "xsrfHeaderName": "X-XSRF-TOKEN",
+  "maxContentLength": -1,
+  "maxBodyLength": -1,
+  "env": {},
+  "method": "get",
+  "url": "/onboarding/hk-uat/api/v1/login",
+  "target": "https://pt.sc.com",
+  "changeOrigin": true,
+  "secure": false,
+ "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "NTB LOGIN",
+      "SC-CLIENT-CONTEXT": "{\"reqId\":\"a3763340-00c6-48fa-bc20-d3ff41636fba\",\"Channel\":\"MOBILE\",\"Country\":\"SG\",\"Language\":\"EN\",\"AppName\":\"RCWB\",\"ClientId\":\"MOBILE\",\"InstanceCode\":\"CB_IN\",\"RumDevice\":\"devicebrowserversion\",\"Source\":\"sc.com\",\"DeviceType\":\"Desktop\"}"
+  },
+}
+
+describe("defaultInterceptor", () => {
+
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.mock('../utils/store/store');
+    store.getState=jest.fn().mockReturnValue(mockState);
+
+  })
+ 
+  test("injectStore", () => {
+    expect(undefined).toEqual(injectStore(store))
+  })
+
+  
+
+  // test("setAbortController", () => {
+  //  const timeout= setAbortTimeout();
+  //   expect(timeout).toEqual(8);
+  //  });
+
+  //  test("setRequestHeader", () => {
+  //  const header= setRequestHeader( JSON.parse(JSON.stringify(requestData)));
+
+  //  header.then((res:any)=>{
+
+  //   expect(res.headers['SC-CLIENT-CONTEXT']).toEqual(undefined);
+
+  //  })
+    
+  //   });
+
+    // test("setResponseTimeout", () => {
+    //   const timeout= setResponseTimeout();
+    //    expect(timeout).toEqual(undefined);
+    //   });
+
+    //   test("setResponseTimeout", () => {
+    //     const response= setResponseTimeout();
+    //      expect(response).toEqual(undefined);
+    //     });
+
+            
+    //   test("setInterceptorsRequestHeader", () => {
+    //     const response= setInterceptorsRequestHeader();
+    //      expect(response).toEqual(undefined);
+    //     });
+
+  test("defaultInterceptor", () => {
+   expect(undefined).toEqual(defaultInterceptor("EN"));
+  });
+
+  
+
+});
