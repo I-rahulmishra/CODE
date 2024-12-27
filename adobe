@@ -1,0 +1,128 @@
+import { getUrl, getDeviceType } from "../common/change.utils";
+import { KeyWithAnyModel } from "../model/common-model";
+
+/**
+ * Method to get device type
+ */
+export const getDeviceTypes = () => {
+    let device = "Desktop Website";
+    let userAgent = window.navigator.userAgent.toLowerCase();
+    if (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        userAgent
+      )
+    ) {
+      return (device = "Mobile Website");
+    }
+    return device;
+  };
+
+export const getErrorType = (errorType: string) => {
+    let errorTypeList: KeyWithAnyModel = {
+        '': 'na',
+        'STOP': 'Save and Next',
+        'CONTINUE': 'Try Again',
+        'RESUBMIT': 'Review',
+        'CORRECT': 'Review',
+        'LOGIN': 'Continue to Login',
+        'ROSHAN_CONTINUE': 'Ok, Continue'
+    }
+    return errorTypeList[errorType];
+ }
+
+export const getUserType = (userType: string) => {
+    let userTypeLIst: KeyWithAnyModel = {
+        'ntb': 'New to Bank',
+        'etb': 'Existing to Bank',
+        'etc': 'Existing to cards or casa',
+        'ntc': 'New to cards or casa',
+        'ecc': 'Existing to credit cards applying for bundle',
+        'c01': 'Non resident of SG',
+        'eca': 'Existing to casa applying for bundle',
+        'mdd': 'Multiple dedupe',
+        'NTB': 'New to Bank',
+        'ETB': 'Existing to Bank',
+        'ETC': 'Existing to CC and PL',
+        'ETP': 'Existing to CC and PL',
+        'NTC': 'New to cards or casa'
+    }
+    return userTypeLIst[userType];
+}
+
+
+
+// export const getStepNames = (stage: KeyWithAnyModel) => {
+//     const productsSelector =  stage.stages.stages[0].stageInfo.products;
+//     const steps: KeyWithAnyModel = checkProductDetails(productsSelector) ? CONSTANTS.NTB : CONSTANTS.NTB;
+//     console.log("steps[stage.stages.stages[0].stageId]", steps[stage.stages.stages[0].stageId])
+//     if (steps[stage.stages.stages[0].stageId]) {
+//         return steps[stage.stages.stages[0].stageId].name;
+//     } else if (stage.stages.stages[0].stageId === 'ffd-1') {
+//         return 'thank you'
+//     } else {
+//         return 'na';
+//     }
+// }
+
+
+export const getStepName = (stage: KeyWithAnyModel) => {
+    const stageID = stage.stages.currentStage ?  stage.stages.currentStage.toLowerCase() : stage.stages.stages[0].stageId.toLowerCase();
+    let stepName;
+    switch(stageID) {
+        case 'declare':
+            stepName = "start application process";
+            break;
+        case 'pd-1':
+            stepName = "personal details";
+            break;
+        case 'bd-1a':
+            stepName = "loan details";
+            break;
+        case 'bd-1':
+            stepName = "loan details";
+            break;
+        case 'ssf-1':
+            stepName = "let's get started !";
+            break;
+        case 'bd-2':
+            stepName = "partner bank details";
+            break;
+        case 'bd-3':
+            stepName = "eligibility assessment";
+            break;
+        case 'bd-4':
+            stepName = "personal details";
+            break;
+        case 'bd-5':
+            stepName = "continue personal details";
+            break;
+        case 'ad-1':
+            stepName = "tax information";
+            break;
+        case 'ad-3':
+            stepName = "create your online banking login details";
+            break;
+        case 'ad-2':
+            stepName = "preferences for account";
+            break;
+        case 'rp':
+            stepName = "review and confirm";
+            break;
+    }
+    return stepName;
+}
+
+
+export const loginval = () => {
+    // const isIbanking = getUrl.getParameterByName("auth");
+    // if (isIbanking != null && getDeviceType() !== 'Mobile Website') {
+    //     return 'Ibanking';
+    // }
+    // else if (isIbanking != null && getDeviceType() === 'Mobile Website') {
+    //     return 'SC Mobile';
+    // }
+    // else {
+        return 'RTOB';
+    // }
+}
+
