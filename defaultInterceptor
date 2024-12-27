@@ -253,3 +253,94 @@ jest.mock('../../path/to/module', () => ({
 }));
 
 Let me know if you encounter further issues!
+
+
+
+
+
+
+import React from 'react';
+import { render } from '@testing-library/react';
+import { useDispatch } from 'react-redux';
+import { nextStage } from './loan-disbursement'; // Import your function/component
+import { getOffer2 } from './api'; // Import the mocked API function
+
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: jest.fn(),
+}));
+
+jest.mock('./api', () => ({
+  getOffer2: jest.fn(),
+}));
+
+describe('nextStage', () => {
+  it('should dispatch loader and handle stage updates correctly', async () => {
+    const dispatch = jest.fn(); // Mock dispatch function
+    (useDispatch as jest.Mock).mockReturnValue(dispatch); // Mock useDispatch to return the mock dispatch
+
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 200,
+      data: {
+        application: { response_type: 'INFO', response_action: 'SUCCESS' },
+        products: [
+          {
+            offer_details: [
+              { offer_status: '1001', service_type: 'ACD3' },
+            ],
+          },
+        ],
+      },
+    });
+
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+
+    const defaultValue = '15000';
+    const defaultMonth = '48';
+
+    await nextStage({
+      dispatch,
+      defaultValue,
+      defaultMonth,
+      stageSelector,
+    });
+
+    // Assertions
+    expect(dispatch).toHaveBeenCalledWith({ type: 'loader/show' }); // Example loader action
+    expect(dispatch).toHaveBeenCalled(); // Ensure dispatch is called
+  });
+
+  it('should handle API errors gracefully', async () => {
+    const dispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(dispatch);
+
+    (getOffer2 as jest.Mock).mockRejectedValue(new Error('API Error'));
+
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+
+    const defaultValue = '15000';
+    const defaultMonth = '48';
+
+    await expect(
+      nextStage({
+        dispatch,
+        defaultValue,
+        defaultMonth,
+        stageSelector,
+      })
+    ).rejects.toThrow('API Error');
+
+    expect(dispatch).toHaveBeenCalledWith({ type: 'loader/show' }); // Example loader action
+    expect(dispatch).toHaveBeenCalledWith({ type: 'loader/hide' });
+  });
+});
