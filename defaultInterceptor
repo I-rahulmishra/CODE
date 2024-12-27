@@ -165,3 +165,91 @@ If you’re using TypeScript and it complains about mockResolvedValue, you may n
 Ensure that getOffer2 is being imported from the correct file and that the module path matches where getOffer2 is defined.
 
 Let me know if you need additional guidance!
+
+
+
+
+
+
+
+The issue highlighted in the second image is a TypeScript error indicating that global.getOfferCalulated is being used, but globalThis doesn’t have an index signature for the property getOfferCalulated.
+
+Here’s how you can address this problem:
+
+1. Properly Mock getOfferCalulated
+
+It seems getOfferCalulated is not defined as a property of global. To avoid TypeScript complaints, explicitly extend the type definition for global in your test setup.
+
+Update or Create a global.d.ts File
+
+Create or modify a global.d.ts file in your project (e.g., in the src or types folder) to extend the type for globalThis:
+
+declare global {
+  var getOfferCalulated: jest.Mock<any, any>;
+}
+
+Add this line to your test:
+
+global.getOfferCalulated = jest.fn();
+
+2. Cast global.getOfferCalulated as jest.Mock
+
+In your test, TypeScript needs to recognize that global.getOfferCalulated is a Jest mock. You can cast it explicitly as follows:
+
+(global.getOfferCalulated as jest.Mock).mockResolvedValue(mockResponse);
+
+3. Example Test Code Update
+
+Here’s how your updated test code should look:
+
+import { getOfferCalulated } from './LoanDisbursement';
+
+describe('getOfferCalulated', () => {
+  beforeAll(() => {
+    global.getOfferCalulated = jest.fn(); // Mock the global function
+  });
+
+  it('should update APR and repayment values on success', async () => {
+    const setAprValue = jest.fn();
+    const setFlateRateValue = jest.fn();
+    const setRepaymentAmount = jest.fn();
+    const data = { requested_tenure: '48', requested_amount: '15000' };
+
+    const mockResponse = {
+      status: 200,
+      data: {
+        apr: '3.5',
+        monthly_flat_rate: '0.2',
+        repayment_amount: '500',
+      },
+    };
+
+    (global.getOfferCalulated as jest.Mock).mockResolvedValue(mockResponse);
+
+    await getOfferCalulated.call({ setAprValue, setFlateRateValue, setRepaymentAmount }, data);
+
+    expect(setAprValue).toHaveBeenCalledWith('3.5');
+    expect(setFlateRateValue).toHaveBeenCalledWith('0.2');
+    expect(setRepaymentAmount).toHaveBeenCalledWith('500');
+  });
+
+  it('should handle API errors gracefully', async () => {
+    const data = { requested_tenure: '48', requested_amount: '15000' };
+
+    (global.getOfferCalulated as jest.Mock).mockRejectedValue(new Error('API Error'));
+
+    await getOfferCalulated.call({}, data);
+
+    expect(dispatchError).toHaveBeenCalled();
+  });
+});
+
+4. Ensure Correct Mocking Setup
+
+Check that getOfferCalulated is correctly mocked in your test environment. If it’s a global function, mocking it as above is sufficient. If it’s part of a module, use:
+
+jest.mock('../../path/to/module', () => ({
+  getOfferCalulated: jest.fn(),
+}));
+
+Let me know if you encounter further issues!
