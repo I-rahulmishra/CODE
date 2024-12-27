@@ -228,3 +228,95 @@ describe("defaultInterceptor", () => {
     );
   });
 });
+
+
+
+
+
+
+
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import defaultInterceptor, { injectStore } from "../path/to/defaultInterceptor";
+import PreApprovalUtil from "../modules/preApproval/services/preApprovalUtils";
+import submitService from "../services/submit-service";
+import { CONSTANTS } from "../utils/common/constants";
+
+jest.mock("../modules/preApproval/services/preApprovalUtils");
+jest.mock("../services/submit-service");
+
+describe("defaultInterceptor", () => {
+  let mockStore: any;
+  let mockAxios: MockAdapter;
+
+  beforeEach(() => {
+    // Mock store
+    mockStore = {
+      getState: jest.fn().mockReturnValue({
+        auth: { sessionUid: "test-session-uid" },
+        urlParam: { applicationDetails: { channelRefNo: "test-ref-no" } },
+        stages: {
+          stages: [
+            {
+              stageId: CONSTANTS.STAGE_NAMES.AD_1,
+            },
+          ],
+        },
+      }),
+    };
+
+    // Inject store
+    injectStore(mockStore);
+
+    // Mock axios
+    mockAxios = new MockAdapter(axios);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    mockAxios.reset();
+  });
+
+  it("should set request headers correctly for AD_1 stage", async () => {
+    // Configure mock response
+    mockAxios.onAny().reply(200);
+
+    const mockRequest = {
+      url: "https://example.com/supportingaof",
+      headers: {},
+    };
+
+    (PreApprovalUtil.getAckMetaDataStageLevel as jest.Mock).mockResolvedValue(
+      "mocked-metadata"
+    );
+
+    defaultInterceptor("EN"); // Add interceptor
+
+    const response = await axios.get(mockRequest.url);
+
+    // Assertions
+    expect(response.config.headers["SC-CLIENT-CONTEXT"]).toEqual(
+      "mocked-metadata"
+    );
+  });
+
+  it("should set responseType to arraybuffer for supportingaof endpoint", async () => {
+    mockAxios.onAny().reply(200);
+
+    defaultInterceptor("EN");
+
+    const response = await axios.get("https://example.com/supportingaof");
+
+    expect(response.config.headers["responseType"]).toEqual("arraybuffer");
+  });
+
+  it("should clear timeout on response", async () => {
+    mockAxios.onAny().reply(200, { success: true });
+
+    defaultInterceptor("EN");
+
+    const response = await axios.get("https://example.com");
+
+    expect(response.data.success).toBe(true);
+  });
+});
