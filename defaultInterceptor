@@ -187,3 +187,79 @@ describe("defaultInterceptor", () => {
     expect(modifiedRequest.headers["SC-CLIENT-CONTEXT"]).toEqual("mocked_meta_data");
   });
 });
+
+
+describe("defaultInterceptor extended tests", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    store.getState = jest.fn().mockReturnValue(mockState);
+  });
+
+  test("defaultInterceptor sets headers based on store state", async () => {
+    await defaultInterceptor("EN");
+    const interceptorFn = axios.interceptors.request.use.mock.calls[0][0];
+    const mockRequest = { url: "/test-endpoint", headers: {} };
+    const modifiedRequest = await interceptorFn(mockRequest);
+
+    expect(modifiedRequest.headers["SC-CLIENT-CONTEXT"]).toEqual("mocked_meta_data");
+    expect(modifiedRequest.headers["Content-Type"]).toEqual("application/json;charset=UTF-8");
+  });
+
+  test("abortController aborts the request after timeout", async () => {
+    jest.useFakeTimers();
+    await defaultInterceptor("EN");
+
+    const mockAbortController = { signal: {}, abort: jest.fn() };
+    global.AbortController = jest.fn(() => mockAbortController);
+
+    jest.advanceTimersByTime(180000); // Simulate timeout
+    expect(mockAbortController.abort).toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  test("handles stages logic correctly", async () => {
+    store.getState.mockReturnValue({
+      ...mockState,
+      stages: [{ stageId: "AD_1" }],
+    });
+
+    await defaultInterceptor("EN");
+    const interceptorFn = axios.interceptors.request.use.mock.calls[0][0];
+    const mockRequest = { url: "/test-endpoint", headers: {} };
+
+    await interceptorFn(mockRequest);
+    expect(PreApprovalUtil.getAckMetaDataStageLevel).toHaveBeenCalledWith("23432432432");
+  });
+
+  test("response interceptor clears timeout", async () => {
+    const mockClearTimeout = jest.spyOn(global, "clearTimeout");
+    await defaultInterceptor("EN");
+
+    const responseInterceptorFn = axios.interceptors.response.use.mock.calls[0][0];
+    const mockResponse = { data: {} };
+
+    responseInterceptorFn(mockResponse);
+    expect(mockClearTimeout).toHaveBeenCalled();
+  });
+
+  test("handles incomplete store state gracefully", async () => {
+    store.getState.mockReturnValue({});
+    await defaultInterceptor("EN");
+
+    const interceptorFn = axios.interceptors.request.use.mock.calls[0][0];
+    const mockRequest = { url: "/test-endpoint", headers: {} };
+    const modifiedRequest = await interceptorFn(mockRequest);
+
+    expect(modifiedRequest.headers["SC-CLIENT-CONTEXT"]).toEqual("mocked_meta_data");
+  });
+
+  test("handles missing channelRefNo", async () => {
+    store.getState.mockReturnValue({
+      ...mockState,
+      urlParam: { applicationDetails: {} },
+    });
+
+    await defaultInterceptor("EN");
+    expect(PreApprovalUtil.getAckMetaData).toHaveBeenCalledWith(undefined);
+  });
+});
