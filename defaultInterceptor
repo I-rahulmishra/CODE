@@ -1,96 +1,109 @@
-The error indicates that the code is calling request.headers.set in the defaultInterceptor, but headers in the mockRequest is being treated as a plain object, which does not have a set method (this method is available in AxiosHeaders instances).
+yimport { nextStage } from './LoanDisbursement';
+import { stagesAction } from '../../../../utils/store/stages-slice';
+import { dispatchLoader, dispatchError } from '../../../../services/common-service';
+import { getOffer2 } from '../../services/preApprovalServices';
 
-To resolve this issue, you can mock the headers object as an instance of AxiosHeaders or ensure that the set method is mocked. Here's how to fix it:
+jest.mock('../../services/preApprovalServices', () => ({
+  getOffer2: jest.fn(),
+}));
+jest.mock('../../../../services/common-service', () => ({
+  dispatchLoader: jest.fn(),
+  dispatchError: jest.fn(),
+}));
+jest.mock('../../../../utils/store/stages-slice', () => ({
+  stagesAction: {
+    updateStageId: jest.fn(),
+  },
+}));
 
+describe('nextStage', () => {
+  it('should dispatch loader and handle stage updates correctly', async () => {
+    const dispatch = jest.fn();
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+    const defaultValue = '15000';
+    const defaultMonth = '48';
 
----
+    getOffer2.mockResolvedValue({
+      status: 200,
+      data: {
+        application: { response_type: 'INFO', response_action: 'SUCCESS' },
+        products: [
+          {
+            offer_details: [
+              { offer_status: '1001', service_type: 'ACD3' },
+            ],
+          },
+        ],
+      },
+    });
 
-Solution 1: Use a Mocked set Method
+    await nextStage.call({ dispatch, defaultValue, defaultMonth, stageSelector });
 
-Modify the test case to mock the set method:
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD_3');
+    expect(dispatch).toHaveBeenCalled();
+  });
 
-test("axios.interceptors.request.use modifies request headers correctly", async () => {
-  await defaultInterceptor("EN"); // Call the interceptor to set up the request interceptor
+  it('should handle API errors gracefully', async () => {
+    const dispatch = jest.fn();
+    getOffer2.mockRejectedValue(new Error('API Error'));
 
-  // Get the request interceptor function
-  const interceptorFn = (axios.interceptors.request.use as jest.Mock).mock.calls[0][0];
-  const mockRequest = { 
-    url: "/test-endpoint", 
-    headers: { 
-      set: jest.fn(), // Mock the `set` method
-    }, 
-  }; // Simulated request object
+    await nextStage.call({ dispatch });
 
-  await interceptorFn(mockRequest); // Call the interceptor logic
-
-  // Verify that headers.set is called with the correct arguments
-  expect(mockRequest.headers.set).toHaveBeenCalledWith({
-    "Content-Type": "application/json;charset=UTF-8",
+    expect(dispatchError).toHaveBeenCalled();
   });
 });
 
 
----
 
-Solution 2: Mock AxiosHeaders Properly
 
-Mock headers as an instance of AxiosHeaders, which includes the set method:
 
-import { AxiosHeaders } from "axios";
 
-test("axios.interceptors.request.use modifies request headers correctly", async () => {
-  await defaultInterceptor("EN"); // Call the interceptor to set up the request interceptor
 
-  // Get the request interceptor function
-  const interceptorFn = (axios.interceptors.request.use as jest.Mock).mock.calls[0][0];
-  const mockHeaders = new AxiosHeaders(); // Simulated headers object
-  jest.spyOn(mockHeaders, "set"); // Spy on the `set` method
+import { getOfferCalulated } from './LoanDisbursement';
+import { dispatchError } from '../../../../services/common-service';
 
-  const mockRequest = { 
-    url: "/test-endpoint", 
-    headers: mockHeaders, 
-  }; // Simulated request object
+jest.mock('../../../../services/common-service', () => ({
+  dispatchError: jest.fn(),
+}));
 
-  const modifiedRequest = await interceptorFn(mockRequest); // Call the interceptor logic
+describe('getOfferCalulated', () => {
+  it('should update APR and repayment values on success', async () => {
+    const setAprValue = jest.fn();
+    const setFlateRateValue = jest.fn();
+    const setRepaymentAmount = jest.fn();
+    const data = { requested_tenure: '48', requested_amount: '15000' };
 
-  // Verify that headers.set is called with the correct arguments
-  expect(mockHeaders.set).toHaveBeenCalledWith({
-    "Content-Type": "application/json;charset=UTF-8",
+    const mockResponse = {
+      status: 200,
+      data: {
+        apr: '3.5',
+        monthly_flat_rate: '0.2',
+        repayment_amount: '500',
+      },
+    };
+
+    global.getOfferCalulated = jest.fn().mockResolvedValue(mockResponse);
+
+    await getOfferCalulated.call({ setAprValue, setFlateRateValue, setRepaymentAmount }, data);
+
+    expect(setAprValue).toHaveBeenCalledWith('3.5');
+    expect(setFlateRateValue).toHaveBeenCalledWith('0.2');
+    expect(setRepaymentAmount).toHaveBeenCalledWith('500');
   });
 
-  // Ensure modifiedRequest includes the mock headers
-  expect(modifiedRequest.headers).toBe(mockHeaders);
+  it('should handle API errors gracefully', async () => {
+    const data = { requested_tenure: '48', requested_amount: '15000' };
+
+    global.getOfferCalulated = jest.fn().mockRejectedValue(new Error('API Error'));
+
+    await getOfferCalulated.call({}, data);
+
+    expect(dispatchError).toHaveBeenCalled();
+  });
 });
-
-
----
-
-Key Changes
-
-1. Mocking set Method:
-
-Added set: jest.fn() in mockRequest.headers to prevent the TypeError.
-
-
-
-2. Using AxiosHeaders:
-
-Created a new instance of AxiosHeaders for mockHeaders.
-
-Spied on the set method to verify calls.
-
-
-
-
-
----
-
-Why This Works
-
-By mocking the set method or using AxiosHeaders, the interceptor logic can run without errors.
-
-The test validates that the set method is called correctly and ensures the test coverage is accurate.
-
-
-Let me know if you encounter further issues!
-
