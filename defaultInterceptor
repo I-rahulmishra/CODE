@@ -416,3 +416,74 @@ test("axios.interceptors.request.use modifies request headers correctly", async 
     })
   );
 });
+
+
+
+The error indicates that TypeScript is unable to find the property mock on the use method of axios.interceptors.request. This typically happens when mocking is not set up correctly or if TypeScript is not recognizing the mocked structure of axios.
+
+To resolve this, you need to properly mock axios using Jest and provide the correct structure for the interceptors object. Here's how you can fix it:
+
+Correct Mocking for axios Interceptors
+
+Ensure that axios.interceptors.request.use is mocked correctly in your Jest setup:
+
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    interceptors: {
+      request: {
+        use: jest.fn(),
+      },
+      response: {
+        use: jest.fn(),
+      },
+    },
+  },
+}));
+
+This mock ensures that use is a Jest function and can be spied on or verified in tests.
+
+Updated Test Case
+
+With the corrected mocking, the test case can be written as follows:
+
+test("axios.interceptors.request.use modifies request headers correctly", async () => {
+  await defaultInterceptor("EN"); // Call the interceptor to set up the request interceptor
+
+  // Get the request interceptor function
+  const interceptorFn = (axios.interceptors.request.use as jest.Mock).mock.calls[0][0];
+  const mockRequest = { url: "/test-endpoint", headers: {} }; // Simulated request object
+
+  const modifiedRequest = await interceptorFn(mockRequest); // Call the interceptor logic
+
+  // Verify that headers and other properties were modified correctly
+  expect(modifiedRequest.headers["SC-CLIENT-CONTEXT"]).toEqual("mocked_meta_data");
+  expect(modifiedRequest.headers["Content-Type"]).toEqual("application/json;charset=UTF-8");
+  expect(modifiedRequest.signal).toBeDefined(); // Ensure abortController's signal is attached
+});
+
+Explanation of Fixes:
+
+1. Proper Mocking:
+
+Mock the use function under axios.interceptors.request and axios.interceptors.response as jest.fn().
+
+
+
+2. TypeScript Compatibility:
+
+Explicitly cast axios.interceptors.request.use as jest.Mock to access mock.calls without errors.
+
+
+
+3. Valid Interceptor Logic:
+
+Simulate the interceptor function's behavior by passing a mock request object (mockRequest) to ensure correct headers and signal attachment.
+
+
+
+
+Notes:
+
+If you still face issues, ensure your Jest setup is configured to handle TypeScript correctly, and axios is being mocked before tests run.
+
