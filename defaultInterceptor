@@ -1,0 +1,80 @@
+import axios from "axios";
+import PreApprovalUtil from "../modules/preApproval/services/preApprovalUtils";
+import submitService from "../services/submit-service";
+import { CONSTANTS } from "../utils/common/constants";
+
+let store: any;
+
+export const injectStore = (_store: any) => {
+  store = _store;
+};
+
+const defaultInterceptor = (lang: string | null) => {
+  console.log('store'+JSON.stringify(store));
+  let scClientContextHeaders: any = {
+      Channel: "MOBILE",
+      loginType: "PRE",
+      Country: "HK",
+      Language: "EN",
+      AppName: "RCWB",
+      ClientId: "MOBILE",
+      InstanceCode: "CB_HK",
+      RumDevice: "devicebrowserversion",
+      Source: "sc.com",
+      DeviceType: "MOBILE",
+      subChannelCode: "",    
+      sessionUID: store.getState().auth.sessionUid,
+      BrowserAgent: "DESKTOP-BROWSER",
+      IPAddress: ""
+  };
+
+  let abortController = new AbortController();
+  const timeout = setTimeout(() => {
+    abortController.abort();
+  }, 180000);
+
+  axios?.interceptors.request.use(
+    async (request) => {
+      let currentEndpoint: any = request.url && request.url.split("/");
+      let uUid = submitService.generateUUID;
+      let header: any = {
+        "Content-Type": "application/json;charset=UTF-8",
+      };
+
+      scClientContextHeaders["reqId"] = uUid;
+      let endPointURL = currentEndpoint[currentEndpoint.length - 1];
+      if (store.getState().auth.sessionUid !== null) {
+        const sessionUid = store.getState().auth.sessionUid;
+        scClientContextHeaders["sessionUID"] = sessionUid;
+      }
+      header["Env"] = `${process.env.REACT_APP_RTOB_ENV}`;
+      if (endPointURL === 'supportingaof') {
+        header['responseType'] = 'arraybuffer';
+      }
+      
+    let stages = JSON.parse(JSON.stringify(store.getState().stages));
+
+      if(stages.stages && stages.stages.length > 0 && stages.stages[0].stageId && (stages.stages[0].stageId === CONSTANTS.STAGE_NAMES.AD_1 || stages.stages[0].stageId === CONSTANTS.STAGE_NAMES.ACD_1)) {
+          request.headers["SC-CLIENT-CONTEXT"] = 
+            await PreApprovalUtil.getAckMetaDataStageLevel(store.getState().urlParam.applicationDetails.channelRefNo)
+      }
+      else {
+        request.headers["SC-CLIENT-CONTEXT"] = 
+            PreApprovalUtil.getAckMetaData(store.getState().urlParam.applicationDetails.channelRefNo)
+      }
+      request.headers.set(header);
+
+      return {
+        ...request,
+        signal: abortController.signal,
+      };
+    }
+  );
+
+  axios?.interceptors.response.use((res) => {
+    clearTimeout(timeout);
+    return res;
+  });
+};
+
+export default defaultInterceptor;
