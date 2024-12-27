@@ -107,3 +107,61 @@ describe('getOfferCalulated', () => {
     expect(dispatchError).toHaveBeenCalled();
   });
 });
+
+
+
+
+
+
+
+The error in the screenshot indicates that mockResolvedValue is being called on an object (getOffer2) that doesn’t have the appropriate Jest mocking setup.
+
+Here’s how you can fix it:
+	1.	Ensure Proper Mocking of getOffer2:
+The function getOffer2 needs to be mocked correctly. Make sure you’re importing it properly and mocking it with Jest. If getOffer2 is not automatically mocked, you need to create a manual mock.
+
+jest.mock('../../services/preApprovalServices', () => ({
+  getOffer2: jest.fn(),
+}));
+
+
+	2.	Update the Test:
+Once getOffer2 is properly mocked, you can use mockResolvedValue on it. For example:
+
+getOffer2.mockResolvedValue({
+  status: 200,
+  data: {
+    application: { response_type: 'INFO', response_action: 'SUCCESS' },
+    products: [
+      {
+        offer_details: [
+          { offer_status: '1001', service_type: 'ACD3' },
+        ],
+      },
+    ],
+  },
+});
+
+
+	3.	TypeScript Considerations:
+If you’re using TypeScript and it complains about mockResolvedValue, you may need to explicitly cast the mock. Here’s an example:
+
+(getOffer2 as jest.Mock).mockResolvedValue({
+  status: 200,
+  data: {
+    application: { response_type: 'INFO', response_action: 'SUCCESS' },
+    products: [
+      {
+        offer_details: [
+          { offer_status: '1001', service_type: 'ACD3' },
+        ],
+      },
+    ],
+  },
+});
+
+
+	4.	Verify Your Imports:
+Ensure that getOffer2 is being imported from the correct file and that the module path matches where getOffer2 is defined.
+
+Let me know if you need additional guidance!
