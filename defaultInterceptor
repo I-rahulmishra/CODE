@@ -78,3 +78,153 @@ const defaultInterceptor = (lang: string | null) => {
 };
 
 export default defaultInterceptor;
+
+
+
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import defaultInterceptor, { injectStore } from "../path/to/defaultInterceptor";
+import PreApprovalUtil from "../modules/preApproval/services/preApprovalUtils";
+import submitService from "../services/submit-service";
+import { CONSTANTS } from "../utils/common/constants";
+
+jest.mock("../modules/preApproval/services/preApprovalUtils");
+jest.mock("../services/submit-service");
+
+describe("defaultInterceptor", () => {
+  let mockStore: any;
+  let mockAxios: MockAdapter;
+
+  beforeEach(() => {
+    // Mock store
+    mockStore = {
+      getState: jest.fn().mockReturnValue({
+        auth: { sessionUid: "test-session-uid" },
+        urlParam: { applicationDetails: { channelRefNo: "test-ref-no" } },
+        stages: {
+          stages: [
+            {
+              stageId: CONSTANTS.STAGE_NAMES.AD_1,
+            },
+          ],
+        },
+      }),
+    };
+
+    // Inject store
+    injectStore(mockStore);
+
+    // Mock axios
+    mockAxios = new MockAdapter(axios);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    mockAxios.reset();
+  });
+
+  it("should set request headers correctly for AD_1 stage", async () => {
+    const mockRequest = {
+      url: "https://example.com/supportingaof",
+      headers: new Map(),
+    };
+
+    // Mock PreApprovalUtil.getAckMetaDataStageLevel
+    (PreApprovalUtil.getAckMetaDataStageLevel as jest.Mock).mockResolvedValue(
+      "mocked-metadata"
+    );
+
+    const addInterceptor = () => defaultInterceptor("EN");
+    addInterceptor();
+
+    const onFulfilled = mockAxios.handlers.request[0][0];
+    const modifiedRequest = await onFulfilled(mockRequest);
+
+    expect(modifiedRequest.headers.get("SC-CLIENT-CONTEXT")).toEqual(
+      "mocked-metadata"
+    );
+    expect(modifiedRequest.headers.get("responseType")).toBeUndefined();
+    expect(modifiedRequest.signal).toBeDefined();
+  });
+
+  it("should set responseType to arraybuffer for supportingaof endpoint", async () => {
+    const mockRequest = {
+      url: "https://example.com/supportingaof",
+      headers: new Map(),
+    };
+
+    const addInterceptor = () => defaultInterceptor("EN");
+    addInterceptor();
+
+    const onFulfilled = mockAxios.handlers.request[0][0];
+    const modifiedRequest = await onFulfilled(mockRequest);
+
+    expect(modifiedRequest.headers.get("responseType")).toEqual("arraybuffer");
+  });
+
+  it("should clear timeout on response", () => {
+    const mockResponse = { data: { success: true } };
+
+    const addInterceptor = () => defaultInterceptor("EN");
+    addInterceptor();
+
+    const onFulfilled = mockAxios.handlers.response[0][0];
+    const modifiedResponse = onFulfilled(mockResponse);
+
+    expect(modifiedResponse).toEqual(mockResponse);
+  });
+
+  it("should handle a missing session UID gracefully", async () => {
+    mockStore.getState.mockReturnValueOnce({
+      auth: { sessionUid: null },
+      urlParam: { applicationDetails: { channelRefNo: "test-ref-no" } },
+      stages: { stages: [] },
+    });
+
+    const mockRequest = {
+      url: "https://example.com/endpoint",
+      headers: new Map(),
+    };
+
+    const addInterceptor = () => defaultInterceptor("EN");
+    addInterceptor();
+
+    const onFulfilled = mockAxios.handlers.request[0][0];
+    const modifiedRequest = await onFulfilled(mockRequest);
+
+    expect(modifiedRequest.headers.get("SC-CLIENT-CONTEXT")).toBeUndefined();
+  });
+
+  it("should set SC-CLIENT-CONTEXT using PreApprovalUtil.getAckMetaData if stage is not AD_1 or ACD_1", async () => {
+    mockStore.getState.mockReturnValueOnce({
+      auth: { sessionUid: "test-session-uid" },
+      urlParam: { applicationDetails: { channelRefNo: "test-ref-no" } },
+      stages: {
+        stages: [
+          {
+            stageId: "some-other-stage",
+          },
+        ],
+      },
+    });
+
+    const mockRequest = {
+      url: "https://example.com/endpoint",
+      headers: new Map(),
+    };
+
+    (PreApprovalUtil.getAckMetaData as jest.Mock).mockReturnValue(
+      "mocked-metadata"
+    );
+
+    const addInterceptor = () => defaultInterceptor("EN");
+    addInterceptor();
+
+    const onFulfilled = mockAxios.handlers.request[0][0];
+    const modifiedRequest = await onFulfilled(mockRequest);
+
+    expect(modifiedRequest.headers.get("SC-CLIENT-CONTEXT")).toEqual(
+      "mocked-metadata"
+    );
+  });
+});
