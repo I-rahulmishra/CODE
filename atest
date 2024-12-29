@@ -446,3 +446,62 @@ describe('nextStage', () => {
   });
 });
 });
+
+
+
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: jest.fn(),
+}));
+
+const mockDispatch = jest.fn();
+
+describe('nextStage', () => {
+  beforeEach(() => {
+    // Mock useDispatch to return the mockDispatch function
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    jest.clearAllMocks();
+  });
+
+  it('should dispatch loader and handle stage updates correctly', async () => {
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 200,
+      data: {
+        application: { response_type: 'INFO', response_action: 'SUCCESS' },
+        products: [
+          {
+            offer_details: [{ offer_status: '1001', service_type: 'ACD3' }],
+          },
+        ],
+      },
+    });
+
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+    const defaultValue = '15000';
+    const defaultMonth = '48';
+
+    await nextStage.call({
+      dispatch: mockDispatch,
+      defaultValue,
+      defaultMonth,
+      stageSelector,
+    });
+
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD_3');
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  it('should handle API errors gracefully', async () => {
+    (getOffer2 as jest.Mock).mockRejectedValue(new Error('API Error'));
+
+    await nextStage.call({ dispatch: mockDispatch });
+
+    expect(dispatchError).toHaveBeenCalled();
+  });
+});
