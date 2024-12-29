@@ -568,3 +568,142 @@ describe('nextStage', () => {
     expect(dispatchError).toHaveBeenCalled();
   });
 });
+
+
+
+
+
+
+
+
+
+import React from 'react';
+import { useDispatch } from 'react-redux';
+import { getOffer2 } from '../services/preApprovalServices';
+import { nextStage } from './loanDisbursement';
+import { dispatchLoader, dispatchError, stagesAction } from './actions';
+
+// Mock modules
+jest.mock('../services/preApprovalServices', () => ({
+  getOffer2: jest.fn(),
+}));
+
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'), // Keep the original functionalities
+  useDispatch: jest.fn(),
+}));
+
+describe('LoanDisbursement Tests', () => {
+  const mockDispatch = jest.fn();
+
+  beforeEach(() => {
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    jest.clearAllMocks();
+  });
+
+  it('should dispatch loader and handle stage updates correctly', async () => {
+    // Mock API response
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 200,
+      data: {
+        application: { response_type: 'INFO', response_action: 'SUCCESS' },
+        products: [
+          {
+            offer_details: [{ offer_status: '1001', service_type: 'ACD3' }],
+          },
+        ],
+      },
+    });
+
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+    const defaultValue = '15000';
+    const defaultMonth = '48';
+
+    await nextStage.call({
+      dispatch: mockDispatch,
+      defaultValue,
+      defaultMonth,
+      stageSelector,
+    });
+
+    // Expectations
+    expect(dispatchLoader).toHaveBeenCalledWith(true); // Loader should be triggered
+    expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD_3'); // Stage update
+    expect(mockDispatch).toHaveBeenCalled(); // Dispatch function called
+  });
+
+  it('should handle API errors gracefully', async () => {
+    // Mock API error
+    (getOffer2 as jest.Mock).mockRejectedValue(new Error('API Error'));
+
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+
+    await nextStage.call({ dispatch: mockDispatch, stageSelector });
+
+    // Expectations
+    expect(dispatchError).toHaveBeenCalled(); // Error handler called
+    expect(dispatchLoader).toHaveBeenCalledWith(false); // Loader turned off
+  });
+
+  it('should handle an empty API response', async () => {
+    // Mock empty API response
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 200,
+      data: null,
+    });
+
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+
+    await nextStage.call({ dispatch: mockDispatch, stageSelector });
+
+    // Expectations
+    expect(dispatchError).toHaveBeenCalled(); // Error handler called for invalid data
+    expect(dispatchLoader).toHaveBeenCalledWith(false); // Loader turned off
+  });
+
+  it('should handle invalid API response format', async () => {
+    // Mock invalid API response
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 200,
+      data: {
+        application: null,
+      },
+    });
+
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+
+    await nextStage.call({ dispatch: mockDispatch, stageSelector });
+
+    // Expectations
+    expect(dispatchError).toHaveBeenCalled(); // Error handler called for invalid format
+    expect(dispatchLoader).toHaveBeenCalledWith(false); // Loader turned off
+  });
+
+  it('should not proceed when stageSelector is undefined', async () => {
+    await nextStage.call({ dispatch: mockDispatch });
+
+    // Expectations
+    expect(dispatchLoader).not.toHaveBeenCalled(); // Loader should not be triggered
+    expect(dispatchError).toHaveBeenCalled(); // Error handler called
+  });
+});
