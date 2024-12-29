@@ -116,3 +116,140 @@ describe('LoanDisbursement - Continue Button', () => {
     });
   });
 });
+
+
+
+
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import LoanDisbursement from './loan-disbursement';
+import { useDispatch } from 'react-redux';
+import { dispatchLoader, dispatchError } from '../../../../services/common-service';
+import { stagesAction } from '../../../../utils/store/stages-slice';
+import { getOffer2 } from '../../services/preApprovalServices';
+
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: jest.fn(),
+}));
+
+jest.mock('../../../../services/common-service', () => ({
+  dispatchLoader: jest.fn(),
+  dispatchError: jest.fn(),
+}));
+
+jest.mock('../../../../utils/store/stages-slice', () => ({
+  stagesAction: {
+    updateStageId: jest.fn(),
+  },
+}));
+
+jest.mock('../../services/preApprovalServices', () => ({
+  getOffer2: jest.fn(),
+}));
+
+const mockStore = configureStore([]);
+
+describe('LoanDisbursement - nextStage Tests', () => {
+  let store: any;
+  let mockDispatch: jest.Mock;
+
+  beforeEach(() => {
+    mockDispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [
+                {
+                  product_category: 'PL',
+                  offer_details: [
+                    {
+                      offer_status: '1004',
+                      approved_amount: '50000',
+                      approved_tenor: '12',
+                      apr: '1.5',
+                      flatRate: '0.5',
+                      repaymentAmount: '4200',
+                      approved_amount_currency: 'USD',
+                      bestOffer: 'Y',
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  it('dispatches loader and updates stage on button click', async () => {
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 200,
+      data: {
+        application: { response_type: 'INFO', response_action: 'SUCCESS' },
+        products: [
+          {
+            offer_details: [
+              { offer_status: '1001', service_type: 'ACD3' },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+
+    const continueButton = screen.getByText(/Continue/i);
+    fireEvent.click(continueButton);
+
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD_3');
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  it('handles API errors gracefully on button click', async () => {
+    (getOffer2 as jest.Mock).mockRejectedValue(new Error('API Error'));
+
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+
+    const continueButton = screen.getByText(/Continue/i);
+    fireEvent.click(continueButton);
+
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(dispatchError).toHaveBeenCalled();
+  });
+
+  it('does not proceed if API response is invalid', async () => {
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 400,
+      data: {},
+    });
+
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+
+    const continueButton = screen.getByText(/Continue/i);
+    fireEvent.click(continueButton);
+
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(stagesAction.updateStageId).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+});
