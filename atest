@@ -1,0 +1,448 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import LoanDisbursement from './loan-disbursement';
+import * as services from '../../services/preApprovalServices'; // Mocked services
+import { getUrl } from '../../../../utils/common/change.utils';
+import { useDispatch } from 'react-redux';
+
+import getOfferCalulated from './loan-disbursement';
+import nextStage from './loan-disbursement';
+import { stagesAction } from '../../../../utils/store/stages-slice';
+import { dispatchLoader, dispatchError } from '../../../../services/common-service';
+import { getOffer2 } from '../../services/preApprovalServices';
+
+jest.mock('../../../../utils/common/change.utils', () => ({
+  // ...jest.requireActual('../../../utils/common/change.utils'),
+  fieldError: jest.fn(),
+  getUrl: {
+    getLanguageInfo: jest.fn()
+  },
+  isFieldUpdate: jest.fn(),
+  isFieldValueUpdate: jest.fn()
+}));
+const mockStore = configureStore([]);
+
+jest.mock('../../services/preApprovalServices', () => ({
+  getOffer2: jest.fn(),
+  getOfferCalulated: jest.fn(),
+  postPdfPreview: jest.fn(),
+}));
+
+jest.mock('axios', () => ({
+  AxiosError: class AxiosErrorMock {
+    message: string;
+    constructor(message: string) {
+      this.message = message;
+    }
+  },
+}));
+
+describe('LoanDisbursement Component', () => {
+  let store: any;
+  it('renders the component with default English content', () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [
+                {
+                  product_category: 'PL',
+                  offer_details: [
+                    {
+                      offer_status: '1004',
+                      approved_amount: '50000',
+                      approved_tenor: '12',
+                      apr: '1.5',
+                      flatRate: '0.5',
+                      repaymentAmount: '4200',
+                      approved_amount_currency: 'USD',
+                      bestOffer: 'Y',
+                    },
+                    {
+                      approved_amount_currency: "USD",
+                      approved_tenor: 2,
+                    }
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+
+    expect(screen.getByText(/Congratulations!/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your preliminary assessment is completed/i)).toBeInTheDocument();
+  });
+
+  it('renders the component with Chinese content when language is zh-HK', () => {
+       store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [
+                {
+                  product_category: 'PL',
+                  offer_details: [
+                    {
+                      offer_status: '1004',
+                      approved_amount: '50000',
+                      approved_tenor: '12',
+                      apr: '1.5',
+                      flatRate: '0.5',
+                      repaymentAmount: '4200',
+                      approved_amount_currency: 'USD',
+                      bestOffer: 'Y',
+                    },
+                    {
+                      approved_amount_currency: "USD",
+                      approved_tenor: 2,
+                    }
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    (getUrl.getLanguageInfo as jest.Mock).mockImplementation(()=>"zh-HK")
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+
+    expect(screen.getByText(/恭喜/i)).toBeInTheDocument();
+    expect(screen.getByText(/你的初步審批已經完成/i)).toBeInTheDocument();
+  });
+
+  it('handles loan amount change via slider', () => {
+
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [
+                {
+                  product_category: 'PL',
+                  offer_details: [
+                    {
+                      offer_status: '1003',
+                      approved_amount: '50000',
+                      approved_tenor: '12',
+                      apr: '1.5',
+                      flatRate: '0.5',
+                      repaymentAmount: '4200',
+                      approved_amount_currency: 'USD',
+                      bestOffer: 'Y',
+                    },
+                    {
+                      approved_amount_currency: "USD",
+                      approved_tenor: 2,
+                    }
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+
+    const slider = screen.getByRole('slider');
+    fireEvent.change(slider, { target: { value: '55000' } });
+
+    expect(slider).toHaveValue('100');
+  });
+
+  it('calls calculateOffer on debounce', async () => {
+    jest.spyOn(services, 'getOfferCalulated').mockResolvedValue({
+      data: {
+        apr: '1.8',
+        monthly_flat_rate: '0.6',
+        repayment_amount: '4500',
+        response_action: 'CONTINUE',
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+
+    const input = screen.getByRole('slider');
+    fireEvent.change(input, { target: { value: '60000' } });
+
+    await waitFor(() => {
+      expect(services.getOfferCalulated).toHaveBeenCalledWith({
+        requested_amount: '',
+        requested_tenure: '60',
+      });
+    });
+  });
+
+  it('renders spinner while loading', () => {
+
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [
+                {
+                  product_category: 'PL',
+                  offer_details: [
+                    {
+                      offer_status: '1003',
+                      approved_amount: '50000',
+                      approved_tenor: '12',
+                      apr: '1.5',
+                      flatRate: '0.5',
+                      repaymentAmount: '4200',
+                      approved_amount_currency: 'USD',
+                      bestOffer: 'Y',
+                    },
+                    {
+                      approved_amount_currency: "USD",
+                      approved_tenor: 2,
+                    }
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+    const spinner = screen.queryByTestId('spinner__container');
+    expect(spinner).toBeInTheDocument();
+  });  
+  
+  it('handles error in calculateOffer gracefully', async () => {
+
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [
+                {
+                  product_category: 'PL',
+                  offer_details: [
+                    {
+                      offer_status: '1003',
+                      approved_amount: '50000',
+                      approved_tenor: '12',
+                      apr: '1.5',
+                      flatRate: '0.5',
+                      repaymentAmount: '4200',
+                      approved_amount_currency: 'USD',
+                      bestOffer: 'Y',
+                    },
+                    {
+                      approved_amount_currency: "USD",
+                      approved_tenor: 2,
+                    }
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    jest.spyOn(services, 'getOfferCalulated').mockRejectedValue(new Error('API Error'));
+  
+    render(
+      <Provider store={store}>
+        <LoanDisbursement />
+      </Provider>
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.change(slider, { target: { value: '60000' } });
+    await waitFor(() => {
+      expect(services.getOfferCalulated).toHaveBeenCalled();
+    });
+    expect(screen.getByText(/Your preliminary assessment is completed. Please confirm the loan offer to continue the application processing:/i)).toBeInTheDocument();
+  });
+
+  describe("test based on database", ()=>{
+    beforeEach(() => {
+      jest.clearAllMocks();
+      store = mockStore({
+        stages: {
+          stages: [
+            {
+              stageInfo: {
+                products: [
+                  {
+                    product_category: 'PL',
+                    offer_details: [
+                      {
+                        offer_status: '1004',
+                        approved_amount: '50000',
+                        approved_tenor: '12',
+                        apr: '1.5',
+                        flatRate: '0.5',
+                        repaymentAmount: '4200',
+                        approved_amount_currency: 'USD',
+                        bestOffer: 'Y',
+                      },
+                      {
+                        approved_amount_currency: "USD",
+                        approved_tenor: 2,
+                      }
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+    });
+    it('renders Prepayment section correctly', () => {
+      render(
+        <Provider store={store}>
+          <LoanDisbursement />
+        </Provider>
+      );
+    
+      // Check if the remarks section is rendered
+      expect(
+        screen.getByText(/Prepayment \/ Early Settlement \/ Redemption Fee:/i)
+      ).toBeInTheDocument();
+    });
+  
+    it('renders Congratulations section correctly', () => {
+      render(
+        <Provider store={store}>
+          <LoanDisbursement />
+        </Provider>
+      );
+      expect(
+        screen.getByText(/Congratulations!/i)
+      ).toBeInTheDocument();
+    });
+    it('renders remarks section correctly', () => {
+      render(
+        <Provider store={store}>
+          <LoanDisbursement />
+        </Provider>
+      );
+    
+      // Check if the remarks section is rendered
+      expect(
+        screen.getByText(/Your preliminary assessment is completed. Please confirm the loan offer to continue the application processing:/i)
+      ).toBeInTheDocument();
+    });
+  
+    it('renders remarks section Remarks: correctly', () => {
+      render(
+        <Provider store={store}>
+          <LoanDisbursement />
+        </Provider>
+      );
+    
+      // Check if the remarks section is rendered
+      expect(
+        screen.getByText(/Remarks:/i)
+      ).toBeInTheDocument();
+    });
+   
+     it('renders remarks preliminary result section correctly', () => {
+      render(
+        <Provider store={store}>
+          <LoanDisbursement />
+        </Provider>
+      );
+    
+      // Check if the remarks section is rendered
+      expect(
+        screen.getByText(/The above offers are preliminary result. The final result may vary after further assessment./i)
+      ).toBeInTheDocument();
+    });   
+  })
+
+  jest.mock('../../../../services/common-service', () => ({
+    dispatchError: jest.fn(),
+  }));
+jest.mock('../../services/preApprovalServices', () => ({
+  getOffer2: jest.fn(),
+}));
+jest.mock('../../../../services/common-service', () => ({
+  dispatchLoader: jest.fn(),
+  // dispatchError: jest.fn(),
+}));
+jest.mock('../../../../utils/store/stages-slice', () => ({
+  stagesAction: {
+    updateStageId: jest.fn(),
+  },
+}));
+jest.mock('../../services/preApprovalServices', () => ({
+  getOffer2: jest.fn(),
+}));
+const mockDispatch = jest.fn();
+const dispatch = jest.fn();
+describe('nextStage', () => {
+  it('should dispatch loader and handle stage updates correctly', async () => {
+    const stageSelector = {
+      applicants: {
+        requested_loan_amount_a_1: '10000',
+        requested_loan_tenor_a_1: '60',
+      },
+    };
+    const defaultValue = '15000';
+    const defaultMonth = '48';
+    // (useDispatch as jest.Mock).mockReturnValue(dispatch)
+
+    (getOffer2 as jest.Mock).mockResolvedValue({
+      status: 200,
+      data: {
+        application: { response_type: 'INFO', response_action: 'SUCCESS' },
+        products: [
+          {
+            offer_details: [
+              { offer_status: '1001', service_type: 'ACD3' },
+            ],
+          },
+        ],
+      },
+    });
+    await nextStage.call({ dispatch, defaultValue, defaultMonth, stageSelector });
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD_3');
+    expect(dispatch).toHaveBeenCalled();
+  });
+
+  it('should handle API errors gracefully', async () => {
+     const dispatch = jest.fn();
+     (useDispatch as jest.Mock).mockReturnValue(dispatch)
+    (getOffer2 as jest.Mock).mockResolvedValue(new Error('API Error'));
+    await nextStage.call({ dispatch });
+    expect(dispatchError).toHaveBeenCalled();
+  });
+});
+});
