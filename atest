@@ -1,255 +1,78 @@
-describe('LoanDisbursement - Continue Button', () => {
-  let store: any;
-  const mockDispatch = jest.fn();
-  
+import { nextStage } from './path-to-file';
+import * as services from './services';
+import * as stagesAction from './stagesAction';
+import { dispatchLoader } from './loaderActions';
+
+jest.mock('./services');
+jest.mock('./stagesAction');
+jest.mock('./loaderActions');
+
+const mockDispatch = jest.fn();
+
+describe('nextStage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    store = mockStore({
-      stages: {
-        stages: [
-          {
-            stageInfo: {
-              products: [
-                {
-                  product_category: 'PL',
-                  offer_details: [
-                    {
-                      offer_status: '1004',
-                      approved_amount: '50000',
-                      approved_tenor: '12',
-                      apr: '1.5',
-                      flatRate: '0.5',
-                      repaymentAmount: '4200',
-                      approved_amount_currency: 'USD',
-                      bestOffer: 'Y',
-                    },
-                  ],
-                },
-              ],
-            },
-          },
-        ],
-      },
-    });
-
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-
-    jest.mock('../../services/preApprovalServices', () => ({
-      getOffer2: jest.fn(),
-    }));
-
-    jest.mock('../../../../services/common-service', () => ({
-      dispatchLoader: jest.fn(),
-      dispatchError: jest.fn(),
-    }));
-
-    jest.mock('../../../../utils/store/stages-slice', () => ({
-      stagesAction: {
-        updateStageId: jest.fn(),
-      },
-    }));
   });
 
-  it('dispatches loader and updates stage on continue click (successful API call)', async () => {
-    (services.getOffer2 as jest.Mock).mockResolvedValue({
+  it('should dispatch loader and update stage when responseType is INFO and responseAction is SUCCESS', async () => {
+    const payload = { applicants: { requested_loan_amount: '1000' } };
+    const mockResponse = {
       status: 200,
       data: {
         application: { response_type: 'INFO', response_action: 'SUCCESS' },
-        products: [
-          {
-            offer_details: [{ offer_status: '1001', service_type: 'ACD3' }],
-          },
-        ],
+        products: [{ offer_details: [{ offer_status: '1001', service_type: 'ACD3' }] }],
       },
-    });
+    };
 
-    render(
-      <Provider store={store}>
-        <LoanDisbursement />
-      </Provider>
-    );
+    (services.getOffer2 as jest.Mock).mockResolvedValue(mockResponse);
 
-    const continueButton = screen.getByText(/Continue/i);
-    fireEvent.click(continueButton);
-
-    await waitFor(() => {
-      expect(dispatchLoader).toHaveBeenCalledWith(true);
-      expect(services.getOffer2).toHaveBeenCalled();
-      expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD3');
-      expect(mockDispatch).toHaveBeenCalled();
-    });
-  });
-
-  it('dispatches error on API failure when continue is clicked', async () => {
-    (services.getOffer2 as jest.Mock).mockRejectedValue(new Error('API Error'));
-
-    render(
-      <Provider store={store}>
-        <LoanDisbursement />
-      </Provider>
-    );
-
-    const continueButton = screen.getByText(/Continue/i);
-    fireEvent.click(continueButton);
-
-    await waitFor(() => {
-      expect(dispatchLoader).toHaveBeenCalledWith(true);
-      expect(services.getOffer2).toHaveBeenCalled();
-      expect(dispatchError).toHaveBeenCalledWith('API Error');
-    });
-  });
-
-  it('does not dispatch updateStageId on API failure', async () => {
-    (services.getOffer2 as jest.Mock).mockRejectedValue(new Error('API Error'));
-
-    render(
-      <Provider store={store}>
-        <LoanDisbursement />
-      </Provider>
-    );
-
-    const continueButton = screen.getByText(/Continue/i);
-    fireEvent.click(continueButton);
-
-    await waitFor(() => {
-      expect(stagesAction.updateStageId).not.toHaveBeenCalled();
-    });
-  });
-});
-
-
-
-
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import LoanDisbursement from './loan-disbursement';
-import { useDispatch } from 'react-redux';
-import { dispatchLoader, dispatchError } from '../../../../services/common-service';
-import { stagesAction } from '../../../../utils/store/stages-slice';
-import { getOffer2 } from '../../services/preApprovalServices';
-
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useDispatch: jest.fn(),
-}));
-
-jest.mock('../../../../services/common-service', () => ({
-  dispatchLoader: jest.fn(),
-  dispatchError: jest.fn(),
-}));
-
-jest.mock('../../../../utils/store/stages-slice', () => ({
-  stagesAction: {
-    updateStageId: jest.fn(),
-  },
-}));
-
-jest.mock('../../services/preApprovalServices', () => ({
-  getOffer2: jest.fn(),
-}));
-
-const mockStore = configureStore([]);
-
-describe('LoanDisbursement - nextStage Tests', () => {
-  let store: any;
-  let mockDispatch: jest.Mock;
-
-  beforeEach(() => {
-    mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-
-    store = mockStore({
-      stages: {
-        stages: [
-          {
-            stageInfo: {
-              products: [
-                {
-                  product_category: 'PL',
-                  offer_details: [
-                    {
-                      offer_status: '1004',
-                      approved_amount: '50000',
-                      approved_tenor: '12',
-                      apr: '1.5',
-                      flatRate: '0.5',
-                      repaymentAmount: '4200',
-                      approved_amount_currency: 'USD',
-                      bestOffer: 'Y',
-                    },
-                  ],
-                },
-              ],
-            },
-          },
-        ],
-      },
-    });
-  });
-
-  it('dispatches loader and updates stage on button click', async () => {
-    (getOffer2 as jest.Mock).mockResolvedValue({
-      status: 200,
-      data: {
-        application: { response_type: 'INFO', response_action: 'SUCCESS' },
-        products: [
-          {
-            offer_details: [
-              { offer_status: '1001', service_type: 'ACD3' },
-            ],
-          },
-        ],
-      },
-    });
-
-    render(
-      <Provider store={store}>
-        <LoanDisbursement />
-      </Provider>
-    );
-
-    const continueButton = screen.getByText(/Continue/i);
-    fireEvent.click(continueButton);
+    await nextStage(mockDispatch);
 
     expect(dispatchLoader).toHaveBeenCalledWith(true);
-    expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD_3');
+    expect(stagesAction.updateStageId).toHaveBeenCalledWith('ACD3');
     expect(mockDispatch).toHaveBeenCalled();
   });
 
-  it('handles API errors gracefully on button click', async () => {
-    (getOffer2 as jest.Mock).mockRejectedValue(new Error('API Error'));
+  it('should handle empty offerDetails array', async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: { response_type: 'INFO', response_action: 'SUCCESS' },
+        products: [{ offer_details: [] }],
+      },
+    };
 
-    render(
-      <Provider store={store}>
-        <LoanDisbursement />
-      </Provider>
-    );
+    (services.getOffer2 as jest.Mock).mockResolvedValue(mockResponse);
 
-    const continueButton = screen.getByText(/Continue/i);
-    fireEvent.click(continueButton);
-
-    expect(dispatchLoader).toHaveBeenCalledWith(true);
-    expect(dispatchError).toHaveBeenCalled();
-  });
-
-  it('does not proceed if API response is invalid', async () => {
-    (getOffer2 as jest.Mock).mockResolvedValue({
-      status: 400,
-      data: {},
-    });
-
-    render(
-      <Provider store={store}>
-        <LoanDisbursement />
-      </Provider>
-    );
-
-    const continueButton = screen.getByText(/Continue/i);
-    fireEvent.click(continueButton);
+    await nextStage(mockDispatch);
 
     expect(dispatchLoader).toHaveBeenCalledWith(true);
     expect(stagesAction.updateStageId).not.toHaveBeenCalled();
-    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('should not update stage when responseAction is CONTINUE', async () => {
+    const mockResponse = {
+      status: 200,
+      data: {
+        application: { response_type: 'SOFT', response_action: 'CONTINUE' },
+        products: [],
+      },
+    };
+
+    (services.getOffer2 as jest.Mock).mockResolvedValue(mockResponse);
+
+    await nextStage(mockDispatch);
+
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(stagesAction.updateStageId).not.toHaveBeenCalled();
+  });
+
+  it('should handle error thrown by getOffer2', async () => {
+    (services.getOffer2 as jest.Mock).mockRejectedValue(new Error('API error'));
+
+    await expect(nextStage(mockDispatch)).rejects.toThrow('API error');
+
+    expect(dispatchLoader).toHaveBeenCalledWith(true);
+    expect(stagesAction.updateStageId).not.toHaveBeenCalled();
   });
 });
