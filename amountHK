@@ -235,3 +235,174 @@ describe('Amount Test Cases', () => {
       expect(screen.getByText(/loan amount/i)).toBeInTheDocument();
 })
   });
+
+
+
+Here's a similar test case format for your React component to check different scenarios related to the Amount component and its interactions. The key part is mocking the necessary Redux store actions and verifying the expected outcomes.
+
+Test Case 1: Test for rendering Loan Amount correctly
+
+it("renders Loan Amount label", () => {
+  (useDispatch as jest.Mock).mockImplementation(() => jest.fn());
+  (getUrl.getLanguageInfo as jest.Mock).mockImplementation(() => "EN");
+
+  (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+    if (selectorFn.toString().includes('state.stages.userInput')) {
+      return {
+        "applicants": [{
+          other_loans: "120",
+          'requested_loan_amount': 20000,
+          rwb_label_name: 'Loan Amount',
+          mandatory: 'Yes',
+          min_length: "Please enter at least",
+          length: 8,
+          regex: '^[0-9]*$',
+          editable: false
+        }],
+      };
+    }
+    if (selectorFn.toString().includes('state.fielderror.error')) {
+      return {
+        'requested_loan_amount': 0,
+      };
+    }
+    if (selectorFn.toString().includes('state.stages.stages')) {
+      return [{
+        "stageId": "bd-2",
+        "stageInfo": {
+          "applicants": [{ max_eligible_amount: "1000", 'requested_loan_amount_a_1': 20000 }],
+          "application": {
+            "source_system_name": 3
+          },
+          "products": [{ product_type: "PL" }]
+        }
+      }];
+    }
+    if (selectorFn.toString().includes('state.lov')) {
+      return {
+        lov: [{
+          "label": "requested_loan_amount",
+        }]
+      };
+    }
+  });
+
+  render(<Amount {...defaultProps} />);
+  expect(screen.getByText(/Loan Amount/i)).toBeInTheDocument();
+});
+
+Test Case 2: Test for Empty Loan Amount Validation
+
+it("shows an error message for empty loan amount", () => {
+  const errorMsg = {
+    emity: "This field cannot be empty",
+  };
+
+  (useDispatch as jest.Mock).mockImplementation(() => jest.fn());
+  (getUrl.getLanguageInfo as jest.Mock).mockImplementation(() => "EN");
+
+  const mockHandleCallback = jest.fn();
+  const updatedProps = {
+    ...defaultProps,
+    data: {
+      ...defaultProps.data,
+      mandatory: "Yes", // Mandatory field
+    },
+    handleCallback: mockHandleCallback
+  };
+
+  render(<Amount {...updatedProps} />);
+  
+  fireEvent.change(screen.getByLabelText(/Loan Amount/i), {
+    target: { value: "" },
+  });
+
+  expect(screen.getByText(errorMsg.emity)).toBeInTheDocument();
+});
+
+Test Case 3: Test for Valid Loan Amount
+
+it("does not show an error for valid loan amount", () => {
+  (useDispatch as jest.Mock).mockImplementation(() => jest.fn());
+  (getUrl.getLanguageInfo as jest.Mock).mockImplementation(() => "EN");
+
+  render(<Amount {...defaultProps} />);
+  
+  fireEvent.change(screen.getByLabelText(/Loan Amount/i), {
+    target: { value: "25000" },
+  });
+
+  expect(screen.queryByText(/This field cannot be empty/)).not.toBeInTheDocument();
+});
+
+Test Case 4: Test for Minimum Length Error
+
+it("shows an error message for loan amount with insufficient length", () => {
+  const errorMsg = {
+    minLength: "Please enter at least",
+  };
+
+  (useDispatch as jest.Mock).mockImplementation(() => jest.fn());
+  (getUrl.getLanguageInfo as jest.Mock).mockImplementation(() => "EN");
+
+  render(<Amount {...defaultProps} />);
+  
+  fireEvent.change(screen.getByLabelText(/Loan Amount/i), {
+    target: { value: "1" },
+  });
+
+  expect(screen.getByText(errorMsg.minLength)).toBeInTheDocument();
+});
+
+Test Case 5: Test for Invalid Loan Amount Range
+
+it("shows an error message for invalid loan amount range", () => {
+  const errorMsg = {
+    loanAmount: "Loan amount must be between 5000 and 2000000.",
+  };
+
+  (useDispatch as jest.Mock).mockImplementation(() => jest.fn());
+  (getUrl.getLanguageInfo as jest.Mock).mockImplementation(() => "EN");
+
+  render(<Amount {...defaultProps} />);
+  
+  fireEvent.change(screen.getByLabelText(/Loan Amount/i), {
+    target: { value: "1000" },
+  });
+
+  expect(screen.getByText(errorMsg.loanAmount)).toBeInTheDocument();
+});
+
+Test Case 6: Test for Successful Loan Amount Entry
+
+it("removes error message when loan amount is valid", () => {
+  const errorMsg = {
+    loanAmount: "Loan amount must be between 5000 and 2000000.",
+  };
+
+  (useDispatch as jest.Mock).mockImplementation(() => jest.fn());
+  (getUrl.getLanguageInfo as jest.Mock).mockImplementation(() => "EN");
+
+  render(<Amount {...defaultProps} />);
+  
+  fireEvent.change(screen.getByLabelText(/Loan Amount/i), {
+    target: { value: "15000" },
+  });
+
+  expect(screen.queryByText(errorMsg.loanAmount)).not.toBeInTheDocument();
+});
+
+Explanation:
+
+Mocking useDispatch and useSelector: The store is mocked to return necessary values for fieldError, stages, and other necessary properties.
+
+Rendering: The Amount component is rendered with different props.
+
+Event Firing: Simulated input changes using fireEvent.change to test how the component handles various scenarios.
+
+Assertions: Verifying the presence or absence of error messages based on the input provided.
+
+
+This pattern can be followed to write additional test cases, ensuring different scenarios are covered, like different field types or validation conditions.
+
+
