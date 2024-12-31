@@ -1,0 +1,237 @@
+useEffect(() => {
+    if (error == "") {
+      dispatch(ContinueBtnAction.getContinueEnableState(false));
+    } else {
+      dispatch(ContinueBtnAction.getContinueEnableState(true));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps  
+  }, [error, madatoryFieldSelector, dispatch])
+
+  const changeHandler = (fieldName: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    setDefaultValue(event.target.value);
+    setError('');
+    if ((props.data.mandatory === "Yes" || props.data.mandatory === "Conditional") && event.target.value.length < 1) {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.emity : language === CONSTANTS.LANG_CN ? errorMsg.emity_CN : errorMsg.emity_HK}${props.data.rwb_label_name}`);
+      dispatch(
+        fieldErrorAction.getFieldError({
+        fieldName: props.data.logical_field_name,
+      }));
+    }
+    if(fieldName === "requested_loan_amount") {
+      if(event.target.value === " " || event.target.value === null || event.target.value === "") {
+        setError(`${language === CONSTANTS.LANG_EN ? props?.data?.rwb_label_name : language === CONSTANTS.LANG_CN ? errorMsg.required_mandatory_CN + props?.data?.rwb_label_name : errorMsg.required_mandatory_HK + props?.data?.rwb_label_name}`);
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+      else {
+        if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
+          setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' digits' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
+          dispatch(
+            fieldErrorAction.getFieldError({
+            fieldName: props.data.logical_field_name,
+          }));
+        }
+        else if (Number(event.target.value) < 5000 || Number(event.target.value) > 2000000) {
+          setError(`${language === CONSTANTS.LANG_EN ? errorMsg.loanAmount : language === CONSTANTS.LANG_CN ? errorMsg.loanAmount_CN : errorMsg.loanAmount_HK}`);
+          dispatch(
+            fieldErrorAction.getFieldError({
+            fieldName: props.data.logical_field_name,
+          }));
+        }
+        else if ((Number(event.target.value) / 1000) % 1 !== 0) {
+          setError(`${language === CONSTANTS.LANG_EN ? errorMsg.loanAmountMin : language === CONSTANTS.LANG_CN ? errorMsg.loanAmountMin_CN : errorMsg.loanAmountMin_HK}`);
+          dispatch(
+            fieldErrorAction.getFieldError({
+            fieldName: props.data.logical_field_name,
+          }));
+          // return
+        }
+        else {
+          dispatch(
+            fieldErrorAction.removeFieldError({
+            fieldName: props.data.logical_field_name,
+          }));
+  
+        }
+      }
+    }
+    if (fieldName === "monthly_installment_mortgage_payment") {
+      if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' characters' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+    }
+    if (fieldName === "total_outstanding_other_loan_amount") {
+      if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' characters' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+    }
+    if (fieldName === "total_outstanding_other_monthly_payment") {
+      if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' characters' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+    }
+    else if (fieldName === 'annual_income_pl') {
+      if ((Number(event.target.value) === 0)) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.annualIncomePlValid : language === CONSTANTS.LANG_CN ? errorMsg.annualIncomePlValid_CN : errorMsg.annualIncomePlValid_HK}`);
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+      if (!(Number(event.target.value) >= 96000)) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.annualIncomePl : language === CONSTANTS.LANG_CN ? errorMsg.annualIncomePl_CN : errorMsg.annualIncomePl_HK}`);
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+    }
+    
+    else if (fieldName === "total_outstanding_other_loan_amount") {
+      if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' characters' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+    }
+    else if (fieldName === "total_outstanding_other_monthly_payment") {
+      if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' characters' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
+        dispatch(
+          fieldErrorAction.getFieldError({
+          fieldName: props.data.logical_field_name,
+        }));
+      }
+    }
+    props.handleCallback(props.data, event.target.value);
+  };
+
+  const allowOnlyCharacter = (event: any, fieldName: string) => {
+    validateService.allowOnlyCharacter(event, fieldName);
+  };
+
+  const bindHandler = (fieldName: string, event: any) => {
+    // setError('')
+    if (event.target.validity.valid) {
+      const fieldValue = event.target.value;
+      dispatch(isFieldUpdate(props, fieldValue, fieldName));
+      dispatch(isFieldValueUpdate(props, stageSelector, fieldValue));
+    }
+  };
+
+
+
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+ jest.mock("../../../utils/common/change.utils", () => ({
+    getUrl: {
+      getLanguageInfo: jest.fn(),
+    },
+    fieldIdAppend:jest.fn(),
+    fieldError:jest.fn(),
+  }));
+
+describe('Amount Test Cases', () => {
+  let store:any;
+  const mockHandleCallback = jest.fn();
+  
+  const defaultProps = {
+    data: {
+      logical_field_name: 'requested_loan_amount',
+      rwb_label_name: 'Loan Amount',
+      mandatory: 'Yes',
+      min_length: 24,
+      length: 8,
+      regex: '^[0-9]*$',
+      editable: false
+    },
+    handleCallback: mockHandleCallback
+  };
+
+  const initialState = {
+    lov: {
+      lov: []
+    },
+    stages: {
+      stages: [{
+        stageInfo: {
+          applicants: [{}]
+        }
+      }],
+      userInput: {
+        applicants: [{
+          other_loans: 'Y'
+        }]
+      }
+    },
+    fielderror: {
+      error: []
+    }
+  };
+  
+  it("first test",()=>{
+    (useDispatch as jest.Mock).mockImplementation(()=>jest.fn());
+    (getUrl.getLanguageInfo as jest.Mock).mockImplementation(()=>"EN");
+    
+  (useSelector as jest.Mock).mockImplementation((selectorFn)=>{
+    if (selectorFn.toString().includes('state.stages.userInput')){
+      return {
+        "applicants":[{other_loans: "120", 
+        'requested_loan_amount': 20000,
+        rwb_label_name: 'Loan Amount',
+        mandatory: 'Yes',
+        min_length: "Please enter at least",
+        length: 8,
+        regex: '^[0-9]*$',
+        editable: false}],
+      };
+  }
+
+  if (selectorFn.toString().includes('state.fielderror.error')){
+    return{
+      'requested_loan_amount': 0,
+    }
+  }
+
+    if (selectorFn.toString().includes('state.stages.stages')){
+      return [{
+        "stageId": "bd-2",
+        "stageInfo": {
+          "applicants":[{max_eligible_amount:"1000", 'requested_loan_amount_a_1': 20000,}],
+          "application": {
+            "source_system_name": 3
+          },
+          "products":[{product_type:"PL"}]
+        }
+      }];
+  }
+  if (selectorFn.toString().includes('state.lov')){
+      return {lov:[{
+          "label":"requested_loan_amount",
+      }]};
+  }
+  });
+  render(<Amount {...defaultProps} />);
+      // screen.debug()
+      expect(screen.getByText(/loan amount/i)).toBeInTheDocument();
+})
+  });
