@@ -119,3 +119,88 @@ describe('rulesUtils Function', () => {
         ]);
     });
 });
+
+
+
+
+
+
+
+
+
+import rulesUtils from '../rulesUtils'; // Update path as necessary
+import { FieldsetModel, KeyWithAnyModel } from '../../utils/model/common-model';
+
+describe('rulesUtils Function', () => {
+    const mockValidationObj = {
+        nonEditable: [
+            ['logical_field_1', 'logical_field_2']
+        ]
+    };
+
+    const mockProps: Array<Array<FieldsetModel>> = [
+        [
+            {
+                fields: [
+                    { logical_field_name: 'logical_field_1', value: 'value1' },
+                    { logical_field_name: 'logical_field_2', value: 'value2' },
+                    { logical_field_name: 'office_phone_number', value: '12345' },
+                    { logical_field_name: 'place_of_birth', value: 'USA' },
+                    { logical_field_name: 'monthly_installment_mortgage_payment', value: '1000' },
+                ]
+            }
+        ]
+    ];
+
+    it('should set "editable" to true for nonEditable fields', () => {
+        const result = rulesUtils(mockProps, mockValidationObj);
+        expect(result[0].fields[0].editable).toBe(true); // logical_field_1
+        expect(result[0].fields[1].editable).toBe(true); // logical_field_2
+    });
+
+    it('should set default_visibility to null for default_visibility_no_field', () => {
+        const result = rulesUtils(mockProps, mockValidationObj);
+        const field = result[0].fields.find(
+            (field) => field.logical_field_name === 'monthly_installment_mortgage_payment'
+        );
+        expect(field.default_visibility).toBeNull();
+    });
+
+    it('should set mandatory to "Yes" for mandatoryField', () => {
+        const result = rulesUtils(mockProps, mockValidationObj);
+        const field = result[0].fields.find(
+            (field) => field.logical_field_name === 'office_phone_number'
+        );
+        expect(field.mandatory).toBe('Yes');
+    });
+
+    it('should set default_visibility to "No" for hiddenFields', () => {
+        const result = rulesUtils(mockProps, mockValidationObj);
+        const field = result[0].fields.find(
+            (field) => field.logical_field_name === 'place_of_birth'
+        );
+        expect(field.default_visibility).toBe('No');
+    });
+
+    it('should filter out fields with default_visibility set to "No"', () => {
+        const result = rulesUtils(mockProps, mockValidationObj);
+        const filteredFields = result[0].fields.filter(
+            (field) => field.default_visibility === 'No'
+        );
+        expect(filteredFields.length).toBe(0); // No fields with default_visibility='No'
+    });
+
+    it('should return updated fields array with correct modifications', () => {
+        const result = rulesUtils(mockProps, mockValidationObj);
+        expect(result).toEqual([
+            {
+                fields: [
+                    { logical_field_name: 'logical_field_1', value: 'value1', editable: true },
+                    { logical_field_name: 'logical_field_2', value: 'value2', editable: true },
+                    { logical_field_name: 'office_phone_number', value: '12345', mandatory: 'Yes' },
+                    { logical_field_name: 'monthly_installment_mortgage_payment', value: '1000', default_visibility: null, mandatory: 'Yes' },
+                ]
+            }
+        ]);
+    });
+});
