@@ -260,3 +260,196 @@ describe("fields.utils", () => {
     });
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+To maximize test coverage for the utility functions in the fields.utils module, we need to test all edge cases, branches, and scenarios for each function. Here's how you can improve your test cases and increase the coverage:
+
+Steps to Maximize Coverage
+
+1. Test All Conditional Branches
+Ensure every if, else, and switch statement is tested.
+
+
+2. Test Edge Cases
+Provide inputs with unexpected or extreme values to see how functions behave.
+
+
+3. Test Error Scenarios
+Mock errors for asynchronous functions and verify error handling.
+
+
+4. Test Default Behaviors
+Check what happens when optional parameters or undefined inputs are passed.
+
+
+5. Increase Mock Verification
+Validate the number of times mocks are called and with what arguments.
+
+
+
+Additional Tests
+
+Below is an enhanced version of test cases for better coverage:
+
+
+---
+
+stageFields
+
+it("should handle missing fieldMetaData gracefully", () => {
+  const invalidStageSelector = [
+    { stageId: "bd-1", stageInfo: {} },
+  ];
+  const result = stageFields(invalidStageSelector, "bd-1");
+  expect(result).toEqual({ fields: undefined });
+});
+
+it("should return undefined fields for an unmatched stageId", () => {
+  const result = stageFields(mockStageSelector, "invalid-id");
+  expect(result).toEqual({ fields: undefined });
+});
+
+
+---
+
+stageSelectFields
+
+it("should handle empty stages gracefully", () => {
+  const mockStageSelector = [
+    { stageId: "bd-1", stageInfo: { fieldMetaData: { data: { stages: [] } } } },
+  ];
+  const result = stageSelectFields(mockStageSelector, "bd-1");
+  expect(result).toEqual({ fields: undefined });
+});
+
+it("should handle missing fieldMetaData", () => {
+  const mockStageSelector = [{ stageId: "bd-1", stageInfo: {} }];
+  const result = stageSelectFields(mockStageSelector, "bd-1");
+  expect(result).toEqual({ fields: undefined });
+});
+
+
+---
+
+userInputPayload
+
+it("should dispatch resetCurrentStage if applicantsSelector is empty", () => {
+  const mockDispatch = jest.fn();
+  const emptyApplicantsSelector = {};
+  const action = userInputPayload(emptyApplicantsSelector, mockStageSelector);
+  action(mockDispatch);
+
+  expect(mockDispatch).toHaveBeenCalledWith(stagesAction.resetCurrentStage());
+});
+
+it("should handle missing applicants in stageSelector", () => {
+  const mockStageSelector = [{ stageId: "bd-1", stageInfo: {} }];
+  const mockDispatch = jest.fn();
+  const action = userInputPayload(mockApplicantsSelector, mockStageSelector);
+  action(mockDispatch);
+
+  expect(mockDispatch).not.toHaveBeenCalledWith(stagesAction.updateStageFields());
+});
+
+
+---
+
+submitRequest
+
+it("should handle missing stageId in valueSelector gracefully", async () => {
+  const invalidValueSelector = { changesUpdate: { changes: true } };
+  const action = submitRequest(
+    mockApplicantsSelector,
+    mockStageSelector,
+    invalidValueSelector,
+    mockLovSelector,
+    "journey",
+    mockUserInputSelector,
+    {},
+    {},
+    false
+  );
+  await action(mockDispatch);
+
+  expect(mockDispatch).not.toHaveBeenCalled();
+});
+
+
+---
+
+fieldGroupingFunc
+
+it("should not modify prev if index is invalid and no field_set_name", () => {
+  const prev = [];
+  fieldGroupingFunc(-1, prev, undefined, { item: "value" });
+
+  expect(prev).toEqual([]);
+});
+
+
+---
+
+compareStageRequest
+
+it("should return true if both inputs are empty", () => {
+  const result = compareStageRequest({}, {});
+  expect(result).toBe(true);
+});
+
+it("should return false for mismatched nested objects", () => {
+  const mockStageSelectorApplicants = { field1: { subfield: "value1" } };
+  const mockUserInputSelectorApplicants = { field1: { subfield: "value2" } };
+
+  const result = compareStageRequest(
+    mockStageSelectorApplicants,
+    mockUserInputSelectorApplicants
+  );
+  expect(result).toBe(false);
+});
+
+
+---
+
+Suggestions to Boost Coverage
+
+1. Use Code Coverage Reports:
+Run tests with coverage flags (jest --coverage) to identify untested lines.
+
+
+2. Refactor for Testability:
+If some logic isn't testable, consider refactoring the code for better separation of concerns.
+
+
+3. Mock All Dependencies:
+Ensure all dependencies are properly mocked, especially for asynchronous operations.
+
+
+
+Implement these additional cases and recheck the coverage report; it should approach 90–100%. Let me know if you need help with specific areas!
+
