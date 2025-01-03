@@ -1,193 +1,29 @@
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { fieldError, fieldIdAppend, getUrl, isFieldUpdate, isFieldValueUpdate } from "../../../utils/common/change.utils";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import errorMsg from "../../../assets/_json/error.json";
-import { CONSTANTS } from "../../../utils/common/constants";
-import './number.scss'
-import { lastAction } from "../../../utils/store/last-accessed-slice";
-
-const Number = (props: KeyWithAnyModel) => {
-  const [error, setError] = useState('');
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const dispatch = useDispatch();
-  const [defaultValue, setDefaultValue] = useState("");
-  let propsData = props && props.data;
-  const [placeholder, setPlaceHolder] = useState(propsData && props.data.rwb_label_name)
-  const language = getUrl && getUrl.getLanguageInfo("lang")
-  const userInputSelector = useSelector((state: StoreModel) => state.stages.userInput);
-
-  const fieldErrorSelector = useSelector(
-    (state: StoreModel) => state.fielderror.error
-  );
-
-  useEffect(() => {
-    if (fieldError(fieldErrorSelector, props)) {
-      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.emity : language === CONSTANTS.LANG_CN ? errorMsg.emity_CN : errorMsg.emity_HK}${props.data.rwb_label_name}`);
-    } else {
-      setError('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldErrorSelector]);
-
-  useEffect(() => {
-    const number = userInputSelector.applicants[0][props?.data?.logical_field_name];
-    setDefaultValue(number);
-    // if (stageSelector && stageSelector[0] && stageSelector[0].stageInfo && stageSelector[0].stageInfo.applicants[0]) {
-    //   // if (stageSelector[0].stageInfo.applicants[0][props.data.logical_field_name]) {
-    //     const number = stageSelector[0].stageInfo.applicants[0][props.data.logical_field_name];
-    //     setDefaultValue(number);
-    //   // }
-    // }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (propsData && props.data.logical_field_name === 'account_number_type_1') {
-      setPlaceHolder('eg. 8446 2196 1234 1234')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps  
-  }, [])
-
-  const changeHandler = (fieldName: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    setDefaultValue(event.target.value);
-    props.handleCallback(props.data, event.target.value);
-    props.handleFieldDispatch(props.data, event.target.value);
-    setError('');
-    if ((props.data.mandatory === "Yes" || props.data.mandatory === "Conditional") && event.target.value.length <= 0) {
-      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.emity : language === CONSTANTS.LANG_CN ? errorMsg.emity_CN : errorMsg.emity_HK}${props.data.rwb_label_name}`);
-    }
-    else if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
-      if (fieldName === 'account_number_type_1') {
-        setError(`${language === CONSTANTS.LANG_EN ? (errorMsg.patternsBank + props.data.rwb_label_name) : language === CONSTANTS.LANG_CN ? errorMsg.patternsBank_CN : errorMsg.patternsBank_HK}`)
-      } else {
-        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' digits' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
-      }
-    }
-    else {
-      if (fieldName === 'account_number_type_1') {
-        setError(!event.target.validity.valid ? (`${language === CONSTANTS.LANG_EN ? (errorMsg.patternsBank + props.data.rwb_label_name) : language === CONSTANTS.LANG_CN ? errorMsg.patternsBank_CN : errorMsg.patternsBank_HK}`) : '')
-      } else if(fieldName === 'indicative_income') {
-        setError(!event.target.validity.valid ? (`${language === CONSTANTS.LANG_EN ? (errorMsg.salaryIncome) : language === CONSTANTS.LANG_CN ? errorMsg.salaryIncome_CN : errorMsg.salaryIncome_HK}`) : '')
-      } else {
-        setError(!event.target.validity.valid ? (`${language === CONSTANTS.LANG_EN ? errorMsg.patterns : language === CONSTANTS.LANG_CN ? errorMsg.patterns_CN : errorMsg.patterns_HK}${props.data.rwb_label_name}`) : '');
-      }
-    }
-  };
-
-  const bindHandler = (fieldName: string, event: any) => {
-    if (event.target.validity.valid) {
-      const fieldValue = event.target.value;
-      dispatch(isFieldUpdate(props, fieldValue, fieldName));
-      dispatch(isFieldValueUpdate(props, stageSelector, fieldValue));
-    }
-  };
-
-  const focusHandler = (fieldName: string, event: React.FocusEvent<HTMLInputElement>) => {
-    dispatch(lastAction.getField(fieldName));
-  };
-
-  return (
-    <>{propsData && (
-      <div className="text">
-        <label htmlFor={props.data.logical_field_name}>
-          {props.data.rwb_label_name}
-        </label>
-        <input data-testid="change"
-          type={props.data.logical_field_name === 'indicative_income' ? 'tel' : props.data.type}
-          name={props.data.logical_field_name}
-          aria-label={props.data.logical_field_name}
-          id={fieldIdAppend(props)}
-          placeholder={placeholder}
-          value={defaultValue}
-          minLength={props.data.min_length}
-          maxLength={props.data.length}
-          // required={
-          //   props.data.mandatory === "Yes" || "Conditional" ? true : false
-          // }
-          pattern={props.data.regex}
-          onChange={changeHandler.bind(this, props.data.logical_field_name)}
-          onBlur={bindHandler.bind(this, props.data.logical_field_name)}
-          onFocus={focusHandler.bind(this, props.data.logical_field_name)}
-          className={error && 'input-error'}
-          autoComplete="off"
-        />
-      </div>)}
-      {error && (
-        <span className="error-msg">
-          {error}
-        </span>
-      )}
-    </>
-  );
-};
-
-export default Number;
-
-
-
-
-
-
-
-Below are sample test cases for the Number component. These test cases use Jest and React Testing Library. They cover various aspects of the component's behavior, including rendering, interaction, and validation.
+yHere are additional test cases you can add to ensure the Number component is well-tested:
 
 
 ---
 
-Test Cases for Number Component
+1. Test: Renders the Component with Default Props
 
-1. Render Component
+This test checks if the component renders properly even when no props are passed.
 
-import { render, screen } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
-import Number from "./Number";
-
-const mockStore = configureStore([]);
-const mockProps = {
-  data: {
-    rwb_label_name: "Account Number",
-    logical_field_name: "account_number_type_1",
-    type: "text",
-    min_length: 5,
-    mandatory: "Yes",
-    regex: "\\d+",
-  },
-  handleCallback: jest.fn(),
-  handleFieldDispatch: jest.fn(),
-};
-
-describe("Number Component", () => {
-  let store;
-
-  beforeEach(() => {
-    store = mockStore({
-      stages: {
-        stages: [],
-        userInput: { applicants: [{ account_number_type_1: "12345" }] },
-      },
-      fielderror: { error: [] },
-    });
-  });
-
-  it("renders without crashing", () => {
-    render(
-      <Provider store={store}>
-        <Number {...mockProps} />
-      </Provider>
-    );
-
-    expect(screen.getByLabelText("Account Number")).toBeInTheDocument();
-  });
+it("renders correctly with default props", () => {
+  render(
+    <Provider store={store}>
+      <Number />
+    </Provider>
+  );
+  expect(screen.getByRole("textbox")).toBeInTheDocument();
 });
 
 
 ---
 
-2. Display Placeholder
+2. Test: Handles Mandatory Fields Validation
 
-it("displays the correct placeholder", () => {
+This test ensures that the component validates mandatory fields correctly.
+
+it("shows an error when a mandatory field is left empty", () => {
   render(
     <Provider store={store}>
       <Number {...mockProps} />
@@ -195,260 +31,116 @@ it("displays the correct placeholder", () => {
   );
 
   const input = screen.getByPlaceholderText("eg. 8446 2196 1234 1234");
-  expect(input).toBeInTheDocument();
-});
+  fireEvent.change(input, { target: { value: "" } }); // Simulate clearing the input
+  fireEvent.blur(input); // Simulate losing focus
 
-
----
-
-3. Set Default Value
-
-it("sets the default value from the selector", () => {
-  render(
-    <Provider store={store}>
-      <Number {...mockProps} />
-    </Provider>
-  );
-
-  const input = screen.getByLabelText("Account Number");
-  expect(input).toHaveValue("12345");
-});
-
-
----
-
-4. Handle Input Change
-
-it("calls the handleCallback and handleFieldDispatch on input change", () => {
-  render(
-    <Provider store={store}>
-      <Number {...mockProps} />
-    </Provider>
-  );
-
-  const input = screen.getByLabelText("Account Number");
-  input.value = "67890";
-  input.dispatchEvent(new Event("input"));
-
-  expect(mockProps.handleCallback).toHaveBeenCalledWith(
-    mockProps.data,
-    "67890"
-  );
   expect(mockProps.handleFieldDispatch).toHaveBeenCalledWith(
-    mockProps.data,
-    "67890"
+    expect.objectContaining({
+      error: "This field is mandatory",
+    })
   );
 });
 
 
 ---
 
-5. Display Error for Empty Input
+3. Test: Handles Regex Validation
 
-it("displays an error if input is empty when mandatory", () => {
+This test ensures that invalid input values are not accepted.
+
+it("validates input against the regex pattern", () => {
   render(
     <Provider store={store}>
       <Number {...mockProps} />
     </Provider>
   );
 
-  const input = screen.getByLabelText("Account Number");
-  input.value = "";
-  input.dispatchEvent(new Event("input"));
+  const input = screen.getByPlaceholderText("eg. 8446 2196 1234 1234");
+  fireEvent.change(input, { target: { value: "abc123" } }); // Invalid value
+  fireEvent.blur(input);
 
-  const error = screen.getByText("Account Number is required");
-  expect(error).toBeInTheDocument();
+  expect(mockProps.handleFieldDispatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      error: "Invalid input format",
+    })
+  );
 });
 
 
 ---
 
-6. Validate Minimum Length
+4. Test: Handles Callback Execution
 
-it("displays an error if input length is less than min_length", () => {
+This test ensures that handleCallback is called with the correct arguments when the input value changes.
+
+it("calls handleCallback when the value changes", () => {
   render(
     <Provider store={store}>
       <Number {...mockProps} />
     </Provider>
   );
 
-  const input = screen.getByLabelText("Account Number");
-  input.value = "12";
-  input.dispatchEvent(new Event("input"));
+  const input = screen.getByPlaceholderText("eg. 8446 2196 1234 1234");
+  fireEvent.change(input, { target: { value: "67890" } });
 
-  const error = screen.getByText("Minimum 5 digits required");
-  expect(error).toBeInTheDocument();
-});
-
-
----
-
-7. Validate Pattern
-
-it("displays an error if input does not match regex pattern", () => {
-  render(
-    <Provider store={store}>
-      <Number {...mockProps} />
-    </Provider>
-  );
-
-  const input = screen.getByLabelText("Account Number");
-  input.value = "abc123";
-  input.dispatchEvent(new Event("input"));
-
-  const error = screen.getByText("Invalid Account Number format");
-  expect(error).toBeInTheDocument();
-});
-
-
----
-
-8. Dispatch Field Updates
-
-it("dispatches field update actions on blur", () => {
-  render(
-    <Provider store={store}>
-      <Number {...mockProps} />
-    </Provider>
-  );
-
-  const input = screen.getByLabelText("Account Number");
-  input.value = "67890";
-  input.dispatchEvent(new Event("blur"));
-
-  expect(store.getActions()).toContainEqual({
-    type: "FIELD_UPDATE",
-    payload: { field: "account_number_type_1", value: "67890" },
-  });
-});
-
-
----
-
-Notes
-
-Mock the store with redux-mock-store to simulate the Redux state and actions.
-
-Validate different input scenarios to ensure robust error handling.
-
-Test edge cases like empty input, invalid regex patterns, and mandatory fields.
-
-Mock handleCallback, handleFieldDispatch, and other props to verify their execution.
-
-
-These test cases provide a comprehensive check for the Number component. Let me know if you need help refining any specific scenario!
-
-
-
-
-
-
-
-
-
-
-import { fireEvent, render, screen } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
-import Number from "./number";
-import { ShallowWrapper, shallow } from "enzyme";
-import { store } from "../../../utils/store/store";
-
-  let wrapper: ShallowWrapper;
-
-  beforeEach(() => {
-    wrapper = shallow(
-      <Provider store={store}>
-        <Number />
-      </Provider>
-    );
-  });
-
-const mockStore = configureStore([]);
-const mockProps = {
-  data: {
-    rwb_label_name: "Account Number",
+  expect(mockProps.handleCallback).toHaveBeenCalledWith({
     logical_field_name: "account_number_type_1",
-    type: "text",
-    min_length: 5,
-    mandatory: "Yes",
-    regex: "\\d+",
-  },
-  handleCallback: jest.fn(),
-  handleFieldDispatch: jest.fn(),
-};
-
-describe("Number Component", () => {
-  let store: any;
-
-  beforeEach(() => {
-    store = mockStore({
-      stages: {
-        stages: [],
-        userInput: { applicants: [{ account_number_type_1: "12345" }] },
-      },
-      fielderror: { error: [] },
-    });
+    value: "67890",
   });
-
-  it("renders without crashing", () => {
-    render(
-      <Provider store={store}>
-        <Number {...mockProps} />
-      </Provider>
-    );
-      const input = screen.getByText("Account Number")
-    expect(input).toBeInTheDocument();
-  });
-
-  it("displays the correct placeholder", () => {
-    render(
-      <Provider store={store}>
-        <Number {...mockProps} />
-      </Provider>
-    );
-  
-    const input = screen.getByPlaceholderText("eg. 8446 2196 1234 1234");
-    expect(input).toBeInTheDocument();
-  });
-
-  it("sets the default value from the selector", () => {
-    render(
-      <Provider store={store}>
-        <Number {...mockProps} />
-      </Provider>
-    );
-  
-    const input = screen.getByLabelText("Account Number");
-    expect(input).toHaveValue("12345");
-  });
-  
-   test("Should render correctly", () => {
-        render(
-          <Provider store={store}>
-            <Number />
-          </Provider>
-        );
-        expect(wrapper.length).toEqual(1);
-        expect(wrapper.find(Number)).toHaveLength(1);
-      });
-    
-      test("changeHandler function is called", () => {
-        const mockOnchange = jest.fn();
-        const {getByTestId} = render(<Provider store={store}><Number onChange={mockOnchange}/></Provider>);
-        const realInput = getByTestId('change');
-        // const inputElementOne = getByTestId('change-one');
-    
-        fireEvent.change(realInput, {target:{value:'42'}});
-        // fireEvent.change(inputElementOne, {target:{value:"62"}});
-        // expect(mockOnchange).toHaveBeenCalledWith({real :42, imaginary:62});
-        expect(realInput.nodeValue).toBe('42');
-    
-        const {queryByTestId} = render(<Provider store={store}><Number /></Provider>);
-    const missingElement = queryByTestId('change');
-    expect(missingElement).toBeFalsy();
-       })
-
-
-       
 });
+
+
+---
+
+5. Test: Displays Error from Redux Store
+
+This test ensures that errors from the Redux store are displayed correctly.
+
+beforeEach(() => {
+  store = mockStore({
+    stages: {
+      stages: [],
+      userInput: { applicants: [{ account_number_type_1: "12345" }] },
+    },
+    fielderror: { error: [{ field: "account_number_type_1", message: "Invalid account number" }] },
+  });
+});
+
+it("displays an error from the store", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const errorMessage = screen.getByText("Invalid account number");
+  expect(errorMessage).toBeInTheDocument();
+});
+
+
+---
+
+6. Test: Renders Minimum Length Attribute
+
+This test ensures that the min_length prop is correctly rendered in the input element.
+
+it("renders the correct minimum length attribute", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByPlaceholderText("eg. 8446 2196 1234 1234");
+  expect(input).toHaveAttribute("minlength", "5");
+});
+
+
+---
+
+7. Test: Simulates Blur Event
+
+This test checks if the blur event triggers the required behavior.
+
+it
+
