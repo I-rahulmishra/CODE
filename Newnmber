@@ -339,3 +339,116 @@ Mock handleCallback, handleFieldDispatch, and other props to verify their execut
 These test cases provide a comprehensive check for the Number component. Let me know if you need help refining any specific scenario!
 
 
+
+
+
+
+
+
+
+
+import { fireEvent, render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import Number from "./number";
+import { ShallowWrapper, shallow } from "enzyme";
+import { store } from "../../../utils/store/store";
+
+  let wrapper: ShallowWrapper;
+
+  beforeEach(() => {
+    wrapper = shallow(
+      <Provider store={store}>
+        <Number />
+      </Provider>
+    );
+  });
+
+const mockStore = configureStore([]);
+const mockProps = {
+  data: {
+    rwb_label_name: "Account Number",
+    logical_field_name: "account_number_type_1",
+    type: "text",
+    min_length: 5,
+    mandatory: "Yes",
+    regex: "\\d+",
+  },
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+describe("Number Component", () => {
+  let store: any;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [],
+        userInput: { applicants: [{ account_number_type_1: "12345" }] },
+      },
+      fielderror: { error: [] },
+    });
+  });
+
+  it("renders without crashing", () => {
+    render(
+      <Provider store={store}>
+        <Number {...mockProps} />
+      </Provider>
+    );
+      const input = screen.getByText("Account Number")
+    expect(input).toBeInTheDocument();
+  });
+
+  it("displays the correct placeholder", () => {
+    render(
+      <Provider store={store}>
+        <Number {...mockProps} />
+      </Provider>
+    );
+  
+    const input = screen.getByPlaceholderText("eg. 8446 2196 1234 1234");
+    expect(input).toBeInTheDocument();
+  });
+
+  it("sets the default value from the selector", () => {
+    render(
+      <Provider store={store}>
+        <Number {...mockProps} />
+      </Provider>
+    );
+  
+    const input = screen.getByLabelText("Account Number");
+    expect(input).toHaveValue("12345");
+  });
+  
+   test("Should render correctly", () => {
+        render(
+          <Provider store={store}>
+            <Number />
+          </Provider>
+        );
+        expect(wrapper.length).toEqual(1);
+        expect(wrapper.find(Number)).toHaveLength(1);
+      });
+    
+      test("changeHandler function is called", () => {
+        const mockOnchange = jest.fn();
+        const {getByTestId} = render(<Provider store={store}><Number onChange={mockOnchange}/></Provider>);
+        const realInput = getByTestId('change');
+        // const inputElementOne = getByTestId('change-one');
+    
+        fireEvent.change(realInput, {target:{value:'42'}});
+        // fireEvent.change(inputElementOne, {target:{value:"62"}});
+        // expect(mockOnchange).toHaveBeenCalledWith({real :42, imaginary:62});
+        expect(realInput.nodeValue).toBe('42');
+    
+        const {queryByTestId} = render(<Provider store={store}><Number /></Provider>);
+    const missingElement = queryByTestId('change');
+    expect(missingElement).toBeFalsy();
+       })
+
+
+       
+});
