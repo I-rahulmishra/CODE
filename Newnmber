@@ -1,0 +1,125 @@
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fieldError, fieldIdAppend, getUrl, isFieldUpdate, isFieldValueUpdate } from "../../../utils/common/change.utils";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import errorMsg from "../../../assets/_json/error.json";
+import { CONSTANTS } from "../../../utils/common/constants";
+import './number.scss'
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+
+const Number = (props: KeyWithAnyModel) => {
+  const [error, setError] = useState('');
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const dispatch = useDispatch();
+  const [defaultValue, setDefaultValue] = useState("");
+  let propsData = props && props.data;
+  const [placeholder, setPlaceHolder] = useState(propsData && props.data.rwb_label_name)
+  const language = getUrl && getUrl.getLanguageInfo("lang")
+  const userInputSelector = useSelector((state: StoreModel) => state.stages.userInput);
+
+  const fieldErrorSelector = useSelector(
+    (state: StoreModel) => state.fielderror.error
+  );
+
+  useEffect(() => {
+    if (fieldError(fieldErrorSelector, props)) {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.emity : language === CONSTANTS.LANG_CN ? errorMsg.emity_CN : errorMsg.emity_HK}${props.data.rwb_label_name}`);
+    } else {
+      setError('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldErrorSelector]);
+
+  useEffect(() => {
+    const number = userInputSelector.applicants[0][props?.data?.logical_field_name];
+    setDefaultValue(number);
+    // if (stageSelector && stageSelector[0] && stageSelector[0].stageInfo && stageSelector[0].stageInfo.applicants[0]) {
+    //   // if (stageSelector[0].stageInfo.applicants[0][props.data.logical_field_name]) {
+    //     const number = stageSelector[0].stageInfo.applicants[0][props.data.logical_field_name];
+    //     setDefaultValue(number);
+    //   // }
+    // }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (propsData && props.data.logical_field_name === 'account_number_type_1') {
+      setPlaceHolder('eg. 8446 2196 1234 1234')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps  
+  }, [])
+
+  const changeHandler = (fieldName: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    setDefaultValue(event.target.value);
+    props.handleCallback(props.data, event.target.value);
+    props.handleFieldDispatch(props.data, event.target.value);
+    setError('');
+    if ((props.data.mandatory === "Yes" || props.data.mandatory === "Conditional") && event.target.value.length <= 0) {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.emity : language === CONSTANTS.LANG_CN ? errorMsg.emity_CN : errorMsg.emity_HK}${props.data.rwb_label_name}`);
+    }
+    else if (props.data.min_length && `${event.target.value}`.length < props.data.min_length) {
+      if (fieldName === 'account_number_type_1') {
+        setError(`${language === CONSTANTS.LANG_EN ? (errorMsg.patternsBank + props.data.rwb_label_name) : language === CONSTANTS.LANG_CN ? errorMsg.patternsBank_CN : errorMsg.patternsBank_HK}`)
+      } else {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.minLength + ' ' + props.data.min_length + ' digits' : language === CONSTANTS.LANG_CN ? errorMsg.minLength_CN + props.data.min_length + '位数字' : errorMsg.minLength_HK + props.data.min_length + '位數字'}`)
+      }
+    }
+    else {
+      if (fieldName === 'account_number_type_1') {
+        setError(!event.target.validity.valid ? (`${language === CONSTANTS.LANG_EN ? (errorMsg.patternsBank + props.data.rwb_label_name) : language === CONSTANTS.LANG_CN ? errorMsg.patternsBank_CN : errorMsg.patternsBank_HK}`) : '')
+      } else if(fieldName === 'indicative_income') {
+        setError(!event.target.validity.valid ? (`${language === CONSTANTS.LANG_EN ? (errorMsg.salaryIncome) : language === CONSTANTS.LANG_CN ? errorMsg.salaryIncome_CN : errorMsg.salaryIncome_HK}`) : '')
+      } else {
+        setError(!event.target.validity.valid ? (`${language === CONSTANTS.LANG_EN ? errorMsg.patterns : language === CONSTANTS.LANG_CN ? errorMsg.patterns_CN : errorMsg.patterns_HK}${props.data.rwb_label_name}`) : '');
+      }
+    }
+  };
+
+  const bindHandler = (fieldName: string, event: any) => {
+    if (event.target.validity.valid) {
+      const fieldValue = event.target.value;
+      dispatch(isFieldUpdate(props, fieldValue, fieldName));
+      dispatch(isFieldValueUpdate(props, stageSelector, fieldValue));
+    }
+  };
+
+  const focusHandler = (fieldName: string, event: React.FocusEvent<HTMLInputElement>) => {
+    dispatch(lastAction.getField(fieldName));
+  };
+
+  return (
+    <>{propsData && (
+      <div className="text">
+        <label htmlFor={props.data.logical_field_name}>
+          {props.data.rwb_label_name}
+        </label>
+        <input data-testid="change"
+          type={props.data.logical_field_name === 'indicative_income' ? 'tel' : props.data.type}
+          name={props.data.logical_field_name}
+          aria-label={props.data.logical_field_name}
+          id={fieldIdAppend(props)}
+          placeholder={placeholder}
+          value={defaultValue}
+          minLength={props.data.min_length}
+          maxLength={props.data.length}
+          // required={
+          //   props.data.mandatory === "Yes" || "Conditional" ? true : false
+          // }
+          pattern={props.data.regex}
+          onChange={changeHandler.bind(this, props.data.logical_field_name)}
+          onBlur={bindHandler.bind(this, props.data.logical_field_name)}
+          onFocus={focusHandler.bind(this, props.data.logical_field_name)}
+          className={error && 'input-error'}
+          autoComplete="off"
+        />
+      </div>)}
+      {error && (
+        <span className="error-msg">
+          {error}
+        </span>
+      )}
+    </>
+  );
+};
+
+export default Number;
