@@ -123,3 +123,219 @@ const Number = (props: KeyWithAnyModel) => {
 };
 
 export default Number;
+
+
+
+
+
+
+
+Below are sample test cases for the Number component. These test cases use Jest and React Testing Library. They cover various aspects of the component's behavior, including rendering, interaction, and validation.
+
+
+---
+
+Test Cases for Number Component
+
+1. Render Component
+
+import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import Number from "./Number";
+
+const mockStore = configureStore([]);
+const mockProps = {
+  data: {
+    rwb_label_name: "Account Number",
+    logical_field_name: "account_number_type_1",
+    type: "text",
+    min_length: 5,
+    mandatory: "Yes",
+    regex: "\\d+",
+  },
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+describe("Number Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [],
+        userInput: { applicants: [{ account_number_type_1: "12345" }] },
+      },
+      fielderror: { error: [] },
+    });
+  });
+
+  it("renders without crashing", () => {
+    render(
+      <Provider store={store}>
+        <Number {...mockProps} />
+      </Provider>
+    );
+
+    expect(screen.getByLabelText("Account Number")).toBeInTheDocument();
+  });
+});
+
+
+---
+
+2. Display Placeholder
+
+it("displays the correct placeholder", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByPlaceholderText("eg. 8446 2196 1234 1234");
+  expect(input).toBeInTheDocument();
+});
+
+
+---
+
+3. Set Default Value
+
+it("sets the default value from the selector", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByLabelText("Account Number");
+  expect(input).toHaveValue("12345");
+});
+
+
+---
+
+4. Handle Input Change
+
+it("calls the handleCallback and handleFieldDispatch on input change", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByLabelText("Account Number");
+  input.value = "67890";
+  input.dispatchEvent(new Event("input"));
+
+  expect(mockProps.handleCallback).toHaveBeenCalledWith(
+    mockProps.data,
+    "67890"
+  );
+  expect(mockProps.handleFieldDispatch).toHaveBeenCalledWith(
+    mockProps.data,
+    "67890"
+  );
+});
+
+
+---
+
+5. Display Error for Empty Input
+
+it("displays an error if input is empty when mandatory", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByLabelText("Account Number");
+  input.value = "";
+  input.dispatchEvent(new Event("input"));
+
+  const error = screen.getByText("Account Number is required");
+  expect(error).toBeInTheDocument();
+});
+
+
+---
+
+6. Validate Minimum Length
+
+it("displays an error if input length is less than min_length", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByLabelText("Account Number");
+  input.value = "12";
+  input.dispatchEvent(new Event("input"));
+
+  const error = screen.getByText("Minimum 5 digits required");
+  expect(error).toBeInTheDocument();
+});
+
+
+---
+
+7. Validate Pattern
+
+it("displays an error if input does not match regex pattern", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByLabelText("Account Number");
+  input.value = "abc123";
+  input.dispatchEvent(new Event("input"));
+
+  const error = screen.getByText("Invalid Account Number format");
+  expect(error).toBeInTheDocument();
+});
+
+
+---
+
+8. Dispatch Field Updates
+
+it("dispatches field update actions on blur", () => {
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+
+  const input = screen.getByLabelText("Account Number");
+  input.value = "67890";
+  input.dispatchEvent(new Event("blur"));
+
+  expect(store.getActions()).toContainEqual({
+    type: "FIELD_UPDATE",
+    payload: { field: "account_number_type_1", value: "67890" },
+  });
+});
+
+
+---
+
+Notes
+
+Mock the store with redux-mock-store to simulate the Redux state and actions.
+
+Validate different input scenarios to ensure robust error handling.
+
+Test edge cases like empty input, invalid regex patterns, and mandatory fields.
+
+Mock handleCallback, handleFieldDispatch, and other props to verify their execution.
+
+
+These test cases provide a comprehensive check for the Number component. Let me know if you need help refining any specific scenario!
+
+
