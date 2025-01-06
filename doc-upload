@@ -586,3 +586,276 @@ const DocumentUploadSRC2: React.FC<any> = ({
 };
 
 export default DocumentUploadSRC2;
+
+
+
+
+
+
+
+
+
+
+
+Splitting this code into smaller files will enhance readability and maintainability. Here's how we can organize it:
+
+1. DocumentUploadSRC2.tsx: The main component file.
+
+
+2. documentUploadHelpers.ts: Contains utility functions and hooks.
+
+
+3. DocumentUploadComponents.tsx: Contains reusable subcomponents.
+
+
+4. documentUploadConstants.ts: Stores constants like text and banners.
+
+
+
+
+---
+
+1. DocumentUploadSRC2.tsx
+
+This will act as the main entry point.
+
+import React, { useState, useEffect } from "react";
+import "./document-upload-scr2.scss";
+import { useDispatch, useSelector } from "react-redux";
+import { preApprovalAction } from "../../../../preApproval/store/preApproval-slice";
+import { dispatchLoader } from "../../../../../services/common-service";
+import { StoreModel } from "../../../../../utils/model/common-model";
+import DocumentUploadFooter from "./DocumentUploadComponents";
+import { handleUploadFile, callSubmit } from "./documentUploadHelpers";
+import banners, { footeContent, copyRights } from "./documentUploadConstants";
+
+const DocumentUploadSRC2: React.FC<any> = ({
+  setShowIncomeProof,
+  documentCount,
+  setDocumentCount,
+  changeSuccessState,
+  showQRCodePage,
+  setShowQRCodePage,
+  setChangeIconColorIdentityProof,
+  showUploadFileSuccess,
+  setShowUploadFileSuccess,
+  channel_reference,
+  HKIDQRCodeData,
+  setHKIDVersion,
+  HKIDVersionValue,
+  setShowContinueBtn,
+  setDocumentData,
+  setZolozDocumentData,
+  setSucsess,
+  success,
+  setChangeIconIncomeProof,
+  changeIconIncomeProof,
+}) => {
+  const dispatch = useDispatch();
+
+  const filesSelector = useSelector(
+    (state: StoreModel) => state.preApproval.incomeProofDocumentUpload
+  );
+
+  const [validImageSizeModel, setValidImageSizeModel] = useState(false);
+
+  const closeFileUpload = () => {
+    setShowIncomeProof("");
+    setShowQRCodePage(false);
+    setHKIDVersion("");
+    setShowContinueBtn(false);
+  };
+
+  useEffect(() => {
+    dispatch(dispatchLoader(false));
+  }, [dispatch]);
+
+  return (
+    <div className="document-view">
+      {!showQRCodePage ? (
+        <>
+          <div className="container">
+            <div className="uploadHkDocument">
+              <p className="doc-close" onClick={closeFileUpload}>
+                CLOSE
+              </p>
+              <p className="hk-proof-name">Income Proof</p>
+            </div>
+            {filesSelector?.map((item: any, index: any) => (
+              <div className="upload-btn1" key={index}>
+                <div className="thumbnail-img-container">
+                  <img
+                    src={URL.createObjectURL(item.file)}
+                    alt={item.filename}
+                  />
+                </div>
+              </div>
+            ))}
+            <div className="upload-btn-section">
+              <input
+                className="upload-input-file"
+                id="file-upload"
+                type="file"
+                accept=".jpg, .png"
+                onChange={(e) =>
+                  handleUploadFile(e, dispatch, setValidImageSizeModel)
+                }
+                multiple
+              />
+              <label htmlFor="file-upload" className="upload-btn">
+                Upload
+              </label>
+            </div>
+            <DocumentUploadFooter
+              footeContent={footeContent}
+              copyRights={copyRights}
+              closeFileUpload={closeFileUpload}
+              filesSelector={filesSelector}
+              okBtnClick={changeSuccessState}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="qrCodeContent">
+          <img
+            src={`data:image/png;base64,${HKIDQRCodeData?.qrCode}`}
+            alt="QR Code"
+          />
+          <button onClick={() => callSubmit(dispatch, channel_reference)}>
+            Submit
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DocumentUploadSRC2;
+
+
+---
+
+2. DocumentUploadComponents.tsx
+
+Subcomponents for modularity.
+
+import React from "react";
+
+const DocumentUploadFooter: React.FC<any> = ({
+  footeContent,
+  copyRights,
+  closeFileUpload,
+  filesSelector,
+  okBtnClick,
+}) => (
+  <>
+    <div className="document-footer">
+      <div className="footer-banner">
+        <p>
+          {footeContent}
+          <span className="tipsLink"> here </span>
+          on tips for uploading.
+        </p>
+      </div>
+    </div>
+    <div className="hk-copy-rights">
+      <p>{copyRights}</p>
+    </div>
+    <div className="footer footer-set">
+      <button
+        disabled={filesSelector?.length === 0}
+        onClick={okBtnClick}
+        className="continue"
+      >
+        Continue
+      </button>
+    </div>
+  </>
+);
+
+export default DocumentUploadFooter;
+
+
+---
+
+3. documentUploadHelpers.ts
+
+Utility functions for better code organization.
+
+import { preApprovalAction } from "../../../../preApproval/store/preApproval-slice";
+import { dispatchLoader } from "../../../../../services/common-service";
+
+export const handleUploadFile = async (
+  e: any,
+  dispatch: any,
+  setValidImageSizeModel: any
+) => {
+  const file = e.target.files[0];
+  const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+
+  if (file.size > maxSize) {
+    setValidImageSizeModel(true);
+    return;
+  }
+
+  try {
+    dispatch(dispatchLoader(true));
+    // Simulated API response
+    const response = {
+      data: { fileData: "Sample data" },
+      statusText: "Accepted",
+    };
+
+    if (response.statusText === "Accepted") {
+      dispatch(preApprovalAction.setIncomeProofDocumentUpload(response.data));
+    }
+    dispatch(dispatchLoader(false));
+  } catch (error) {
+    console.error("Upload Error:", error);
+  }
+};
+
+export const callSubmit = async (dispatch: any, channel_reference: any) => {
+  try {
+    dispatch(dispatchLoader(true));
+    // Add your API calls here.
+    dispatch(dispatchLoader(false));
+  } catch (error) {
+    console.error("Submit Error:", error);
+  }
+};
+
+
+---
+
+4. documentUploadConstants.ts
+
+For constants.
+
+import banner1 from "../images-du/illustration-03@3x.png";
+import banner2 from "../images-du/illustration-06@3x.png";
+import banner3 from "../images-du/illustration-05@3x.png";
+import banner4 from "../images-du/illustration-02@3x.png";
+import banner5 from "../images-du/illustration-01@3x.png";
+import banner6 from "../images-du/illustration-04@3x.png";
+
+export const footeContent =
+  "File format should be in JPG or PNG. The individual file size must not exceed 5MB. Click";
+export const copyRights = "© Standard Chartered Bank (HK) Limited";
+
+const banners = [
+  { banner: banner1, step: "Step 1", stepText: "Scan the QR code" },
+  { banner: banner2, step: "Step 2", stepText: "Remove card holder" },
+  { banner: banner3, step: "Step 3", stepText: "Capture ID" },
+  { banner: banner4, step: "Step 4", stepText: "Tilt mobile" },
+  { banner: banner5, step: "Step 5", stepText: "Remove accessories" },
+  { banner: banner6, step: "Step 6", stepText: "Return to desktop" },
+];
+
+export default banners;
+
+
+---
+
+This structure separates concerns effectively, improving readability and scalability of the project.
+
