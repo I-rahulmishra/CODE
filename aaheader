@@ -1,4 +1,4 @@
-yimport axios from "axios";
+import axios from "axios";
 import configureStore from "redux-mock-store";
 import thunk from "redux-thunk";
 import { getOfferCalulated } from "./preApprovalServices";
@@ -30,7 +30,7 @@ describe("getOfferCalulated", () => {
     // Mock process.env variables
     process.env.REACT_APP_RTOB_BASE_URL = "http://mock-base-url.com";
     process.env.REACT_APP_RTOB_APPLICATION_END_POINT = "/application";
-    process.env.REACT_APP_RTOB_FETCH_OFFERS = "/fetch-offers";
+    process.env.REACT_APP_RTOB_FETCH_APR_DETAILS = "/fetch-apr-details";
   });
 
   afterEach(() => {
@@ -39,14 +39,22 @@ describe("getOfferCalulated", () => {
 
   it("should make a POST request with the correct payload", async () => {
     const data = { requested_amount: 5000, requested_tenure: 12 };
-    axios.post.mockResolvedValue({ data: "success" }); // Mock Axios POST response
 
-    await getOfferCalulated(data);
+    // Mock Axios POST
+    (axios.post as jest.Mock).mockImplementation(() =>
+      Promise.resolve({ data: "success" })
+    );
+
+    const response = await getOfferCalulated(data);
 
     // Verify Axios was called with the correct URL and payload
     expect(axios.post).toHaveBeenCalledWith(
-      "http://mock-base-url.com/application/mock-channel-ref/fetch-offers",
+      "http://mock-base-url.com/application/mock-channel-ref/fetch-apr-details",
       JSON.stringify({
+        channel_ref_number: "mock-channel-ref",
+        cos_ref_number: undefined,
+        application_reference: undefined,
+        source_system_name: "02",
         requested_amount: 5000,
         requested_tenure: 12,
       }),
@@ -57,6 +65,8 @@ describe("getOfferCalulated", () => {
         },
       }
     );
+
+    expect(response).toEqual({ data: "success" });
     expect(axios.post).toHaveBeenCalledTimes(1);
   });
 });
