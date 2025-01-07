@@ -1,95 +1,145 @@
-export const getProductMetaDataInfo = (urlParams: any): any => {
-  var scClientContextHeaders = {
-    "SC-CLIENT-CONTEXT":
-      '{"reqId":"' +
-      PreApprovalUtil.generateUUID() +
-      '","Channel":"MOBILE","Country":"SG",' +
-      '"Language":"EN","AppName":"RCWB","ClientId":"MOBILE","InstanceCode":"CB_IN",' +
-      '"RumDevice":"devicebrowserversion","Source":"sc.com","DeviceType":"Desktop"}',
+yimport { getProductMetaDataInfo } from './path-to-file';
+import axios from 'axios';
+import { PreApprovalUtil } from './PreApprovalUtil';
+import { getUrl } from './getUrl';
+import { urlParamAction } from './urlParamAction';
+import { dispatchError } from './dispatchError';
+
+jest.mock('axios');
+jest.mock('./PreApprovalUtil', () => ({
+  generateUUID: jest.fn(),
+}));
+jest.mock('./getUrl', () => ({
+  getParameterByName: jest.fn(),
+}));
+jest.mock('./urlParamAction', () => ({
+  productDetails: jest.fn(),
+}));
+jest.mock('./dispatchError', () => ({
+  dispatchError: jest.fn(),
+}));
+
+const mockDispatch = jest.fn();
+
+describe('getProductMetaDataInfo', () => {
+  const mockUrlParams = {
+    search: '?products=personal-loan&campaign=testCampaign&premium=testPremium',
   };
-  const endpoint = `${process.env.REACT_APP_PRODUCT_INFO_URL}`;
-  const options = {
-    method: "GET",
-    url: endpoint,
-    headers: {
-      Authorization: `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
-      "SC-CLIENT-CONTEXT": scClientContextHeaders["SC-CLIENT-CONTEXT"],
+
+  const mockResponseData = {
+    products: {
+      personal: [
+        { product_type: 'personal-loan', product_description: 'Test Description' },
+      ],
     },
   };
- 
-  return async (dispatch: AppDispatch) => axios
-    .request(options)
-    .then((response) => {
-      let productInfoResponse = response.data.products;
-      let products = getUrl.getParameterByName("products") ? getUrl.getParameterByName("products") : getUrl.getParameterByName("product");
-      let resume = getUrl.getParameterByName("auth");
-      if (!resume) {
-        if (products) {
-          let filteredProducts = [];
-          let productlov: any = [];
-          let proKey: any = [];
-          if (products) {
-            proKey = Object.keys(productInfoResponse);
-            for (const elements of proKey) {
-              productlov = productInfoResponse[elements];
-              for (const elementj of productlov) {
-                if (elementj.product_type === products) {
-                  filteredProducts.push(elementj);
-                }
-              }
-            }
-            const flatFilteredArray = filteredProducts.flat();
-            if (flatFilteredArray && flatFilteredArray.length > 0) {
-              dispatch(urlParamAction.productDetails(flatFilteredArray));
-              const decodedUrl = decodeURIComponent(urlParams.search.replace('?', ''));
-              const splitUrlParams = decodedUrl.split("&");
-              var product_type;
-              var campaign;
-              var premium;
-              for (let i in splitUrlParams) {
-                if (splitUrlParams[i].split("=")[0] === 'products' || splitUrlParams[i].split("=")[0] === 'product') {
-                  product_type = splitUrlParams[i].split("=")[1]
-                }
-                if (splitUrlParams[i].split("=")[0] === 'campaign') {
-                  campaign = splitUrlParams[i].split("=")[1]
-                }
-                if (splitUrlParams[i].split("=")[0] === 'premium') {
-                  premium = splitUrlParams[i].split("=")[1]
-                }
-              }
-              let product = JSON.parse(JSON.stringify(flatFilteredArray));
-              product[0]["campaign"] = campaign;
-              product[0]["name"] = "personal-instalment-loan";
-              product[0]["company_category"] = "NA";
-              product[0]["premiumCode"] = premium;
-              product[0]["product_type"] = product_type;
-              delete product[0].product_description
-              return Promise.resolve(product);
-            } else {
-              const error = {
-                response: {
-                  status: "error",
-                  statusText: "no response",
-                },
-              };
-              dispatch(dispatchError(error));
-            }
-          }
-        } else {
-          const error = {
-            response: {
-              status: "error",
-              statusText: "no response",
-            },
-          };
-          dispatch(dispatchError(error));
-          return Promise.reject();
-        }
+
+  const mockFlatFilteredArray = [
+    {
+      campaign: 'testCampaign',
+      name: 'personal-instalment-loan',
+      company_category: 'NA',
+      premiumCode: 'testPremium',
+      product_type: 'personal-loan',
+    },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('should fetch product metadata and dispatch product details if products are found', async () => {
+    // Mock dependencies
+    PreApprovalUtil.generateUUID.mockReturnValue('test-uuid');
+    getUrl.getParameterByName.mockImplementation((param) => {
+      switch (param) {
+        case 'products':
+          return 'personal-loan';
+        case 'campaign':
+          return 'testCampaign';
+        case 'premium':
+          return 'testPremium';
+        default:
+          return null;
       }
-    })
-    .catch((error) => {
-      console.log("clientResponse", error);
-      dispatchError(error);
-      return Promise.reject(error);
     });
-};
+
+    axios.request.mockResolvedValue({ data: mockResponseData });
+
+    // Call the function
+    const result = await getProductMetaDataInfo(mockUrlParams)(mockDispatch);
+
+    // Assertions
+    expect(axios.request).toHaveBeenCalledWith({
+      method: 'GET',
+      url: `${process.env.REACT_APP_PRODUCT_INFO_URL}`,
+      headers: {
+        Authorization: `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
+        'SC-CLIENT-CONTEXT': expect.any(String),
+      },
+    });
+
+    expect(urlParamAction.productDetails).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ product_type: 'personal-loan' }),
+      ])
+    );
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      urlParamAction.productDetails(mockFlatFilteredArray)
+    );
+
+    expect(result).toEqual(mockFlatFilteredArray);
+  });
+
+  test('should handle no products in the response and dispatch an error', async () => {
+    // Mock dependencies
+    axios.request.mockResolvedValue({ data: { products: {} } });
+
+    // Call the function
+    await getProductMetaDataInfo(mockUrlParams)(mockDispatch);
+
+    // Assertions
+    expect(dispatchError).toHaveBeenCalledWith({
+      response: {
+        status: 'error',
+        statusText: 'no response',
+      },
+    });
+  });
+
+  test('should handle axios request errors and dispatch an error', async () => {
+    // Mock dependencies
+    const mockError = new Error('Request failed');
+    axios.request.mockRejectedValue(mockError);
+
+    // Call the function
+    await expect(
+      getProductMetaDataInfo(mockUrlParams)(mockDispatch)
+    ).rejects.toThrow('Request failed');
+
+    // Assertions
+    expect(dispatchError).toHaveBeenCalledWith(mockError);
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      urlParamAction.productDetails(expect.anything())
+    );
+  });
+
+  test('should reject the promise if no "products" or "auth" parameter is found', async () => {
+    // Mock dependencies
+    getUrl.getParameterByName.mockReturnValue(null);
+
+    // Call the function
+    await expect(
+      getProductMetaDataInfo(mockUrlParams)(mockDispatch)
+    ).rejects.toBeUndefined();
+
+    // Assertions
+    expect(dispatchError).toHaveBeenCalledWith({
+      response: {
+        status: 'error',
+        statusText: 'no response',
+      },
+    });
+  });
+});
