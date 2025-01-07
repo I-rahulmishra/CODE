@@ -1,185 +1,183 @@
-import React from "react";
-import { shallow, ShallowWrapper } from "enzyme";
-import { cleanup, render, screen } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store"; // Use mock store
-import Header from "./header";
-import { CONSTANTS } from "../../../utils/common/constants";
-import { getUrl } from "../../../utils/common/change.utils";
-
-jest.mock("axios", () => ({
-  __esModule: true,
-}));
-
-jest.mock("../../../utils/common/header-titles", () => jest.fn());
-jest.mock("react-pdf", () => ({
-  pdfjs: {
-    GlobalWorkerOptions: {
-      workerSrc: "https://pt.sc.com/onboarding/platform/react/pdf.worker.min.js",
+export const getOffer = (payload: any): any => {
+  const stageSelector = JSON.parse(JSON.stringify(store.getState()?.stages.stages[0]));
+  const channel_reference_no = stageSelector?.stageInfo?.application?.channel_reference;
+ 
+  const url = `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channel_reference_no}${process.env.REACT_APP_RTOB_OFFER}`;
+ 
+  var currentStageData = JSON.parse(JSON.stringify(PreApprovalUtil.getFormConfigPayload()));
+  payload = JSON.parse(JSON.stringify(payload));
+  payload.stage.page_id = stageSelector.stageId;
+  payload.stage.stage_id = stageSelector.stageId.split("-")[0].toUpperCase();
+  payload.stage.stage_status = "incomplete";
+  payload.stage.workflow_stage_id = null;
+  payload.applicants = payload.applicants.length > 0 ? payload.applicants[0] : payload.applicants;
+  payload.client = {
+    "journey": "prelogin_ntc_or_ntp",
+    "auth-type": "manual",
+    "login-type": "prelogin"
+  }
+  if (stageSelector.stageId === CONSTANTS.STAGE_NAMES.ACD_1) {
+    payload["applicant_documents"] = [
+      {
+        applicant_sequence_number: null,
+        document_list: null,
+        email_id_change: null,
+        icdd_reference_no_availability: null,
+        journey_type: "NTB",
+        last_updated_credit_limit_date_flag: null,
+        mobile_no_change: null,
+        staff_category: null,
+      },
+    ]
+    delete payload.documents
+    delete payload.etb_account_details
+    delete payload.existing_address
+    payload["dedupeList"] = currentStageData.dedupeList;
+  }
+  if (payload.fieldMetaData) {
+    delete Object.assign(payload, {
+      ["fieldmetadata"]: payload["fieldMetaData"],
+    })["fieldMetaData"];
+  }
+  payload.products = stageSelector?.stageInfo?.products;
+ 
+ 
+ 
+ 
+  const options = {
+    method: "POST",
+    url,
+    headers: {
+      "Content-Type": "application/json;charset=UTF-8",
+      "Sc-Client-Context": PreApprovalUtil.getAckMetaData(channel_reference_no),
     },
-    renderTextLayer: false,
-  },
-  Outline: null,
-}));
-
-const mockStore = configureStore([]);
-
-afterEach(() => {
-  cleanup();
-  jest.resetAllMocks();
-});
-afterAll(() => {
-  jest.clearAllMocks();
-});
-
-describe("Header Component Tests", () => {
-  let store: any;
-  let wrapper: ShallowWrapper;
-
-  beforeEach(() => {
-    store = mockStore({
-      stages: { stages: [] },
+    body: JSON.stringify(payload)
+  };
+ 
+  return axios
+    .post(url, JSON.stringify(payload), { headers: options.headers })
+    .then((response: any) => {
+      return Promise.resolve(response);
+    })
+    .catch((error: any) => {
+      dispatchError(error);
+      console.log("clientResponse", error);
+      return Promise.reject(error);
     });
-
-    wrapper = shallow(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-  });
-
-  test("Should render correctly", () => {
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-    expect(wrapper.length).toEqual(1);
-    expect(wrapper.find(Header)).toHaveLength(1);
-  });
-
-  test("Should render without crashing when there are no stages", () => {
-    store = mockStore({
-      stages: { stages: [] },
+};
+ 
+export const getOffer2 = (payload: any): any => {
+  const stageSelector = JSON.parse(JSON.stringify(store.getState()?.stages.stages[0]));
+  const channel_reference_no = stageSelector?.stageInfo?.application?.channel_reference;
+ 
+  const url = `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channel_reference_no}${process.env.REACT_APP_RTOB_OFFER}`;
+ 
+  payload = JSON.parse(JSON.stringify(payload));
+  payload.stage.page_id = stageSelector?.stageId;
+  payload.stage.stage_id = stageSelector?.stageId?.split("-")[0].toUpperCase();
+  payload.stage.stage_status = "incomplete";
+  payload.customerDetails = null;
+  payload.application.service_type = stageSelector.stageId.replace("-", "").toUpperCase();
+  payload.applicants = payload.applicants.length > 0 ? payload.applicants[0] : payload.applicants;
+  payload.client = {
+    "journey": "prelogin_ntc_or_ntp",
+    "auth-type": "manual",
+    "login-type": "prelogin"
+  }
+  if (stageSelector.stageId === CONSTANTS.STAGE_NAMES.ACD_4) {
+    payload.applicants["business_est_date_a_1"] = payload.applicants["business_est_date_a_1"] ? payload.applicants["business_est_date_a_1"] : null;
+  }
+ 
+  if (payload.fieldMetaData) {
+    delete Object.assign(payload, {
+      ["fieldmetadata"]: payload["fieldMetaData"],
+    })["fieldMetaData"];
+  }
+  const options = {
+    method: "POST",
+    url,
+    headers: {
+      "Content-Type": "application/json;charset=UTF-8",
+      "Sc-Client-Context": PreApprovalUtil.getAckMetaData(channel_reference_no),
+    },
+    body: JSON.stringify(payload)
+  };
+ 
+  return axios
+    .post(url, JSON.stringify(payload), { headers: options.headers })
+    .then((response) => {
+ 
+      return Promise.resolve(response);
+    })
+    .catch((error) => {
+      dispatchError(error);
+      console.log("clientResponse", error);
+      return Promise.reject(error);
     });
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-    expect(document.querySelector(".header")).toBeNull();
-    expect(document.querySelector(".pending__resume-header")).toBeNull();
-  });
-
-  test("Should render product details when stages are available", () => {
-    store = mockStore({
-      stages: {
-        stages: [{ stageId: "stage-1", stageInfo: { applicants: [{}] } }],
-      },
+};
+ 
+export const getOfferCalulated = (data: any): any => {
+  const stageSelector = JSON.parse(JSON.stringify(store.getState()?.stages.stages[0]));
+  const channel_reference_no = stageSelector.stageInfo.application.channel_reference;
+  const url = `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${process.env.REACT_APP_RTOB_FETCH_APR_DETAILS}`;
+ 
+  var payload: any = {};
+  payload = {
+    channel_ref_number: stageSelector.stageInfo.application.channel_ref_number,
+    cos_ref_number: stageSelector.stageInfo.application.cos_ref_number,
+    application_reference: stageSelector.stageInfo.application.application_reference,
+    source_system_name: "02",
+  };
+  payload['requested_amount'] = data.requested_amount;
+  payload['requested_tenure'] = data.requested_tenure;
+ 
+  const options = {
+    method: "POST",
+    url,
+    headers: {
+      "Content-Type": "application/json;charset=UTF-8",
+      "Sc-Client-Context": PreApprovalUtil.getAckMetaData(channel_reference_no),
+    },
+    body: JSON.stringify(payload)
+  };
+ 
+  return axios
+    .post(url, JSON.stringify(payload), { headers: options.headers })
+    .then((response: any) => {
+      return Promise.resolve(response);
+    })
+    .catch((error: any) => {
+      console.log("clientResponse", error);
+      dispatchError(error);
+      return Promise.reject(error);
     });
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-    expect(document.querySelector(".header")).toBeInTheDocument();
-    expect(document.querySelector(".step-info")).toBeInTheDocument();
-  });
-
-  test("Should render resume header when pathname matches", () => {
-    Object.defineProperty(window, "location", {
-      value: {
-        pathname: "/hk/pending-application",
-      },
-      writable: true,
+};
+ 
+export const getImagePreview = (channelReference: any, docId: any): any => {
+ 
+  const baseUrl = `${process.env.REACT_APP_RTOB_BASE_URL}`;
+  const application = `${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}`;
+  const endPoint = `${process.env.REACT_APP_RTOB_DOCUMENTS_END_POINT}`
+ 
+ 
+  const url = `${baseUrl}${application}${channelReference}${endPoint}/${docId}.png`;
+  const options = {
+    method: "GET",
+    url,
+    headers: {
+      "Content-Type": "application/json;charset=UTF-8",
+      "Sc-Client-Context": PreApprovalUtil.getAckMetaData(channelReference),
+    },
+    // body:JSON.stringify(payload),
+  };
+  return axios
+    .get(url, { headers: options.headers, responseType: 'blob' })
+    .then((response: any) => {
+      return Promise.resolve(response);
+    })
+    .catch((error: any) => {
+      dispatchError(error);
+      console.log("clientResponse", error);
+      return Promise.reject(error);
     });
-
-    store = mockStore({
-      stages: { stages: [] },
-    });
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-
-    expect(document.querySelector(".pending__resume-header")).toBeInTheDocument();
-    expect(document.querySelector(".resume__header-name")).toBeInTheDocument();
-    expect(document.querySelector(".resume__header-text")).toBeInTheDocument();
-  });
-
-  test("Should render close button in resume header", () => {
-    Object.defineProperty(window, "location", {
-      value: {
-        pathname: "/hk/pending-application",
-      },
-      writable: true,
-    });
-
-    store = mockStore({
-      stages: { stages: [] },
-    });
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-
-    expect(document.querySelector(".close")).toBeInTheDocument();
-  });
-
-  test("Should render correct header title based on language", () => {
-    const mockGetLanguageInfo = jest.fn(() => CONSTANTS.LANG_EN);
-    jest.spyOn(getUrl, "getLanguageInfo").mockImplementation(mockGetLanguageInfo);
-
-    store = mockStore({
-      stages: {
-        stages: [{ stageId: "stage-1", stageInfo: { applicants: [{}] } }],
-      },
-    });
-
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-
-    expect(document.querySelector(".product-name")).toHaveTextContent(CONSTANTS.MASTER_HEADER);
-  });
-
-  test("Should handle empty stageInfo gracefully", () => {
-    store = mockStore({
-      stages: {
-        stages: [{ stageId: "stage-1", stageInfo: null }],
-      },
-    });
-
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-
-    expect(document.querySelector(".header")).not.toBeInTheDocument();
-  });
-
-  test("Should call title function with correct stageId and language", () => {
-    const mockTitle = require("../../../utils/common/header-titles");
-    mockTitle.mockReturnValue("Mock Title");
-
-    store = mockStore({
-      stages: {
-        stages: [{ stageId: "stage-1", stageInfo: { applicants: [{}] } }],
-      },
-    });
-
-    render(
-      <Provider store={store}>
-        <Header />
-      </Provider>
-    );
-
-    expect(mockTitle).toHaveBeenCalledWith("stage-1", CONSTANTS.LANG_EN);
-    expect(document.querySelector(".step-info")).toHaveTextContent("Mock Title");
-  });
-});
+};
