@@ -1,167 +1,95 @@
-yimport axios from "axios";
-import configureStore from "redux-mock-store";
-import thunk from "redux-thunk";
-import {
-  getOffer,
-  getOffer2,
-  getOfferCalulated,
-  getImagePreview,
-} from "./yourFile"; // Replace 'yourFile' with the actual file name
-import { PreApprovalUtil } from "../../../utils/common/preapproval.util";
-import { CONSTANTS } from "../../../utils/common/constants";
-
-// Mock store setup
-const mockStore = configureStore([thunk]);
-jest.mock("axios");
-jest.mock("../../../utils/common/preapproval.util", () => ({
-  getAckMetaData: jest.fn(),
-  getFormConfigPayload: jest.fn(() => ({
-    dedupeList: ["mockDedupeList"],
-  })),
-}));
-
-// Mock global objects
-jest.mock("../../../utils/common/constants", () => ({
-  CONSTANTS: {
-    STAGE_NAMES: { ACD_1: "ACD_1", ACD_4: "ACD_4" },
-  },
-}));
-
-describe("API Function Tests", () => {
-  let store: any;
-  beforeEach(() => {
-    store = mockStore({
-      stages: {
-        stages: [
-          {
-            stageId: "ACD-1",
-            stageInfo: {
-              application: {
-                channel_reference: "12345",
-                channel_ref_number: "12345",
-                cos_ref_number: "COS123",
-                application_reference: "APP123",
-              },
-              products: [{ productId: 1 }],
+export const getProductMetaDataInfo = (urlParams: any): any => {
+  var scClientContextHeaders = {
+    "SC-CLIENT-CONTEXT":
+      '{"reqId":"' +
+      PreApprovalUtil.generateUUID() +
+      '","Channel":"MOBILE","Country":"SG",' +
+      '"Language":"EN","AppName":"RCWB","ClientId":"MOBILE","InstanceCode":"CB_IN",' +
+      '"RumDevice":"devicebrowserversion","Source":"sc.com","DeviceType":"Desktop"}',
+  };
+  const endpoint = `${process.env.REACT_APP_PRODUCT_INFO_URL}`;
+  const options = {
+    method: "GET",
+    url: endpoint,
+    headers: {
+      Authorization: `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
+      "SC-CLIENT-CONTEXT": scClientContextHeaders["SC-CLIENT-CONTEXT"],
+    },
+  };
+ 
+  return async (dispatch: AppDispatch) => axios
+    .request(options)
+    .then((response) => {
+      let productInfoResponse = response.data.products;
+      let products = getUrl.getParameterByName("products") ? getUrl.getParameterByName("products") : getUrl.getParameterByName("product");
+      let resume = getUrl.getParameterByName("auth");
+      if (!resume) {
+        if (products) {
+          let filteredProducts = [];
+          let productlov: any = [];
+          let proKey: any = [];
+          if (products) {
+            proKey = Object.keys(productInfoResponse);
+            for (const elements of proKey) {
+              productlov = productInfoResponse[elements];
+              for (const elementj of productlov) {
+                if (elementj.product_type === products) {
+                  filteredProducts.push(elementj);
+                }
+              }
+            }
+            const flatFilteredArray = filteredProducts.flat();
+            if (flatFilteredArray && flatFilteredArray.length > 0) {
+              dispatch(urlParamAction.productDetails(flatFilteredArray));
+              const decodedUrl = decodeURIComponent(urlParams.search.replace('?', ''));
+              const splitUrlParams = decodedUrl.split("&");
+              var product_type;
+              var campaign;
+              var premium;
+              for (let i in splitUrlParams) {
+                if (splitUrlParams[i].split("=")[0] === 'products' || splitUrlParams[i].split("=")[0] === 'product') {
+                  product_type = splitUrlParams[i].split("=")[1]
+                }
+                if (splitUrlParams[i].split("=")[0] === 'campaign') {
+                  campaign = splitUrlParams[i].split("=")[1]
+                }
+                if (splitUrlParams[i].split("=")[0] === 'premium') {
+                  premium = splitUrlParams[i].split("=")[1]
+                }
+              }
+              let product = JSON.parse(JSON.stringify(flatFilteredArray));
+              product[0]["campaign"] = campaign;
+              product[0]["name"] = "personal-instalment-loan";
+              product[0]["company_category"] = "NA";
+              product[0]["premiumCode"] = premium;
+              product[0]["product_type"] = product_type;
+              delete product[0].product_description
+              return Promise.resolve(product);
+            } else {
+              const error = {
+                response: {
+                  status: "error",
+                  statusText: "no response",
+                },
+              };
+              dispatch(dispatchError(error));
+            }
+          }
+        } else {
+          const error = {
+            response: {
+              status: "error",
+              statusText: "no response",
             },
-          },
-        ],
-      },
+          };
+          dispatch(dispatchError(error));
+          return Promise.reject();
+        }
+      }
+    })
+    .catch((error) => {
+      console.log("clientResponse", error);
+      dispatchError(error);
+      return Promise.reject(error);
     });
-    jest.clearAllMocks();
-  });
-
-  test("getOffer should post data to the correct URL", async () => {
-    (axios.post as jest.Mock).mockResolvedValue({ data: "success" });
-
-    const payload = { stage: {}, applicants: [{}] };
-    const result = await getOffer(payload);
-
-    expect(axios.post).toHaveBeenCalledWith(
-      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}12345${process.env.REACT_APP_RTOB_OFFER}`,
-      expect.any(String),
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": expect.any(String),
-        },
-      }
-    );
-    expect(result).toEqual({ data: "success" });
-  });
-
-  test("getOffer2 should post data to the correct URL", async () => {
-    (axios.post as jest.Mock).mockResolvedValue({ data: "success" });
-
-    const payload = { stage: {}, applicants: [{}], application: {} };
-    const result = await getOffer2(payload);
-
-    expect(axios.post).toHaveBeenCalledWith(
-      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}12345${process.env.REACT_APP_RTOB_OFFER}`,
-      expect.any(String),
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": expect.any(String),
-        },
-      }
-    );
-    expect(result).toEqual({ data: "success" });
-  });
-
-  test("getOfferCalulated should post data to the correct URL", async () => {
-    (axios.post as jest.Mock).mockResolvedValue({ data: "success" });
-
-    const payload = { requested_amount: 1000, requested_tenure: 12 };
-    const result = await getOfferCalulated(payload);
-
-    expect(axios.post).toHaveBeenCalledWith(
-      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${process.env.REACT_APP_RTOB_FETCH_APR_DETAILS}`,
-      expect.any(String),
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": expect.any(String),
-        },
-      }
-    );
-    expect(result).toEqual({ data: "success" });
-  });
-
-  test("getImagePreview should get the image from the correct URL", async () => {
-    (axios.get as jest.Mock).mockResolvedValue({ data: "imageBlob" });
-
-    const channelReference = "12345";
-    const docId = "doc123";
-    const result = await getImagePreview(channelReference, docId);
-
-    expect(axios.get).toHaveBeenCalledWith(
-      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channelReference}${process.env.REACT_APP_RTOB_DOCUMENTS_END_POINT}/${docId}.png`,
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": expect.any(String),
-        },
-        responseType: "blob",
-      }
-    );
-    expect(result).toEqual({ data: "imageBlob" });
-  });
-
-  test("getOffer should handle error gracefully", async () => {
-    (axios.post as jest.Mock).mockRejectedValue(new Error("API Error"));
-
-    const payload = { stage: {}, applicants: [{}] };
-    await expect(getOffer(payload)).rejects.toThrow("API Error");
-
-    expect(axios.post).toHaveBeenCalled();
-  });
-
-  test("getOffer2 should handle error gracefully", async () => {
-    (axios.post as jest.Mock).mockRejectedValue(new Error("API Error"));
-
-    const payload = { stage: {}, applicants: [{}], application: {} };
-    await expect(getOffer2(payload)).rejects.toThrow("API Error");
-
-    expect(axios.post).toHaveBeenCalled();
-  });
-
-  test("getOfferCalulated should handle error gracefully", async () => {
-    (axios.post as jest.Mock).mockRejectedValue(new Error("API Error"));
-
-    const payload = { requested_amount: 1000, requested_tenure: 12 };
-    await expect(getOfferCalulated(payload)).rejects.toThrow("API Error");
-
-    expect(axios.post).toHaveBeenCalled();
-  });
-
-  test("getImagePreview should handle error gracefully", async () => {
-    (axios.get as jest.Mock).mockRejectedValue(new Error("API Error"));
-
-    const channelReference = "12345";
-    const docId = "doc123";
-    await expect(getImagePreview(channelReference, docId)).rejects.toThrow("API Error");
-
-    expect(axios.get).toHaveBeenCalled();
-  });
-});
+};
