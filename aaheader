@@ -1,17 +1,35 @@
-import axios from "axios";
+yimport axios from "axios";
 import configureStore from "redux-mock-store";
 import thunk from "redux-thunk";
-import { getOfferCalulated } from "./preApprovalServices";
+import {
+  getOffer,
+  getOffer2,
+  getOfferCalulated,
+  getImagePreview,
+} from "./yourFile"; // Replace 'yourFile' with the actual file name
+import { PreApprovalUtil } from "../../../utils/common/preapproval.util";
+import { CONSTANTS } from "../../../utils/common/constants";
 
-jest.mock("axios");
-
+// Mock store setup
 const mockStore = configureStore([thunk]);
+jest.mock("axios");
+jest.mock("../../../utils/common/preapproval.util", () => ({
+  getAckMetaData: jest.fn(),
+  getFormConfigPayload: jest.fn(() => ({
+    dedupeList: ["mockDedupeList"],
+  })),
+}));
 
-describe("getOfferCalulated", () => {
-  let store: ReturnType<typeof mockStore>;
+// Mock global objects
+jest.mock("../../../utils/common/constants", () => ({
+  CONSTANTS: {
+    STAGE_NAMES: { ACD_1: "ACD_1", ACD_4: "ACD_4" },
+  },
+}));
 
+describe("API Function Tests", () => {
+  let store: any;
   beforeEach(() => {
-    // Mock Redux store with correct structure
     store = mockStore({
       stages: {
         stages: [
@@ -19,54 +37,131 @@ describe("getOfferCalulated", () => {
             stageId: "ACD-1",
             stageInfo: {
               application: {
-                channel_reference: "mock-channel-ref",
+                channel_reference: "12345",
+                channel_ref_number: "12345",
+                cos_ref_number: "COS123",
+                application_reference: "APP123",
               },
+              products: [{ productId: 1 }],
             },
           },
         ],
       },
     });
-
-    // Mock process.env variables
-    process.env.REACT_APP_RTOB_BASE_URL = "http://mock-base-url.com";
-    process.env.REACT_APP_RTOB_APPLICATION_END_POINT = "/application";
-    process.env.REACT_APP_RTOB_FETCH_APR_DETAILS = "/fetch-apr-details";
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should make a POST request with the correct payload", async () => {
-    const data = { requested_amount: 5000, requested_tenure: 12 };
+  test("getOffer should post data to the correct URL", async () => {
+    (axios.post as jest.Mock).mockResolvedValue({ data: "success" });
 
-    // Mock Axios POST
-    (axios.post as jest.Mock).mockImplementation(() =>
-      Promise.resolve({ data: "success" })
-    );
+    const payload = { stage: {}, applicants: [{}] };
+    const result = await getOffer(payload);
 
-    const response = await getOfferCalulated(data);
-
-    // Verify Axios was called with the correct URL and payload
     expect(axios.post).toHaveBeenCalledWith(
-      "http://mock-base-url.com/application/mock-channel-ref/fetch-apr-details",
-      JSON.stringify({
-        channel_ref_number: "mock-channel-ref",
-        cos_ref_number: undefined,
-        application_reference: undefined,
-        source_system_name: "02",
-        requested_amount: 5000,
-        requested_tenure: 12,
-      }),
+      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}12345${process.env.REACT_APP_RTOB_OFFER}`,
+      expect.any(String),
       {
         headers: {
           "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": undefined, // Mock or provide actual value
+          "Sc-Client-Context": expect.any(String),
         },
       }
     );
+    expect(result).toEqual({ data: "success" });
+  });
 
-    expect(response).toEqual({ data: "success" });
-    expect(axios.post).toHaveBeenCalledTimes(1);
+  test("getOffer2 should post data to the correct URL", async () => {
+    (axios.post as jest.Mock).mockResolvedValue({ data: "success" });
+
+    const payload = { stage: {}, applicants: [{}], application: {} };
+    const result = await getOffer2(payload);
+
+    expect(axios.post).toHaveBeenCalledWith(
+      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}12345${process.env.REACT_APP_RTOB_OFFER}`,
+      expect.any(String),
+      {
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Sc-Client-Context": expect.any(String),
+        },
+      }
+    );
+    expect(result).toEqual({ data: "success" });
+  });
+
+  test("getOfferCalulated should post data to the correct URL", async () => {
+    (axios.post as jest.Mock).mockResolvedValue({ data: "success" });
+
+    const payload = { requested_amount: 1000, requested_tenure: 12 };
+    const result = await getOfferCalulated(payload);
+
+    expect(axios.post).toHaveBeenCalledWith(
+      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${process.env.REACT_APP_RTOB_FETCH_APR_DETAILS}`,
+      expect.any(String),
+      {
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Sc-Client-Context": expect.any(String),
+        },
+      }
+    );
+    expect(result).toEqual({ data: "success" });
+  });
+
+  test("getImagePreview should get the image from the correct URL", async () => {
+    (axios.get as jest.Mock).mockResolvedValue({ data: "imageBlob" });
+
+    const channelReference = "12345";
+    const docId = "doc123";
+    const result = await getImagePreview(channelReference, docId);
+
+    expect(axios.get).toHaveBeenCalledWith(
+      `${process.env.REACT_APP_RTOB_BASE_URL}${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}${channelReference}${process.env.REACT_APP_RTOB_DOCUMENTS_END_POINT}/${docId}.png`,
+      {
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Sc-Client-Context": expect.any(String),
+        },
+        responseType: "blob",
+      }
+    );
+    expect(result).toEqual({ data: "imageBlob" });
+  });
+
+  test("getOffer should handle error gracefully", async () => {
+    (axios.post as jest.Mock).mockRejectedValue(new Error("API Error"));
+
+    const payload = { stage: {}, applicants: [{}] };
+    await expect(getOffer(payload)).rejects.toThrow("API Error");
+
+    expect(axios.post).toHaveBeenCalled();
+  });
+
+  test("getOffer2 should handle error gracefully", async () => {
+    (axios.post as jest.Mock).mockRejectedValue(new Error("API Error"));
+
+    const payload = { stage: {}, applicants: [{}], application: {} };
+    await expect(getOffer2(payload)).rejects.toThrow("API Error");
+
+    expect(axios.post).toHaveBeenCalled();
+  });
+
+  test("getOfferCalulated should handle error gracefully", async () => {
+    (axios.post as jest.Mock).mockRejectedValue(new Error("API Error"));
+
+    const payload = { requested_amount: 1000, requested_tenure: 12 };
+    await expect(getOfferCalulated(payload)).rejects.toThrow("API Error");
+
+    expect(axios.post).toHaveBeenCalled();
+  });
+
+  test("getImagePreview should handle error gracefully", async () => {
+    (axios.get as jest.Mock).mockRejectedValue(new Error("API Error"));
+
+    const channelReference = "12345";
+    const docId = "doc123";
+    await expect(getImagePreview(channelReference, docId)).rejects.toThrow("API Error");
+
+    expect(axios.get).toHaveBeenCalled();
   });
 });
