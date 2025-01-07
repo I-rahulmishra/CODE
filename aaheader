@@ -1,189 +1,62 @@
-Here’s how you can write test cases for the provided functions using Jest and Axios mocking. These tests ensure that the functions are behaving correctly under different scenarios.
-
-Dependencies
-
-Ensure you have the following dependencies installed:
-
-npm install jest @testing-library/react redux-mock-store axios jest-mock axios-mock-adapter
-
-
----
-
-Test Cases for getOffer
-
-import axios from "axios";
+yimport axios from "axios";
 import configureStore from "redux-mock-store";
 import thunk from "redux-thunk";
-import { getOffer } from "./your-file";
-import { CONSTANTS } from "../../../utils/common/constants";
+import { getOfferCalulated } from "./preApprovalServices";
 
-jest.mock("../../../utils/common/pre-approval-utils", () => ({
-  getAckMetaData: jest.fn(() => "mock-meta-data"),
-  getFormConfigPayload: jest.fn(() => ({
-    dedupeList: ["mock-dedupe-data"],
-  })),
-}));
-
-jest.mock("../../../utils/common/constants", () => ({
-  STAGE_NAMES: {
-    ACD_1: "ACD_1",
-  },
-}));
-
-jest.mock("../../../utils/common/utils", () => ({
-  dispatchError: jest.fn(),
-}));
+jest.mock("axios");
 
 const mockStore = configureStore([thunk]);
-const store = mockStore({
-  stages: {
-    stages: [
-      {
-        stageId: "ACD-1",
-        stageInfo: {
-          application: { channel_reference: "mock-channel-ref" },
-          products: ["mock-product"],
-        },
-      },
-    ],
-  },
-});
 
-describe("getOffer", () => {
+describe("getOfferCalulated", () => {
+  let store: ReturnType<typeof mockStore>;
+
+  beforeEach(() => {
+    // Mock Redux store with correct structure
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "ACD-1",
+            stageInfo: {
+              application: {
+                channel_reference: "mock-channel-ref",
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    // Mock process.env variables
+    process.env.REACT_APP_RTOB_BASE_URL = "http://mock-base-url.com";
+    process.env.REACT_APP_RTOB_APPLICATION_END_POINT = "/application";
+    process.env.REACT_APP_RTOB_FETCH_OFFERS = "/fetch-offers";
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should make a POST request with the correct payload and headers", async () => {
-    const payload = { stage: {}, applicants: [{}] };
-
-    axios.post = jest.fn().mockResolvedValue({ data: "success" });
-
-    await getOffer(payload);
-
-    expect(axios.post).toHaveBeenCalledWith(
-      "undefinedundefinedmock-channel-refundefined",
-      expect.any(String),
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": "mock-meta-data",
-        },
-      }
-    );
-    expect(payload.stage.stage_id).toBe("ACD");
-    expect(payload.stage.stage_status).toBe("incomplete");
-  });
-
-  it("should handle errors and dispatch them", async () => {
-    axios.post = jest.fn().mockRejectedValue(new Error("Network Error"));
-
-    await expect(getOffer({ stage: {}, applicants: [{}] })).rejects.toThrow("Network Error");
-  });
-});
-
-
----
-
-Test Cases for getOffer2
-
-import { getOffer2 } from "./your-file";
-
-describe("getOffer2", () => {
-  it("should make a POST request with the correct data", async () => {
-    const payload = { stage: {}, applicants: [{}], application: {} };
-    axios.post = jest.fn().mockResolvedValue({ data: "success" });
-
-    await getOffer2(payload);
-
-    expect(axios.post).toHaveBeenCalledWith(
-      "undefinedundefinedmock-channel-refundefined",
-      expect.any(String),
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": "mock-meta-data",
-        },
-      }
-    );
-  });
-});
-
-
----
-
-Test Cases for getOfferCalulated
-
-import { getOfferCalulated } from "./your-file";
-
-describe("getOfferCalulated", () => {
   it("should make a POST request with the correct payload", async () => {
     const data = { requested_amount: 5000, requested_tenure: 12 };
-    axios.post = jest.fn().mockResolvedValue({ data: "success" });
+    axios.post.mockResolvedValue({ data: "success" }); // Mock Axios POST response
 
     await getOfferCalulated(data);
 
+    // Verify Axios was called with the correct URL and payload
     expect(axios.post).toHaveBeenCalledWith(
-      "undefinedundefinedundefined",
-      expect.stringContaining('"requested_amount":5000'),
+      "http://mock-base-url.com/application/mock-channel-ref/fetch-offers",
+      JSON.stringify({
+        requested_amount: 5000,
+        requested_tenure: 12,
+      }),
       {
         headers: {
           "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": "mock-meta-data",
+          "Sc-Client-Context": undefined, // Mock or provide actual value
         },
       }
     );
+    expect(axios.post).toHaveBeenCalledTimes(1);
   });
 });
-
-
----
-
-Test Cases for getImagePreview
-
-import { getImagePreview } from "./your-file";
-
-describe("getImagePreview", () => {
-  it("should make a GET request with the correct URL and headers", async () => {
-    const channelReference = "mock-channel";
-    const docId = "123";
-    axios.get = jest.fn().mockResolvedValue({ data: "image-blob" });
-
-    await getImagePreview(channelReference, docId);
-
-    expect(axios.get).toHaveBeenCalledWith(
-      "undefinedundefinedmock-channelundefined/123.png",
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          "Sc-Client-Context": "mock-meta-data",
-        },
-        responseType: "blob",
-      }
-    );
-  });
-
-  it("should handle errors and dispatch them", async () => {
-    axios.get = jest.fn().mockRejectedValue(new Error("Network Error"));
-
-    await expect(getImagePreview("mock-channel", "123")).rejects.toThrow("Network Error");
-  });
-});
-
-
----
-
-Notes:
-
-1. Mocking axios: All HTTP requests made with axios are mocked using jest.fn(). This prevents actual network calls during testing.
-
-
-2. Mocking Redux Store: The store.getState() is mocked using redux-mock-store to provide predefined states for each test case.
-
-
-3. Environment Variables: Replace process.env values with mock-env if necessary.
-
-
-
-These test cases cover various scenarios, including success and error handling for all four functions. Let me know if you need additional details!
-
