@@ -134,3 +134,219 @@ describe("Header component Testing", () => {
     expect(wrapper.find(Header)).toHaveLength(1);
   });
 });
+
+
+
+
+
+To increase the test coverage for the Header component, consider covering all conditional paths, state updates, and interactions. Below are additional test cases that can help achieve maximum coverage:
+
+
+---
+
+1. Test Default State Rendering
+
+Verify the default rendering of the Header component when no specific conditions are met.
+
+test("Should render without crashing when there are no stages", () => {
+  const emptyStore = {
+    ...store.getState(),
+    stages: { stages: [] },
+  };
+  render(
+    <Provider store={{ ...store, getState: () => emptyStore }}>
+      <Header />
+    </Provider>
+  );
+  expect(document.querySelector(".header")).toBeNull();
+  expect(document.querySelector(".pending__resume-header")).toBeNull();
+});
+
+
+---
+
+2. Test Rendering When productDetails is True
+
+Simulate the scenario where productDetails is set to true and verify that the header renders with the correct content.
+
+test("Should render product details when stages are available", () => {
+  const updatedStore = {
+    ...store.getState(),
+    stages: {
+      stages: [
+        { stageId: "stage-1", stageInfo: { applicants: [{}] } },
+      ],
+    },
+  };
+  render(
+    <Provider store={{ ...store, getState: () => updatedStore }}>
+      <Header />
+    </Provider>
+  );
+  expect(document.querySelector(".header")).toBeInTheDocument();
+  expect(document.querySelector(".step-info")).toHaveTextContent("Expected Header Title");
+});
+
+
+---
+
+3. Test Conditional Rendering of headerText
+
+Check the behavior when the pathname matches /hk/pending-application.
+
+test("Should render resume header when pathname matches", () => {
+  Object.defineProperty(window, "location", {
+    value: {
+      pathname: "/hk/pending-application",
+    },
+    writable: true,
+  });
+
+  const updatedStore = {
+    ...store.getState(),
+    stages: { stages: [] },
+  };
+  render(
+    <Provider store={{ ...store, getState: () => updatedStore }}>
+      <Header />
+    </Provider>
+  );
+
+  expect(document.querySelector(".pending__resume-header")).toBeInTheDocument();
+  expect(document.querySelector(".resume__header-name")).toHaveTextContent("Expected Resume Header Text");
+  expect(document.querySelector(".resume__header-text")).toHaveTextContent("Expected Subheader Text");
+});
+
+
+---
+
+4. Test Behavior with showCloseButton
+
+Verify that the close button renders conditionally based on showCloseButton.
+
+test("Should render close button in resume header", () => {
+  Object.defineProperty(window, "location", {
+    value: {
+      pathname: "/hk/pending-application",
+    },
+    writable: true,
+  });
+
+  const updatedStore = {
+    ...store.getState(),
+    stages: { stages: [] },
+  };
+  render(
+    <Provider store={{ ...store, getState: () => updatedStore }}>
+      <Header />
+    </Provider>
+  );
+
+  expect(document.querySelector(".close")).toBeInTheDocument();
+});
+
+
+---
+
+5. Test Behavior with Different Language Configurations
+
+Simulate scenarios for CONSTANTS.LANG_EN, CONSTANTS.LANG_CN, and CONSTANTS.LANG_HK.
+
+test("Should render correct header title based on language", () => {
+  const mockGetLanguageInfo = jest.fn(() => CONSTANTS.LANG_EN);
+  jest.spyOn(getUrl, "getLanguageInfo").mockImplementation(mockGetLanguageInfo);
+
+  const updatedStore = {
+    ...store.getState(),
+    stages: {
+      stages: [
+        { stageId: "stage-1", stageInfo: { applicants: [{}] } },
+      ],
+    },
+  };
+
+  render(
+    <Provider store={{ ...store, getState: () => updatedStore }}>
+      <Header />
+    </Provider>
+  );
+
+  expect(document.querySelector(".product-name")).toHaveTextContent(CONSTANTS.MASTER_HEADER);
+});
+
+
+---
+
+6. Test Edge Case with Empty stageInfo
+
+Simulate a scenario where stageInfo is missing from stages and verify no errors occur.
+
+test("Should handle empty stageInfo gracefully", () => {
+  const updatedStore = {
+    ...store.getState(),
+    stages: {
+      stages: [
+        { stageId: "stage-1", stageInfo: null },
+      ],
+    },
+  };
+
+  render(
+    <Provider store={{ ...store, getState: () => updatedStore }}>
+      <Header />
+    </Provider>
+  );
+
+  expect(document.querySelector(".header")).not.toBeInTheDocument();
+});
+
+
+---
+
+7. Test Behavior with title Function
+
+Mock the title function to ensure it is called with the correct parameters and returns the expected value.
+
+jest.mock("../../../utils/common/header-titles", () => jest.fn());
+
+test("Should call title function with correct stageId and language", () => {
+  const mockTitle = require("../../../utils/common/header-titles");
+  mockTitle.mockReturnValue("Mock Title");
+
+  const updatedStore = {
+    ...store.getState(),
+    stages: {
+      stages: [
+        { stageId: "stage-1", stageInfo: { applicants: [{}] } },
+      ],
+    },
+  };
+
+  render(
+    <Provider store={{ ...store, getState: () => updatedStore }}>
+      <Header />
+    </Provider>
+  );
+
+  expect(mockTitle).toHaveBeenCalledWith("stage-1", CONSTANTS.LANG_EN);
+  expect(document.querySelector(".step-info")).toHaveTextContent("Mock Title");
+});
+
+
+---
+
+Key Coverage Areas
+
+Default state rendering.
+
+Conditional rendering for product details and resume headers.
+
+Edge cases like missing stageInfo.
+
+Language-specific behavior.
+
+Interaction with the title function.
+
+
+These tests will cover additional paths and edge cases, bringing your test coverage closer to 100%.
+
