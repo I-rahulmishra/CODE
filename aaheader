@@ -1,0 +1,136 @@
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { StoreModel } from "../../../utils/model/common-model";
+import "./header.scss";
+import Close from "../../../shared/components/close/close";
+import title from "../../../utils/common/header-titles"
+import { CONSTANTS, resumeHeaderText } from "../../../utils/common/constants";
+import { getUrl } from "../../../utils/common/change.utils";
+
+const Header = () => {
+
+  const stageSelector = useSelector((state: StoreModel) => state.stages);
+  const [productDetails, setProductDetails] = useState(false);
+  const [headerTitle, setHeaderTitle] = useState('');
+  const [headerText, setHeaderText] = useState("");
+  const [subheaderText, setSubHeaderText] = useState("");
+  const [showCloseButton, setShowCloseButton] = useState(false);
+  const language = getUrl && getUrl.getLanguageInfo("lang")
+
+  useEffect(() => {
+    /*istanbul ignore else*/
+    if (
+      stageSelector &&
+      stageSelector.stages &&
+      stageSelector.stages.length > 0 &&
+      stageSelector.stages[0].stageInfo
+    ) {
+      setProductDetails(true);
+    }
+  }, [stageSelector]);
+  useEffect(() => {
+    const pathname = window.location.pathname;
+    /*istanbul ignore else*/
+    if (
+      stageSelector &&
+      stageSelector.stages &&
+      stageSelector.stages.length > 0 &&
+      stageSelector.stages[0].stageId
+    ) {
+      setHeaderTitle(title(stageSelector.stages[0].stageId, language));
+    } else if (pathname === "/hk/pending-application") {
+      setHeaderText(language === CONSTANTS.LANG_EN ? resumeHeaderText.HEADER_TEXT_EN.resume : language === CONSTANTS.LANG_CN ? resumeHeaderText.HEADER_TEXT_CN.resume : resumeHeaderText.HEADER_TEXT_HK.resume);
+      setSubHeaderText(language === CONSTANTS.LANG_EN ? resumeHeaderText.HEADER_TEXT_EN.resumeSubHeader : language === CONSTANTS.LANG_CN ? resumeHeaderText.HEADER_TEXT_CN.resumeSubHeader : resumeHeaderText.HEADER_TEXT_HK.resumeSubHeader);
+      setShowCloseButton(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageSelector]);
+  return (
+    <>
+      {productDetails && (
+        <div className="header">
+          <div className="header__content">
+            <div className="product-name">{language === CONSTANTS.LANG_EN ? CONSTANTS.MASTER_HEADER : language === CONSTANTS.LANG_CN ? CONSTANTS.MASTER_HEADER_CN : CONSTANTS.MASTER_HEADER_HK}</div>
+            <Close />
+            <div className="step-info">{headerTitle}</div>
+          </div>
+        </div>
+      )}
+      {headerText && (
+        <div className="pending__resume-header">
+          <div>
+            <div className="resume__header-name">{headerText}</div>
+            {showCloseButton && <Close authType="resume" />}
+            <div className="resume__header-text">{subheaderText}</div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Header;
+
+
+
+import { shallow, ShallowWrapper } from "enzyme";
+import Header from "./header";
+import { Provider } from "react-redux";
+import { cleanup, render } from "@testing-library/react";
+import { store } from "../../../utils/store/store";
+
+jest.mock("axios", () => ({
+    __esModule: true,
+}));
+
+jest.mock('react-pdf', () => {
+    return {
+        pdfjs: {
+            GlobalWorkerOptions: {
+                workerSrc: 'https://pt.sc.com/onboarding/platform/react/pdf.worker.min.js'
+            },
+            renderTextLayer :false
+        },
+        Outline: null,
+    };
+  });
+
+afterEach(() => {
+    cleanup();
+    jest.resetAllMocks();
+});
+afterAll(() => {
+    jest.clearAllMocks();
+});
+
+let wrapper: ShallowWrapper;
+
+beforeEach(() => {
+  wrapper = shallow(
+    <Provider store={store}>
+      <Header />
+    </Provider>
+  );
+});
+
+describe("Header component Testing", () => {
+  let wrapper: ShallowWrapper;
+
+  beforeEach(() => {
+    wrapper = shallow(
+      <Provider store={store}>
+        <Header />
+      </Provider>
+    );
+  });
+
+  test("Should render correctly", () => {
+    render(
+      <Provider store={store}>
+        <Header />
+      </Provider>
+    );
+    expect(wrapper.length).toEqual(1);
+    expect(wrapper.find(Header)).toHaveLength(1);
+  });
+});
