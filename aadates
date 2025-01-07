@@ -685,3 +685,127 @@ describe('Date Component', () => {
     expect(container.firstChild).toBeNull();
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+To improve the test coverage from 65%, you need to identify untested or under-tested parts of the Date component. Based on the provided test cases, here are four additional scenarios that might increase coverage:
+
+
+---
+
+1. Test handleCallback Prop Execution
+
+Verify that the handleCallback prop is called with the correct values after valid input is provided.
+
+test('calls handleCallback with the correct date values', () => {
+  renderComponent();
+
+  const ddInput = screen.getByPlaceholderText('DD');
+  const mmInput = screen.getByPlaceholderText('MM');
+  const yyyyInput = screen.getByPlaceholderText('YYYY');
+
+  fireEvent.change(ddInput, { target: { value: '12' } });
+  fireEvent.change(mmInput, { target: { value: '08' } });
+  fireEvent.change(yyyyInput, { target: { value: '1995' } });
+
+  expect(mockProps.handleCallback).toHaveBeenCalledWith({
+    field: 'test_date',
+    value: '1995-08-12',
+  });
+});
+
+
+---
+
+2. Test editable Prop Behavior
+
+Ensure the component behaves correctly when the editable prop is set to true or false.
+
+test('disables inputs when editable is false', () => {
+  renderComponent({ ...mockProps, data: { ...mockProps.data, editable: false } });
+
+  const ddInput = screen.getByPlaceholderText('DD');
+  const mmInput = screen.getByPlaceholderText('MM');
+  const yyyyInput = screen.getByPlaceholderText('YYYY');
+
+  expect(ddInput).toBeDisabled();
+  expect(mmInput).toBeDisabled();
+  expect(yyyyInput).toBeDisabled();
+});
+
+test('enables inputs when editable is true', () => {
+  renderComponent({ ...mockProps, data: { ...mockProps.data, editable: true } });
+
+  const ddInput = screen.getByPlaceholderText('DD');
+  const mmInput = screen.getByPlaceholderText('MM');
+  const yyyyInput = screen.getByPlaceholderText('YYYY');
+
+  expect(ddInput).toBeEnabled();
+  expect(mmInput).toBeEnabled();
+  expect(yyyyInput).toBeEnabled();
+});
+
+
+---
+
+3. Test mandatory Field Behavior
+
+Check if the component correctly highlights errors when the mandatory field is Yes and inputs are left empty.
+
+test('shows error for empty mandatory fields', () => {
+  renderComponent({
+    ...mockProps,
+    data: { ...mockProps.data, mandatory: 'Yes' },
+  });
+
+  const yyyyInput = screen.getByPlaceholderText('YYYY');
+  fireEvent.blur(yyyyInput);
+
+  expect(screen.getByText('This field is required')).toBeInTheDocument();
+});
+
+
+---
+
+4. Test Conditional Label Rendering
+
+Test that the label is conditionally rendered based on rwb_label_name.
+
+test('does not render label when rwb_label_name is empty', () => {
+  renderComponent({
+    ...mockProps,
+    data: { ...mockProps.data, rwb_label_name: '' },
+  });
+
+  expect(screen.queryByText('Test Date')).not.toBeInTheDocument();
+});
+
+
+---
+
+Expected Impact
+
+1. handleCallback Execution: This adds coverage for the callback functionality.
+
+
+2. editable Prop: Tests dynamic behavior based on input accessibility.
+
+
+3. mandatory Validation: Adds coverage for required field logic.
+
+
+4. Label Rendering: Ensures conditional rendering is accounted for.
+
+
+
+With these additional tests, you should see a noticeable improvement in the overall coverage percentage, ideally reaching 90% or more.
+
