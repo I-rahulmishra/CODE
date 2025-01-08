@@ -1,145 +1,174 @@
-yimport { getProductMetaDataInfo } from './path-to-file';
-import axios from 'axios';
-import { PreApprovalUtil } from './PreApprovalUtil';
-import { getUrl } from './getUrl';
-import { urlParamAction } from './urlParamAction';
-import { dispatchError } from './dispatchError';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import { fieldError, fieldIdAppend, getUrl, isFieldUpdate, isFieldValueUpdate } from "../../../utils/common/change.utils";
+import errorMsg from "../../../assets/_json/error.json";
+import { CONSTANTS } from "../../../utils/common/constants";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import "./text.scss";
+import { modelAction } from "../../../utils/store/model-slice";
+import { ContinueBtnAction } from "../../../utils/store/continue-validation-slice";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
 
-jest.mock('axios');
-jest.mock('./PreApprovalUtil', () => ({
-  generateUUID: jest.fn(),
-}));
-jest.mock('./getUrl', () => ({
-  getParameterByName: jest.fn(),
-}));
-jest.mock('./urlParamAction', () => ({
-  productDetails: jest.fn(),
-}));
-jest.mock('./dispatchError', () => ({
-  dispatchError: jest.fn(),
-}));
+const Text = (props: KeyWithAnyModel) => {
+  const [error, setError] = useState('');
+  const stageSelector = useSelector((state: StoreModel) => state?.stages?.stages);
+  const fieldErrorSelector = useSelector((state: StoreModel) => state.fielderror?.error);
+  const userInputSelector = useSelector((state: StoreModel) => state?.stages?.userInput);
+  const dispatch = useDispatch();
+  const pinyinToggleSelector = useSelector((state: StoreModel) => state?.stages?.pinyinToggle)
+  const [defaultValue, setDefaultValue] = useState(props?.data?.ui_defaulted_value !== null ? props?.data?.ui_defaulted_value : "");
+  const [textDisabled, setTextDisabled] = useState(false)
+  const [placeholder, setPlaceHolder] = useState('')
+  const chineseRegex = /[^\s\u4E00-\u9FFF\u3400-\u4DFF\uF900-\uFAFF]+/g;
+  const addressChineseRegex = /[^a-zA-Z\d\u4E00-\u9FFF\u3400-\u4DFF\uF900-\uFAFF.,/?:()#&-\s]+/;
+  const addressNonChineseRegex = /([^A-Za-z\d.()/&#,:?-\s]+)/;
+  const stateCityPattern = /[^a-zA-Z\s]+/;
+  const regexAlphaNumeric = /^[a-zA-Z0-9 ]+$/;
+  const regexAlphaNumericName = /^[a-zA-Z ]+$/;
+  const chinaIdRegex = "^[0-9]{17}[0-9a-zA-Z]{1}$";
+  const user_names = ['admin', 'administrator', 'manager']
+  const language = getUrl.getLanguageInfo("lang");
+  const [taxIDValue, setTaxIDValue] = useState("");
+  const relationshipWithBank=userInputSelector.applicants[0].related_party;
 
-const mockDispatch = jest.fn();
+  useEffect(() => {
+    if (props?.data?.rwb_label_name === "Room (If applicable – one input required from Room, Floor or Block)" ||
+      props?.data?.rwb_label_name === "Floor (If applicable)" || props?.data?.rwb_label_name === "Block (If applicable)") {
+      setPlaceHolder("(If-applicable)")
+    }
+  },[]);
 
-describe('getProductMetaDataInfo', () => {
-  const mockUrlParams = {
-    search: '?products=personal-loan&campaign=testCampaign&premium=testPremium',
-  };
+  const validationPatterns = () => {
+    let pattern; let fieldName = props?.data?.logical_field_name;
+    if (props?.data?.logical_field_name === "china_id_number") {
+      pattern = '^[0-9]{17}[0-9a-zA-Z]{1}$';
+    }
+    if (props?.data?.logical_field_name === "full_name_chinese") {
+      pattern = "[ \\u4E00-\\u9FFF\\u3400-\\u4DFF\\uF900-\\uFAFF ]+";
+    }
+    if (fieldName === "res_name_of_street_1" || fieldName === "res_building_estate_1" || fieldName === "res_room_flat_1" || fieldName === "res_room_flat_3" || fieldName === "res_building_estate_3" || fieldName === "res_name_of_street_3") {
+      pattern = "^[a-zA-Z \\u4E00-\\u9FFF\\u3400-\\u4DFF\\uF900-\\uFAFF.,/?:()#&-]+";
+    }
+    if (fieldName === "address_res_1" || fieldName === "address_res_2" || fieldName === "address_res_3" || fieldName === "address_mailing_1" || fieldName === "address_mailing_2" || fieldName === "address_mailing_3" || fieldName === "res_name_of_street_2" || fieldName === "res_building_estate_2" || fieldName === "res_room_flat_2" || fieldName === "res_floor_4" || fieldName === "res_building_estate_4" || fieldName === "res_name_of_street_4" || fieldName === "res_room_flat_4" || fieldName === "res_block_3") {
+      pattern = "^[A-Za-z .()/&#,:?-]+";   //"^([A-Za-z\d.()/&#,:?-]+\s)*[a-zA-Z\d.()/&#,:?-]+$"   
+    }
+    if (fieldName === "state_res_1" || fieldName === "state_mailing_1" || fieldName === "city_res_1" || fieldName === "city_mailing_1") {
+      pattern = "^[a-zA-Z]+";     //-->  "^[a-zA-Z]+(?: [a-zA-Z]+)*$" ;
+    }
+    if (fieldName === "first_name" || fieldName === "last_name") {
+      pattern = "^[a-zA-Z]+";
+    }
+    if (fieldName === "user_name_ibk") {
+      pattern = "^[a-zA-Z0-9]+$";
+    }
+    return pattern
+  }
 
-  const mockResponseData = {
-    products: {
-      personal: [
-        { product_type: 'personal-loan', product_description: 'Test Description' },
-      ],
-    },
-  };
-
-  const mockFlatFilteredArray = [
-    {
-      campaign: 'testCampaign',
-      name: 'personal-instalment-loan',
-      company_category: 'NA',
-      premiumCode: 'testPremium',
-      product_type: 'personal-loan',
-    },
-  ];
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('should fetch product metadata and dispatch product details if products are found', async () => {
-    // Mock dependencies
-    PreApprovalUtil.generateUUID.mockReturnValue('test-uuid');
-    getUrl.getParameterByName.mockImplementation((param) => {
-      switch (param) {
-        case 'products':
-          return 'personal-loan';
-        case 'campaign':
-          return 'testCampaign';
-        case 'premium':
-          return 'testPremium';
-        default:
-          return null;
+  const promoCodeValidation = (fieldName:string, event:React.ChangeEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>) =>{
+    if (event.target.value.length === 0) {
+      setError('')
+    } else if ((event.target.value).includes(' ')) {
+      return setError(`${language === CONSTANTS.LANG_EN ? errorMsg.pleaseDeleteSpace : language === CONSTANTS.LANG_CN ? errorMsg.pleaseDeleteSpace_CN : errorMsg.pleaseDeleteSpace_HK}`);
+    }
+    if (!(event.target.value).startsWith("SCB") && (event.target.value).slice(0, 3) !== ("HKR")) {
+      return setError(`${language === CONSTANTS.LANG_EN ? errorMsg.promocodeRequired : language === CONSTANTS.LANG_CN ? errorMsg.promocodeRequired_CN : errorMsg.promocodeRequired_HK}`);
+    }
+    if (!(event.target.value).startsWith("HKR") && (event.target.value).slice(0, 3) !== ("SCB")) {
+      return setError(`${language === CONSTANTS.LANG_EN ? errorMsg.promocodeRequired : language === CONSTANTS.LANG_CN ? errorMsg.promocodeRequired_CN : errorMsg.promocodeRequired_HK}`);
+    } 
+    if (fieldName === "mgm_referral_code" && /^[A-Z]\d{7}$/.test(event.target.value)) {
+      var sum = 0;
+      for (var i = 1; i <= 7; i++) {
+        sum += parseInt(event.target.value.charAt(i));
       }
-    });
+      var lookupTable: any = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'J': 9, 'K': 0 };
+      sum += lookupTable[event.target.value.charAt(0)];
+      if (sum % 10 !== 0) {
+        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.promocodeRequired : language === CONSTANTS.LANG_CN ? errorMsg.promocodeRequired_CN : errorMsg.promocodeRequired_HK}`);
+      } else {
+        setError('')
+      }
+    }
+  } 
 
-    axios.request.mockResolvedValue({ data: mockResponseData });
+  const requiredErrorValidations = (fieldName:string,event:React.FocusEvent<HTMLInputElement>) => {
+    
+    const fieldValue = event.target.value;
+    if (fieldName === "first_name" && fieldValue === "") {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.surnameRequired : language === CONSTANTS.LANG_CN ? errorMsg.surnameRequired_CN : errorMsg.surnameRequired_HK}`);
+    }
+    if (fieldName === "last_name" && fieldValue === "") {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.surnameRequired : language === CONSTANTS.LANG_CN ? errorMsg.surnameRequired_CN : errorMsg.surnameRequired_HK}`);
+    }
 
-    // Call the function
-    const result = await getProductMetaDataInfo(mockUrlParams)(mockDispatch);
+    if (fieldName === "res_room_flat" && fieldValue === "") {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.roomRequired + ` "1202"` : language === CONSTANTS.LANG_CN ? errorMsg.roomRequired_CN + ` "1202"` : errorMsg.roomRequired_HK + ` "1202"`}`);
+    }
+   
+    if(fieldName==="res_building_estate_pt" && fieldValue===""){
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.buildingEstateRequired : language === CONSTANTS.LANG_CN ? errorMsg.buildingEstateRequired_CN : errorMsg.buildingEstateRequired_HK}`);
+    }
 
-    // Assertions
-    expect(axios.request).toHaveBeenCalledWith({
-      method: 'GET',
-      url: `${process.env.REACT_APP_PRODUCT_INFO_URL}`,
-      headers: {
-        Authorization: `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
-        'SC-CLIENT-CONTEXT': expect.any(String),
-      },
-    });
+    if(fieldName==="off_room_flat" && fieldValue===""){
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.roomRequired + ` "1202"` : language === CONSTANTS.LANG_CN ? errorMsg.roomRequired_CN + ` "1202"` : errorMsg.roomRequired_HK + ` "1202"`}`);
+    }
 
-    expect(urlParamAction.productDetails).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ product_type: 'personal-loan' }),
-      ])
-    );
+    if(fieldName==="off_building_estate_pt" && fieldValue===""){
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.buildingEstateRequired : language === CONSTANTS.LANG_CN ? errorMsg.buildingEstateRequired_CN : errorMsg.buildingEstateRequired_HK}`);
+    }
 
-    expect(mockDispatch).toHaveBeenCalledWith(
-      urlParamAction.productDetails(mockFlatFilteredArray)
-    );
+    if (fieldName === "annual_income_pl" && fieldValue === "") {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.annualIncomePlRequired : language === CONSTANTS.LANG_CN ? errorMsg.annualIncomePlRequired_CN : errorMsg.annualIncomePlRequired_HK}`);
+    }
 
-    expect(result).toEqual(mockFlatFilteredArray);
-  });
+    if (fieldName === "name_of_employer" && fieldValue === "") {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.nameOfEmpRequired : language === CONSTANTS.LANG_CN ? errorMsg.nameOfEmpRequired_CN : errorMsg.nameOfEmpRequired_HK}`);
+    }
 
-  test('should handle no products in the response and dispatch an error', async () => {
-    // Mock dependencies
-    axios.request.mockResolvedValue({ data: { products: {} } });
 
-    // Call the function
-    await getProductMetaDataInfo(mockUrlParams)(mockDispatch);
-
-    // Assertions
-    expect(dispatchError).toHaveBeenCalledWith({
-      response: {
-        status: 'error',
-        statusText: 'no response',
-      },
-    });
-  });
-
-  test('should handle axios request errors and dispatch an error', async () => {
-    // Mock dependencies
-    const mockError = new Error('Request failed');
-    axios.request.mockRejectedValue(mockError);
-
-    // Call the function
-    await expect(
-      getProductMetaDataInfo(mockUrlParams)(mockDispatch)
-    ).rejects.toThrow('Request failed');
-
-    // Assertions
-    expect(dispatchError).toHaveBeenCalledWith(mockError);
-    expect(mockDispatch).not.toHaveBeenCalledWith(
-      urlParamAction.productDetails(expect.anything())
-    );
-  });
-
-  test('should reject the promise if no "products" or "auth" parameter is found', async () => {
-    // Mock dependencies
-    getUrl.getParameterByName.mockReturnValue(null);
-
-    // Call the function
-    await expect(
-      getProductMetaDataInfo(mockUrlParams)(mockDispatch)
-    ).rejects.toBeUndefined();
-
-    // Assertions
-    expect(dispatchError).toHaveBeenCalledWith({
-      response: {
-        status: 'error',
-        statusText: 'no response',
-      },
-    });
-  });
-});
+    else if (fieldName === "first_name" && fieldValue === "") {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.givenNameRequired : language === CONSTANTS.LANG_CN ? errorMsg.givenNameRequired_CN : errorMsg.givenNameRequired_HK}`);
+    }
+    else if (fieldName === "related_party" && fieldValue === "") {
+      setError(`${language === CONSTANTS.LANG_EN ? errorMsg.givenNameRequired : language === CONSTANTS.LANG_CN ? errorMsg.givenNameRequired_CN : errorMsg.givenNameRequired_HK}`);
+    }
+    if (event.target.validity.valid) {
+      props.handleCallback(props.data, event.target.value);
+      dispatch(isFieldValueUpdate(props, stageSelector, fieldValue));
+      dispatch(isFieldUpdate(props, fieldValue, fieldName));
+    }
+    let trimmedValue = event.target.value.trimStart();
+    if (fieldName === "full_name" || fieldName === "full_name_chinese" || stageSelector?.[0].stageId === CONSTANTS.STAGE_NAMES.BD_5) {
+      setDefaultValue(trimmedValue.replace(/\s\s+/g, ' ').trimEnd());
+      //show error message more than one empty space
+      if ((fieldName === "state_res_1" || fieldName === "city_res_1" || fieldName === "state_mailing_1" || fieldName === "city_mailing_1")) {
+        if (`${event.target.value.replace(/\s\s+/g, ' ').trimEnd()}`.match(stateCityPattern)) {
+          setError(`${language === CONSTANTS.LANG_EN ? errorMsg.patterns : language === CONSTANTS.LANG_CN ? errorMsg.patterns_CN : errorMsg.patterns_HK}${props?.data?.rwb_label_name}`);
+        } else {
+          if (event.target.validity.valid) {
+            setError('');
+          }
+        }
+      }
+      if (fieldName === "res_name_of_street_1" || fieldName === "res_building_estate_1" || fieldName === "res_room_flat_1" || fieldName === "res_room_flat_3" || fieldName === "res_building_estate_3" || fieldName === "res_name_of_street_3") {
+        if (`${event.target.value.replace(/\s\s+/g, ' ').trimEnd()}`.match(addressChineseRegex)) {
+          setError(`${language === CONSTANTS.LANG_EN ? errorMsg.patterns : language === CONSTANTS.LANG_CN ? errorMsg.patterns_CN : errorMsg.patterns_HK}${props?.data?.rwb_label_name}`);
+        } else {
+          setError('');
+        }
+      }
+      if (fieldName === "address_res_1" || fieldName === "address_res_2" || fieldName === "address_res_3" || fieldName === "address_mailing_1" || fieldName === "address_mailing_2" || fieldName === "address_mailing_3" || fieldName === "res_name_of_street_2" || fieldName === "res_building_estate_2" || fieldName === "res_room_flat_2" || fieldName === "res_floor_4" || fieldName === "res_building_estate_4" || fieldName === "res_name_of_street_4" || fieldName === "res_room_flat_4" || fieldName === "res_block_3") {
+        if (`${event.target.value.replace(/\s\s+/g, ' ').trimEnd()}`.match(addressNonChineseRegex)) {
+          setError(`${language === CONSTANTS.LANG_EN ? errorMsg.patterns : language === CONSTANTS.LANG_CN ? errorMsg.patterns_CN : errorMsg.patterns_HK}${props?.data?.rwb_label_name}`);
+        } else {
+          setError('');
+        }
+      }
+    }
+    // Promo code validation
+    else if (fieldName === "mgm_referral_code") {
+      promoCodeValidation(fieldName,event)
+    }
+  }
