@@ -42,3 +42,43 @@
       }
     });
   }
+
+
+
+const downloadPdf = async (link: string, pdfName: string) => {
+  try {
+    const response = await fetch(link, {
+      headers: {
+        Authorization: `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+    }
+
+    // Read the response as a blob
+    const blob = await response.blob();
+
+    // Check if the browser is Safari
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    // Create a download link
+    const dataURL = window.URL.createObjectURL(blob);
+    const lin = document.createElement('a');
+    lin.href = dataURL;
+
+    // Set the download file name
+    lin.download = pdfName.endsWith('.pdf') ? pdfName : `${pdfName}.pdf`;
+
+    // Append link to the DOM and trigger the download
+    document.body.appendChild(lin);
+    lin.click();
+    document.body.removeChild(lin);
+
+    // Revoke the object URL to free up memory
+    window.URL.revokeObjectURL(dataURL);
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+  }
+};
