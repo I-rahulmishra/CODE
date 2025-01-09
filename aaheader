@@ -291,3 +291,46 @@ const OnboardingBeforeStart: React.FC<any> = ({
 };
 
 export default OnboardingBeforeStart;
+
+
+
+
+
+
+const downloadPdf = async (link: any) => {
+  try {
+    const response = await fetch(link, {
+      headers: {
+        "Authorization": `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch PDF');
+    }
+
+    // Ensure the response is converted to a Blob (binary data)
+    const blob = await response.blob();
+
+    // Create a URL for the Blob
+    const dataURL = window.URL.createObjectURL(blob);
+
+    // Create a temporary download link
+    const lin = document.createElement('a');
+    lin.href = dataURL;
+
+    // Ensure the file name ends with .pdf
+    lin.download = pdfName.endsWith('.pdf') ? pdfName : `${pdfName}.pdf`;
+
+    // Append to the document and trigger the download
+    document.body.appendChild(lin);
+    lin.click();
+    document.body.removeChild(lin);
+
+    // Revoke the object URL to free up memory
+    window.URL.revokeObjectURL(dataURL);
+
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+  }
+};
