@@ -1,36 +1,30 @@
-const downloadPdf = async (link: string) => {
+const downloadFile = async (fileUrl: string, fileName: string) => {
   try {
-    // Fetch the PDF from the link
-    const response = await fetch(link, {
-      headers: {
-        Authorization: `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
-      },
+    // Use proxy to bypass CORS
+    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+    const response = await fetch(proxyUrl + fileUrl, {
+      method: 'GET',
     });
 
-    // Check if the response is successful
     if (!response.ok) {
-      throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+      throw new Error(`Error downloading file: ${response.statusText}`);
     }
 
-    // Convert the response to a Blob
+    // Convert response to blob
     const blob = await response.blob();
 
-    // Create a link element
-    const lin = document.createElement('a');
-    const dataURL = window.URL.createObjectURL(blob);
-    lin.href = dataURL;
+    // Create a link to download the file
+    const downloadLink = document.createElement('a');
+    const url = window.URL.createObjectURL(blob);
+    downloadLink.href = url;
+    downloadLink.download = fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
 
-    // Set the download file name
-    lin.download = pdfName.endsWith('.pdf') ? pdfName : `${pdfName}.pdf`;
-
-    // Append the link to the DOM, trigger the click, and remove the link
-    document.body.appendChild(lin);
-    lin.click();
-    document.body.removeChild(lin);
-
-    // Revoke the object URL to free memory
-    window.URL.revokeObjectURL(dataURL);
+    // Cleanup
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(downloadLink);
   } catch (error) {
-    console.error('Error downloading PDF:', error);
+    console.error('Error downloading file:', error);
   }
 };
