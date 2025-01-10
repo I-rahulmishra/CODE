@@ -287,3 +287,132 @@ const OnboardingBeforeStart: React.FC<any> = ({
 };
 
 export default OnboardingBeforeStart;
+
+
+
+
+
+
+
+
+
+
+
+The issue you're facing with downloading a PDF file is likely due to how the response from the fetch request is being handled and transformed into a Blob. Here's an updated and corrected approach to fix the issue:
+
+Key Changes:
+
+1. Ensure the response is correctly handled as a Blob (not as response.data).
+
+
+2. Use response.blob() to properly retrieve the binary data from the fetch response.
+
+
+3. Remove unnecessary handling of browser-specific behaviors unless strictly required.
+
+
+
+Here's the corrected downloadPdf function:
+
+const downloadPdf = (link: string) => {
+  fetch(link, {
+    headers: {
+      "Authorization": `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
+    },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch the PDF");
+      }
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create a download link for the blob
+      const lin = document.createElement("a");
+      const dataURL = window.URL.createObjectURL(blob);
+
+      lin.href = dataURL;
+
+      // Check if the file name ends with ".pdf", otherwise append it
+      lin.download = pdfName.endsWith(".pdf") ? pdfName : `${pdfName}.pdf`;
+      document.body.appendChild(lin);
+      lin.click();
+      document.body.removeChild(lin);
+    })
+    .catch((error) => {
+      console.error("Error downloading the PDF:", error);
+    });
+};
+
+Explanation:
+
+1. response.blob(): This ensures the binary data is fetched correctly without corruption.
+
+
+2. Dynamic File Name: Ensures the downloaded file has the proper .pdf extension.
+
+
+3. Error Handling: Logs errors in case the fetch request fails.
+
+
+
+Open in a New Tab:
+
+To view the file in a new tab, create an object URL from the Blob and open it using window.open.
+
+Add this functionality if required:
+
+const openPdfInNewTab = (link: string) => {
+  fetch(link, {
+    headers: {
+      "Authorization": `${process.env.REACT_APP_RTOB_AUTHORIZATION}`,
+    },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch the PDF");
+      }
+      const blob = await response.blob();
+      const dataURL = window.URL.createObjectURL(blob);
+
+      // Open the PDF in a new tab
+      window.open(dataURL, "_blank");
+    })
+    .catch((error) => {
+      console.error("Error opening the PDF:", error);
+    });
+};
+
+Usage:
+
+1. Replace the onClick handlers in your JSX:
+
+<span
+  className="tcTable__download"
+  onClick={() => {
+    downloadPdf(item.url);
+  }}
+>
+  Download
+</span>
+<span
+  className="tcTable__view"
+  onClick={() => {
+    openPdfInNewTab(item.url);
+  }}
+>
+  View
+</span>
+
+
+2. Test by downloading and viewing the files.
+
+
+
+Additional Notes:
+
+Ensure the API endpoint link is correct and provides a valid PDF file.
+
+Check for CORS issues since fetch may fail if the server doesn't allow cross-origin requests.
+
+
