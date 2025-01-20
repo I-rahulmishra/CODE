@@ -1,3 +1,266 @@
+export const documentList=[
+   {
+       "document_category": "Colour Identity Proof",
+       "document_category_code": "R0001",
+       "min_options_req": "1",
+       "document_category_visible": null,
+       "document_category_seq": null,
+       "document_options": [
+           {
+               "document_option_sequence": "1",
+               "document_option_selected": null,
+               "document_types": [
+                   {
+                       "document_requested_stage": null,
+                       "document_type": "HKID Copy",
+                       "document_type_code": "A001",
+                       "document_sub_type": null,
+                       "no_of_periods": null,
+                       "id_expiry": null,
+                       "id_number": null,
+                       "uploaded_documents": null
+                   }
+               ]
+           }
+       ]
+   },
+   {
+       "document_category": "Income Proof",
+       "document_category_code": "R0005",
+       "min_options_req": "1",
+       "document_category_visible": null,
+       "document_category_seq": null,
+       "document_options": [
+           {
+               "document_option_sequence": "1",
+               "document_option_selected": null,
+               "document_types": [
+                   {
+                       "document_requested_stage": null,
+                       "document_type": "3-month Income proof",
+                       "document_type_code": "A023",
+                       "document_sub_type": null,
+                       "no_of_periods": null,
+                       "id_expiry": null,
+                       "id_number": null,
+                       "uploaded_documents": null
+                   }
+               ]
+           }
+       ]
+   },
+   {
+      "document_category": "Address Proof",
+      "document_category_code": "R0004",
+      "min_options_req": "1",
+      "document_category_visible": null,
+      "document_category_seq": null,
+      "document_options": [
+          {
+              "document_option_sequence": "1",
+              "document_option_selected": null,
+              "document_types": [
+                  {
+                      "document_requested_stage": null,
+                      "document_type": "3-month Income proof",
+                      "document_type_code": "A023",
+                      "document_sub_type": null,
+                      "no_of_periods": null,
+                      "id_expiry": null,
+                      "id_number": null,
+                      "uploaded_documents": null
+                  }
+              ]
+          }
+      ]
+  },
+  {
+      "document_category": "Passport",
+      "document_category_code": "R0003",
+      "min_options_req": "1",
+      "document_category_visible": null,
+      "document_category_seq": null,
+      "document_options": [
+         {
+            "document_option_sequence": "1",
+            "document_option_selected": null,
+            "document_types": [
+                  {
+                     "document_requested_stage": null,
+                     "document_type": "3-month Income proof",
+                     "document_type_code": "A023",
+                     "document_sub_type": null,
+                     "no_of_periods": null,
+                     "id_expiry": null,
+                     "id_number": null,
+                     "uploaded_documents": null
+                  }
+            ]
+         }
+      ]
+   }
+]
+
+
+import React, { useState } from "react";
+import "../documentUploadMain/document-upload-main-scr.scss";
+import "./document-type-dynamic.scss";
+import ColorIdentityProof from "../colourIdentityProof/colour-Identity-Proof";
+import { dispatchError, dispatchLoader } from "../../../../../services/common-service";
+import { useDispatch, useSelector } from "react-redux";
+import { postQRCodeZOLO } from "../../../services/preApprovalPostServices";
+import { AxiosError } from "axios";
+import DocumentUpload from "../document-upload-scr2/documentUpload";
+import { stagesAction } from "../../../../../utils/store/stages-slice";
+
+
+const DocumentTypeDynamic: React.FC<any> = ({
+  // changeIconColorIdentityProof,
+  openUploadHKdialog,
+  docCategory,
+  docCategory2,
+  // success,
+  // setChangeIconIncomeProof,
+  // changeIconIncomeProof,
+  // changeIcon,
+  // title,
+  document_list,
+  showContinueBtn,
+  setShowContinueBtn,
+  setHKIDVersionValue,
+  setShowUploadFileSuccess,
+  setHKIDVersion,
+  setHKIDQRCodeData,
+  HKIDQRCodeData,
+  HKIDVersion,
+  showUploadFileSuccess,
+  HKIDVersionValue,
+  setZolozDocumentData
+}) => {
+
+  const dispatch = useDispatch();
+  const goBack = useSelector((state: any) => state.stages.dynamicDocumentsUpload.goBack);
+  const success = useSelector((state: any) => state.stages.dynamicDocumentsUpload.success);
+ 
+  const changeIconIncomeProof = useSelector((state: any) => state.stages.dynamicDocumentsUpload.changeIconIncomeProof);
+  const changeIconColorIdentityProof = useSelector((state: any) => state.stages.dynamicDocumentsUpload.changeIconColorIdentityProof);
+  const channel_reference = "04041ed2f9a3a12024";
+  // const channel_reference = useSelector((state: StoreModel) => state.stages && state.stages.stages[0].stageInfo.application.channel_reference);
+  const fileSectionData = useSelector((state: any) => state.stages.dynamicDocumentsUpload.fileSectionData);
+
+  const [showSpinner, setShowSpinner] = useState(true);
+  
+  const [showIncomeProof, setShowIncomeProof] = useState("");
+  const [showQRCodePage, setShowQRCodePage] = useState(false);
+
+  const callQRCodeAPI = () => {
+    setShowSpinner(true);
+    dispatch(dispatchLoader(true));
+    console.log(channel_reference)
+    postQRCodeZOLO(channel_reference, HKIDVersionValue).then((response: any) => {
+      if (response.status === 200) {
+        setHKIDQRCodeData(response.data);
+        setShowSpinner(false);
+        dispatch(dispatchLoader(false));
+      }
+    }).catch((error: AxiosError) => {
+      dispatchError(error)
+    });
+  };
+  return (
+    <div className="row-start">
+      <div className="doc-select-box">
+        {console.log(document_list,fileSectionData, "document_listrk")}
+        {fileSectionData.length === 0 && document_list?.map((item: any) => {
+            return (
+              <div
+                id="upload_fieldset_{{docCategory.document_category_code}}"
+                className={
+                  changeIconColorIdentityProof
+                    ? "form-field doc-select-box-child"
+                    : "form-field-checked doc-select-box-child"
+                }
+              >
+                <p
+                 role="button"
+                  title={item.document_category}
+                  className={
+                    changeIconColorIdentityProof ? "doc-add" : "doc-checked"
+                  }
+                  onClick={() => dispatch(stagesAction.updatefileSectionData(item))}
+                  id="upload_fieldset_{{docCategory.document_category_code}}"
+                ></p>
+                <p
+                  className="doc-field-name"
+                  id="upload_fieldset_{{docCategory.document_category_code}}"
+                >
+                  {/* {docCategory} */}
+                  {item.document_category}
+                </p>
+              </div>
+            );
+        })}
+      </div>
+
+      {fileSectionData.length !== 0 && fileSectionData?.document_category_code==="R0001"? 
+        <ColorIdentityProof
+        showIncomeProof={showIncomeProof}
+        setShowIncomeProof={setShowIncomeProof}
+        goBack={goBack}
+        setGoBack={dispatch(stagesAction.updategoBack(false))}
+        showQRCodePage={showQRCodePage}
+        setShowQRCodePage={setShowQRCodePage}
+        changeIconColorIdentityProof={changeIconColorIdentityProof}
+        // setChangeIconColorIdentityProof={dispatch(stagesAction.updatechangeIconColorIdentityProof(false))}
+        showUploadFileSuccess={showUploadFileSuccess}
+        setShowUploadFileSuccess={setShowUploadFileSuccess}
+        callQRCodeAPI={callQRCodeAPI}
+        HKIDVersion={HKIDVersion}
+        HKIDVersionValue={HKIDVersionValue}
+        setHKIDVersion={setHKIDVersion}
+        setHKIDVersionValue={setHKIDVersionValue}
+        setShowContinueBtn={setShowContinueBtn}
+      />
+      : fileSectionData.length !== 0 && <DocumentUpload
+        showIncomeProof={showIncomeProof}
+        setShowIncomeProof={setShowIncomeProof}
+        // documentCount={documentCount}
+        success={success}
+        // setDocumentCount={dispatch(stagesAction.updateDocumentCount(documentCount+1))}
+        // setSucsess={setSucsess}
+        // setSucsess={dispatch(stagesAction.updateSuccess(false))}
+        // changeSuccessState={ dispatch(stagesAction.updateSuccess(success))}
+        // goBack={dispatch(stagesAction.updategoBack(false))}
+        // goBack={goBack}
+        // setGoBack={dispatch(stagesAction.updategoBack(false))}
+        // setChangeIconColorIdentityProof={dispatch(stagesAction.updatechangeIconColorIdentityProof(false))}
+        showQRCodePage={showQRCodePage}
+        setShowQRCodePage={setShowQRCodePage}
+        changeIconColorIdentityProof={changeIconColorIdentityProof}
+        showUploadFileSuccess={showUploadFileSuccess}
+        setShowUploadFileSuccess={setShowUploadFileSuccess}
+        channel_reference={channel_reference}
+        HKIDQRCodeData={HKIDQRCodeData}
+        HKIDVersion={HKIDVersion}
+        HKIDVersionValue={HKIDVersionValue}
+        setHKIDVersion={setHKIDVersion}
+        setHKIDVersionValue={setHKIDVersionValue}
+        showContinueBtn={showContinueBtn}
+        setShowContinueBtn={setShowContinueBtn}
+        setZolozDocumentData={setZolozDocumentData}
+        changeIconIncomeProof={changeIconIncomeProof}
+      />
+      }
+    </div>
+
+  );
+};
+
+export default DocumentTypeDynamic;
+
+
+
+
 import React, { useState, useEffect } from "react";
 import "./documentUpload.scss";
 import { useDispatch, useSelector } from "react-redux";
@@ -498,7 +761,6 @@ const DocumentUpload: React.FC<any> = ({
                 )}
 
                 {
-                  //onClick={()=>openImagePreview(item.imgurl, item.filename)}
                   showUploadFileSuccess && (
                     <>
                       <div className="upload-btn1" key={"index"}>
