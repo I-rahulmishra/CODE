@@ -1,4 +1,160 @@
- {fileSectionData.length === 0 && document_list?.map((item: any) => {
+// import React from "react";
+// import "../documentUploadMain/document-upload-main-scr.scss";
+// import "./document-type-dynamic.scss";
+
+// // on click object usestate =-->item 
+// // for cip 
+// // 2 section color identity proof 
+
+// const DocumentTypeDynamic: React.FC<any> = ({
+//   changeIconColorIdentityProof,
+//   openUploadHKdialog,
+//   docCategory,
+//   success,
+//   docCategory2,
+//   title,
+//   document_list,
+//   setChangeIconIncomeProof,
+//   changeIconIncomeProof
+// }) => {
+
+//   const [proofData, setProofData] = React.useState({});
+//   return (
+//     <div className="row-start">
+//       <div className="doc-select-box">
+//         {console.log(document_list, "document_listrk")}
+//         {document_list?.map((item: any) => {
+//           if (item?.document_category === "Colour Identity Proof") {
+//             return (
+//               <div
+//                 id="upload_fieldset_{{docCategory.document_category_code}}"
+//                 className={
+//                   changeIconColorIdentityProof
+//                     ? "form-field doc-select-box-child"
+//                     : "form-field-checked doc-select-box-child"
+//                 }
+//               >
+//                 <p
+//                  role="button"
+//                   title={title}
+//                   className={
+//                     changeIconColorIdentityProof ? "doc-add" : "doc-checked"
+//                   }
+//                   onClick={() => openUploadHKdialog("Colour Identity Proof")}
+//                   id="upload_fieldset_{{docCategory.document_category_code}}"
+//                 ></p>
+//                 <p
+//                   className="doc-field-name"
+//                   id="upload_fieldset_{{docCategory.document_category_code}}"
+//                 >
+//                   {docCategory}
+//                 </p>
+//               </div>
+//             );
+//           } else if (item?.document_category === "Income Proof") {
+//             return (
+//               <div
+//                 className={
+//                   changeIconIncomeProof
+//                     ? "form-field doc-select-box-child"
+//                     : "form-field-checked doc-select-box-child"
+//                 }
+//               >
+//                 <p
+//                   role="button"
+//                   className={changeIconIncomeProof ? "doc-add" : "doc-checked"}
+//                   title="Income Proof"
+//                   onClick={() => openUploadHKdialog("Income Proof")}
+//                 ></p>
+//                 <p className="doc-field-name">{docCategory2}</p>
+//               </div>
+//             );
+//           }
+//         })}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default DocumentTypeDynamic;
+
+
+
+import React, { useState } from "react";
+import "../documentUploadMain/document-upload-main-scr.scss";
+import "./document-type-dynamic.scss";
+import ColorIdentityProof from "../colourIdentityProof/colour-Identity-Proof";
+import { dispatchError, dispatchLoader } from "../../../../../services/common-service";
+import { useDispatch, useSelector } from "react-redux";
+import { postQRCodeZOLO } from "../../../services/preApprovalPostServices";
+import { AxiosError } from "axios";
+import DocumentUpload from "../document-upload-scr2/documentUpload";
+import { stagesAction } from "../../../../../utils/store/stages-slice";
+
+// on click object usestate =-->item 
+// for cip 
+// 2 section color identity proof 
+
+const DocumentTypeDynamic: React.FC<any> = ({
+  // changeIconColorIdentityProof,
+  openUploadHKdialog,
+  docCategory,
+  docCategory2,
+  // success,
+  // setChangeIconIncomeProof,
+  // changeIconIncomeProof,
+  // changeIcon,
+  // title,
+  document_list,
+  showContinueBtn,
+  setShowContinueBtn,
+  setHKIDVersionValue,
+  setShowUploadFileSuccess,
+  setHKIDVersion,
+  setHKIDQRCodeData,
+  HKIDQRCodeData,
+  HKIDVersion,
+  showUploadFileSuccess,
+  HKIDVersionValue,
+  setZolozDocumentData
+}) => {
+
+  const dispatch = useDispatch();
+  const goBack = useSelector((state: any) => state.stages.dynamicDocumentsUpload.goBack);
+  const success = useSelector((state: any) => state.stages.dynamicDocumentsUpload.success);
+ 
+  const changeIconIncomeProof = useSelector((state: any) => state.stages.dynamicDocumentsUpload.changeIconIncomeProof);
+  const changeIconColorIdentityProof = useSelector((state: any) => state.stages.dynamicDocumentsUpload.changeIconColorIdentityProof);
+  const channel_reference = "04041ed2f9a3a12024";
+  // const channel_reference = useSelector((state: StoreModel) => state.stages && state.stages.stages[0].stageInfo.application.channel_reference);
+  const fileSectionData = useSelector((state: any) => state.stages.dynamicDocumentsUpload.fileSectionData);
+  const [showSpinner, setShowSpinner] = useState(true);
+  const incomeprooffilesAreSelected =  useSelector((state: any) =>  state.preApproval.incomeProofDocumentUpload);
+  const addressprooffilesAreSelected =  useSelector((state: any) =>  state.preApproval.incomeProofDocumentUpload);
+  const passportprooffilesAreSelected =  useSelector((state: any) =>  state.preApproval.incomeProofDocumentUpload);
+  const [showIncomeProof, setShowIncomeProof] = useState("");
+  const [showQRCodePage, setShowQRCodePage] = useState(false);
+
+  const callQRCodeAPI = () => {
+    setShowSpinner(true);
+    dispatch(dispatchLoader(true));
+    console.log(channel_reference)
+    postQRCodeZOLO(channel_reference, HKIDVersionValue).then((response: any) => {
+      if (response.status === 200) {
+        setHKIDQRCodeData(response.data);
+        setShowSpinner(false);
+        dispatch(dispatchLoader(false));
+      }
+    }).catch((error: AxiosError) => {
+      dispatchError(error)
+    });
+  };
+
+  return (
+    <div className="row-start">
+      <div className="doc-select-box">
+        {console.log(document_list,fileSectionData, changeIconColorIdentityProof, "document_listrk")}
+        {fileSectionData.length === 0 && document_list?.map((item: any) => {
           console.log(item, item.document_category, "document_list",   item.document_category === "Income Proof"?incomeprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked": 
           item.document_category === "Address Proof"? addressprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
           item.document_category === "Passport"? passportprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
@@ -52,3 +208,60 @@
               </div>
             );
         })}
+      </div>
+
+      {fileSectionData.length !== 0 && fileSectionData?.document_category_code==="R0001"? 
+        <ColorIdentityProof
+        showIncomeProof={showIncomeProof}
+        setShowIncomeProof={setShowIncomeProof}
+        goBack={goBack}
+        setGoBack={dispatch(stagesAction.updategoBack(false))}
+        showQRCodePage={showQRCodePage}
+        setShowQRCodePage={setShowQRCodePage}
+        changeIconColorIdentityProof={changeIconColorIdentityProof}
+        // setChangeIconColorIdentityProof={dispatch(stagesAction.updatechangeIconColorIdentityProof(false))}
+        showUploadFileSuccess={showUploadFileSuccess}
+        setShowUploadFileSuccess={setShowUploadFileSuccess}
+        callQRCodeAPI={callQRCodeAPI}
+        HKIDVersion={HKIDVersion}
+        HKIDVersionValue={HKIDVersionValue}
+        setHKIDVersion={setHKIDVersion}
+        setHKIDVersionValue={setHKIDVersionValue}
+        setShowContinueBtn={setShowContinueBtn}
+      />
+      : fileSectionData.length !== 0 && <DocumentUpload
+        showIncomeProof={showIncomeProof}
+        setShowIncomeProof={setShowIncomeProof}
+        // documentCount={documentCount}
+        success={success}
+        // setDocumentCount={dispatch(stagesAction.updateDocumentCount(documentCount+1))}
+        // setSucsess={setSucsess}
+        // setSucsess={dispatch(stagesAction.updateSuccess(false))}
+        // changeSuccessState={ dispatch(stagesAction.updateSuccess(success))}
+        // goBack={dispatch(stagesAction.updategoBack(false))}
+        // goBack={goBack}
+        // setGoBack={dispatch(stagesAction.updategoBack(false))}
+        // setChangeIconColorIdentityProof={dispatch(stagesAction.updatechangeIconColorIdentityProof(false))}
+        showQRCodePage={showQRCodePage}
+        setShowQRCodePage={setShowQRCodePage}
+        changeIconColorIdentityProof={changeIconColorIdentityProof}
+        showUploadFileSuccess={showUploadFileSuccess}
+        setShowUploadFileSuccess={setShowUploadFileSuccess}
+        channel_reference={channel_reference}
+        HKIDQRCodeData={HKIDQRCodeData}
+        HKIDVersion={HKIDVersion}
+        HKIDVersionValue={HKIDVersionValue}
+        setHKIDVersion={setHKIDVersion}
+        setHKIDVersionValue={setHKIDVersionValue}
+        showContinueBtn={showContinueBtn}
+        setShowContinueBtn={setShowContinueBtn}
+        setZolozDocumentData={setZolozDocumentData}
+        changeIconIncomeProof={changeIconIncomeProof}
+      />
+      }
+    </div>
+
+  );
+};
+
+export default DocumentTypeDynamic;
