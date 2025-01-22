@@ -1,82 +1,16 @@
-const handleUploadFile = async (e: any) => {
-    const filename = e.target.files[0].name;
-    const filesize = `${(e.target.files[0].size / (1024 * 1012)).toFixed(2)}MB`;
-    const file = e.target.files[0];
-    console.log(file,  e.target,"file check on 147")
-    const maxSize = 5 * 1024 * 1024; //5MB in bytes
+uconst getClassName = (category: string) => {
+  switch (category) {
+    case "Income Proof":
+      return incomeproofFilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
+    case "Address Proof":
+      return addressproofFilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
+    case "Passport":
+      return passportproofFilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
+    case "Colour Identity Proof":
+      return changeIconColorIdentityProof ? "doc-checked" : "doc-add";
+    default:
+      return "doc-add";
+  }
+};
 
-    if (file.size > maxSize) {
-      setValidImageSizeModel(true);
-      return;
-    }
-    try {
-      await dispatch(dispatchLoader(true));
-      const response = await postDocuments(
-        channel_reference,
-        e.target.files[0]
-      );
-      const tempData = {
-        file: file,
-        filename: filename,
-        filesize: filesize,
-        ...response.data,
-      };
-
-      if (response.statusText === "Accepted") {
-  // const selectedValue = fileSectionData.document_category
-
-  // const selectedValue = fileSectionData.document_category
-  
-  // if(existingCategory){
-    //   existingCategory.files.push(tempData)
-    // }else{
-      //   existingFiles.push({
-        //     document_category:{
-          //       fileSectionData
-          //     }
-          //   })
-          // }
-          //       const speradedValue = {...(filesSelector[fileSectionData.document_category] || []), tempData}
-          // const speradedValue =
-          //  const existingCategory = existingFiles.find((item)=>item.document_Catogory === fileSectionData.document_category) 
-        //  const existingFiles = filesSelector
-      
-  // console.log(filesSelector, fileSectionData.document_category, [...(filesSelector[fileSectionData.document_category] || []), tempData], "crore")
-        
-          let filesData: any = JSON.parse(JSON.stringify(filesSelector))
-          for(let i in filesData) {
-          if(filesData[i].document_category === fileSectionData.document_category) {
-          console.log(filesData,filesData[i].document_category, fileSectionData.document_category, "filesData123")
-          if(filesData[i].document_options[0].document_types[0].uploaded_documents === null ) {
-      // console.log(filesData,filesData[i].document_category, fileSectionData.document_category, filesData[i].document_options[0].document_types[0].uploaded_documents, tempData, "filesData123")
-          filesData[i].document_options[0].document_types[0].uploaded_documents= [tempData]
-      // console.log(filesData,filesData[i].document_category, fileSectionData.document_category, filesData[i].document_options[0].document_types[0].uploaded_documents, tempData, "filesData123")
-            }
-            else {
-            let filesList= filesData[i].document_options[0].document_types[0].uploaded_documents;
-            console.log(filesList, "filesData123filelist")
-            filesList.push(tempData)
-            console.log(filesList, "filesData123temp")
-            filesData[i].document_options[0].document_types[0].uploaded_documents= filesList;
-            }
-          }
-        }
-        console.log(filesData, "filesData123")
-        dispatch(preApprovalAction.setIncomeProofDocumentUpload(filesData))
-        // Enable this one 
-        // let stageData = JSON.parse(
-        //   JSON.stringify(stageSelector[0].stageInfo)
-        // );
-        // stageData.applicant_documents[0].document_list = filesData;
-        // dispatch(
-        //   stagesAction.getStage({
-        //     id: stageSelector[0].stageId,
-        //     formConfig: stageData,
-        //   })
-        // );
-      }
-      await dispatch(dispatchLoader(false));
-    } catch (err) {
-      console.log("err:", err);
-    }
-  };
+className={getClassName(item.document_category)}
