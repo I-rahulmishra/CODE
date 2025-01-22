@@ -1,16 +1,54 @@
-uconst getClassName = (category: string) => {
-  switch (category) {
-    case "Income Proof":
-      return incomeproofFilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
-    case "Address Proof":
-      return addressproofFilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
-    case "Passport":
-      return passportproofFilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
-    case "Colour Identity Proof":
-      return changeIconColorIdentityProof ? "doc-checked" : "doc-add";
-    default:
-      return "doc-add";
-  }
-};
+ {fileSectionData.length === 0 && document_list?.map((item: any) => {
+          console.log(item, item.document_category, "document_list",   item.document_category === "Income Proof"?incomeprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked": 
+          item.document_category === "Address Proof"? addressprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
+          item.document_category === "Passport"? passportprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
+          item.document_category === "Colour Identity Proof"&& changeIconColorIdentityProof ? "doc-add" : "doc-checked")
 
-className={getClassName(item.document_category)}
+
+          const getClassName = (category: string) => {
+            switch (category) {
+              case "Income Proof":
+                return incomeprooffilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
+              case "Address Proof":
+                return addressprooffilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
+              case "Passport":
+                return passportprooffilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
+              case "Colour Identity Proof":
+                return changeIconColorIdentityProof ? "doc-checked" : "doc-add";
+              default:
+                return "doc-add";
+            }
+          };
+            return (
+              <div
+                id="upload_fieldset_{{docCategory.document_category_code}}"
+                className={
+                  changeIconColorIdentityProof
+                    ? "form-field doc-select-box-child"
+                    : "form-field-checked doc-select-box-child"
+                }
+              >
+                <p
+                 role="button"
+                  title={item.document_category}
+                  // className={
+                  //   item.document_category === "Income Proof"?incomeprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked": 
+                  //   item.document_category === "Address Proof"? addressprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
+                  //   item.document_category === "Passport"? passportprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
+                  //   item.document_category === "Colour Identity Proof"&& changeIconColorIdentityProof ? "doc-add" : "doc-checked"
+
+                  // }
+                  className={getClassName(item.document_category)}
+                  onClick={() => dispatch(stagesAction.updatefileSectionData(item))}
+                  id="upload_fieldset_{{docCategory.document_category_code}}"
+                ></p>
+                <p
+                  className="doc-field-name"
+                  id="upload_fieldset_{{docCategory.document_category_code}}"
+                >
+                  {/* {docCategory} */}
+                  {item.document_category}
+                </p>
+              </div>
+            );
+        })}
