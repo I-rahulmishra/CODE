@@ -1,186 +1,373 @@
-
-import React, { useState } from "react";
-import "../documentUploadMain/document-upload-main-scr.scss";
-import "./document-type-dynamic.scss";
-import ColorIdentityProof from "../colourIdentityProof/colour-Identity-Proof";
-import { dispatchError, dispatchLoader } from "../../../../../services/common-service";
+import React, { useState, useEffect } from "react";
+import "./documentUpload.scss";
 import { useDispatch, useSelector } from "react-redux";
-import { postQRCodeZOLO } from "../../../services/preApprovalPostServices";
-import { AxiosError } from "axios";
-import DocumentUpload from "../document-upload-scr2/documentUpload";
+import { preApprovalAction } from  "../../../store/preApproval-slice";
+import Modal from "../modals/tipsModal/tips-modal";
+import PopupModel from "../../../../../shared/components/popup-model/popup-model";
+
+import Carousel from "../carousel/carousel";
+import banner1 from "../images-du/illustration-03@3x.png";
+import banner2 from "../images-du/illustration-06@3x.png";
+import banner3 from "../images-du/illustration-05@3x.png";
+import banner4 from "../images-du/illustration-02@3x.png";
+import banner5 from "../images-du/illustration-01@3x.png";
+import banner6 from "../images-du/illustration-04@3x.png";
+import ImagePreviewModal from "../modals/imagePreviewModal/image-preview-modal";
+import { getImagePreview } from "../../../services/preApprovalServices";
+import {  postDocuments,} from "../../../services/preApprovalPostServices";
+import AlertModel from "../../../alertModal/alert-modal";
+import { dispatchLoader } from "../../../../../services/common-service";
+import { StoreModel } from "../../../../../utils/model/common-model";
+import { store } from "../../../../../utils/store/store";
 import { stagesAction } from "../../../../../utils/store/stages-slice";
+import { CONSTANTS } from "../../../../../utils/common/constants";
 
-// on click object usestate =-->item 
-// for cip 
-// 2 section color identity proof 
-
-const DocumentTypeDynamic: React.FC<any> = ({
-  // changeIconColorIdentityProof,
-  openUploadHKdialog,
-  docCategory,
-  docCategory2,
-  // success,
-  // setChangeIconIncomeProof,
-  // changeIconIncomeProof,
-  // changeIcon,
-  // title,
-  document_list,
-  showContinueBtn,
-  setShowContinueBtn,
-  setHKIDVersionValue,
-  setShowUploadFileSuccess,
+const DocumentUpload: React.FC<any> = ({
+  setShowIncomeProof,
+  showQRCodePage,
+  setShowQRCodePage,
+  channel_reference,
   setHKIDVersion,
-  setHKIDQRCodeData,
-  HKIDQRCodeData,
-  HKIDVersion,
-  showUploadFileSuccess,
-  HKIDVersionValue,
-  setZolozDocumentData
+  setShowContinueBtn,
 }) => {
-
   const dispatch = useDispatch();
-  const goBack = useSelector((state: any) => state.stages.dynamicDocumentsUpload.goBack);
-  const success = useSelector((state: any) => state.stages.dynamicDocumentsUpload.success);
- 
-  const changeIconIncomeProof = useSelector((state: any) => state.stages.dynamicDocumentsUpload.changeIconIncomeProof);
-  const changeIconColorIdentityProof = useSelector((state: any) => state.stages.dynamicDocumentsUpload.changeIconColorIdentityProof);
-  const channel_reference = "04041ed2f9a3a12024";
-  // const channel_reference = useSelector((state: StoreModel) => state.stages && state.stages.stages[0].stageInfo.application.channel_reference);
-  const fileSectionData = useSelector((state: any) => state.stages.dynamicDocumentsUpload.fileSectionData);
-  const [showSpinner, setShowSpinner] = useState(true);
-  const incomeprooffilesAreSelected =  useSelector((state: any) =>  state.preApproval.incomeProofDocumentUpload);
-  const addressprooffilesAreSelected =  useSelector((state: any) =>  state.preApproval.incomeProofDocumentUpload);
-  const passportprooffilesAreSelected =  useSelector((state: any) =>  state.preApproval.incomeProofDocumentUpload);
-  const [showIncomeProof, setShowIncomeProof] = useState("");
-  const [showQRCodePage, setShowQRCodePage] = useState(false);
 
-  const callQRCodeAPI = () => {
-    setShowSpinner(true);
-    dispatch(dispatchLoader(true));
-    console.log(channel_reference)
-    postQRCodeZOLO(channel_reference, HKIDVersionValue).then((response: any) => {
-      if (response.status === 200) {
-        setHKIDQRCodeData(response.data);
-        setShowSpinner(false);
-        dispatch(dispatchLoader(false));
-      }
-    }).catch((error: AxiosError) => {
-      dispatchError(error)
-    });
+  const storeDummy = useSelector((state: StoreModel) => state)
+  console.log(storeDummy, "storeDummy")
+
+  const footeContent =
+    "File format should be in JPG or PNG. The individual file size must not exceed 5MB. Click";
+  const copyRights = "© Standard Chartered Bank (HK) Limited";
+  const images: any = [
+    {
+      banner: banner1,
+      step: "Step 1",
+      stepText: "Scan the QR code with a mobile phone",
+    },
+    {
+      banner: banner2,
+      step: "Step 2",
+      stepText:
+        "Remove card holder and place it on a flat surface under adequate lighting",
+    },
+    {
+      banner: banner3,
+      step: "Step 3",
+      stepText:
+        "Capture ID from above and align the edges with the rectangular frames",
+    },
+    {
+      banner: banner4,
+      step: "Step 4",
+      stepText: "Tilt mobile phone about 30-degree and capture from aside",
+    },
+    {
+      banner: banner5,
+      step: "Step 5",
+      stepText:
+        "Remove accessories and face mask and place full face in the circular frame and blink once as instructed",
+    },
+    {
+      banner: banner6,
+      step: "Step 6",
+      stepText: "Return to desktop browser and click “Submit” to continue",
+    },
+  ];
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState(false);
+  const [imgeURL, setImageURL] = useState("");
+  const [name, setName] = useState("");
+  const [files, setFiles] = useState<any>([]);
+  const [openSuccessModal, setOpenSuccessModal] = useState(false);
+  const [validImageSizeModel, setValidImageSizeModel] = useState(false);
+  const [continueBtnVisiblity, setContinueBtnVisiblity] = useState(false);
+  const stageSelector = useSelector(
+    (state: StoreModel) => state.stages.stages[0].stageInfo
+  );
+  const docName = useSelector((state: any) => {
+    return state?.preApproval?.documentZoloCheckRes?.data?.documents[0]
+    ?.documentName;
+  });
+  const documentCount = useSelector((state: any) => state.stages.dynamicDocumentsUpload.documentCount);
+  const fileSectionData = useSelector((state: any) => state.stages.dynamicDocumentsUpload.fileSectionData);
+  const imgUrl = useSelector((state: any) => {
+    return state?.preApproval?.imgPrevURL;
+  });
+
+  useEffect(() => {
+    dispatch(dispatchLoader(false));
+
+    var isMobile = false;
+    if (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      )
+    ) {
+      isMobile = true;
+    }
+    console.log(isMobile);
+    
+    
+  }, []);
+
+  const closeFileUpload = () => {
+    setShowIncomeProof("");
+    setShowQRCodePage(false);
+    setHKIDVersion("");
+    setShowContinueBtn(false);
   };
 
+  const closeFileUploadBack = () => {
+    dispatch(stagesAction.updatefileSectionData([]))
+  };
+
+  const handleUploadFile = async (e: any) => {
+    const filename = e.target.files[0].name;
+    const filesize = `${(e.target.files[0].size / (1024 * 1012)).toFixed(2)}MB`;
+    const file = e.target.files[0];
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      setValidImageSizeModel(true);
+
+      return;
+    }
+    try {
+      await dispatch(dispatchLoader(true));
+      const response = await postDocuments(
+        channel_reference,
+        e.target.files[0]
+      );
+      const tempData = {
+        file: file,
+        filename: filename,
+        filesize: filesize,
+        ...response.data,
+      };
+      if (response.statusText === "Accepted") {
+         let newFiles = files;
+         newFiles.push(tempData)
+          setFiles(newFiles)     
+      }
+      await dispatch(dispatchLoader(false));
+    } catch (err) {
+      console.log("err:", err);
+    }
+  };
+  const okBtnClick = (e: any) => {
+    const { title } = e.target;
+    let filesValue= stageSelector.applicant_documents[0].document_list
+    let filesData: any = JSON.parse(JSON.stringify(filesValue))
+    for (let i in filesData) {
+      if (filesData[i].document_category === fileSectionData.document_category) {
+        filesData[i].document_options[0].document_types[0].uploaded_documents = files
+      }
+    }
+    let stageData = JSON.parse(
+      JSON.stringify(stageSelector)
+    );
+    stageData.applicant_documents[0].document_list = filesData;
+    dispatch(
+      stagesAction.getStage({
+        id: CONSTANTS.STAGE_NAMES.DOC_3,
+        formConfig: stageData,
+      })
+    );
+    setContinueBtnVisiblity(true);
+    dispatch(stagesAction.updateDocumentCount(documentCount + 1));
+    dispatch(stagesAction.updatefileSectionData([]))
+    setShowIncomeProof("");
+    dispatch(stagesAction.updatechangechangeIconIncomeProof(false));
+    dispatch(stagesAction.updateSuccess(true))
+    setHKIDVersion("");
+    setShowContinueBtn(false);
+  };
+
+  const handleDelete = (docId: any) => {
+    dispatch(preApprovalAction.setDeleteIncomeProofDocument(docId));
+  };
+  const handleRefresh = (fileID: any, index: any) => { };
+
+  const callModal = () => {
+    setIsModalOpen(true);
+  };
+  const openImagePreview = (img: any, name: any) => {
+    setImageURL(img);
+    setName(name);
+    setImagePreview(true);
+  };
+
+  const successModalClose = () => {
+    setOpenSuccessModal(false);
+  };
+
+  const modelClose = () => {
+    setValidImageSizeModel(false);
+  };
   return (
-    <div className="row-start">
-      <div className="doc-select-box">
-        {console.log(document_list,fileSectionData, changeIconColorIdentityProof, "document_listrk")}
-        {fileSectionData.length === 0 && document_list?.map((item: any) => {
-          console.log(item, item.document_category, "document_list",   item.document_category === "Income Proof"?incomeprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked": 
-          item.document_category === "Address Proof"? addressprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
-          item.document_category === "Passport"? passportprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
-          item.document_category === "Colour Identity Proof"&& changeIconColorIdentityProof ? "doc-add" : "doc-checked")
+    <>
+      <div className={"document-view"}>
+        {
+          <PopupModel displayPopup={openSuccessModal}>
+            <AlertModel alertType="Success" goBack={successModalClose} />
+          </PopupModel>
+        }
 
-
-          const getClassName = (category: string) => {
-            switch (category) {
-              case "Income Proof":
-                return incomeprooffilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
-              case "Address Proof":
-                return addressprooffilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
-              case "Passport":
-                return passportprooffilesAreSelected.length !== 0 ? "doc-checked" : "doc-add";
-              case "Colour Identity Proof":
-                return changeIconColorIdentityProof ? "doc-checked" : "doc-add";
-              default:
-                return "doc-add";
-            }
-          };
-            return (
-              <div
-                id="upload_fieldset_{{docCategory.document_category_code}}"
-                className={
-                  changeIconColorIdentityProof
-                    ? "form-field doc-select-box-child"
-                    : "form-field-checked doc-select-box-child"
-                }
-              >
-                <p
-                 role="button"
-                  title={item.document_category}
-                  // className={
-                  //   item.document_category === "Income Proof"?incomeprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked": 
-                  //   item.document_category === "Address Proof"? addressprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
-                  //   item.document_category === "Passport"? passportprooffilesAreSelected.length === 0 ? "doc-add" : "doc-checked":
-                  //   item.document_category === "Colour Identity Proof"&& changeIconColorIdentityProof ? "doc-add" : "doc-checked"
-
-                  // }
-                  className={getClassName(item.document_category)}
-                  onClick={() => dispatch(stagesAction.updatefileSectionData(item))}
-                  id="upload_fieldset_{{docCategory.document_category_code}}"
-                ></p>
-                <p
-                  className="doc-field-name"
-                  id="upload_fieldset_{{docCategory.document_category_code}}"
-                >
-                  {/* {docCategory} */}
-                  {item.document_category}
+        {validImageSizeModel && (
+          <PopupModel displayPopup={validImageSizeModel}>
+            <AlertModel alertType={"invalideimagesize"} goBack={modelClose} />
+          </PopupModel>
+        )}
+        {imagePreview && (
+          <ImagePreviewModal
+            imgeURL={imgeURL}
+            name={name}
+            imagePreview={imagePreview}
+            setImagePreview={setImagePreview}
+          />
+        )}
+        {!showQRCodePage && (
+          <>
+            <Modal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
+            <div className="container">
+              <div className="uploadHkDocument">
+                <p className="doc-close" onClick={closeFileUpload}>
+                  <span className="doc-close-btn"></span>
+                  CLOSE
                 </p>
+                <p className="hk-proof-name">{fileSectionData.document_category}</p>
               </div>
-            );
-        })}
+              {files?.map((item: any, index: any) => {
+                console.log(item, "check item")
+                return (
+                  <div className="upload-btn1" key={index}>
+                    <div className="thumbnail-img-container">
+                      <a>
+                        <img
+                          data-testid="image-preview-id"
+                          src={URL.createObjectURL(item.file)}
+                          alt={item.filename}
+                          onClick={() =>
+                            openImagePreview(
+                              URL.createObjectURL(item.file),
+                              item.filename
+                            )
+                          }
+                        ></img>
+                      </a>
+                    </div>
+                    <div className="container-image">
+                      <div className="uploading-doc-name">
+                        <span className="span-file-name">{item.filename}</span>
+                        <div className="progress-text-icon"></div>
+                        {item.documentStatus === "UPLOADED" && (
+                          <div
+                            data-testid="delete-btn"
+                            role="button"
+                            className="trash-icon"
+                            onClick={() => {
+                              handleDelete(item.docId);
+                            }}
+                          ></div>
+                         )} 
+                        {item.documentStatus === "Upload failed" && (
+                          <div
+                            data-testid="refresh-btn"
+                            className="retry-icon"
+                            onClick={() => {
+                              handleRefresh(item.docId, index);
+                            }}
+                          ></div>
+                        )}
+                      </div>
+                      <div
+                        className={
+                          item.documentStatus === "UPLOADED"
+                            ? "uploaded"
+                            : "retry-uploaded"
+                        }
+                      ></div>
+                      <div
+                        className={
+                          item.documentStatus === "UPLOADED"
+                            ? "tick-mark"
+                            : "no-tick-mark"
+                        }
+                      >
+                        {item.documentStatus === "UPLOADED"
+                          ? `${"Upload completed"} !`
+                          : `${item.documentStatus} Retry?`}
+                      </div>
+                      <div className="fileSizeDetails">
+                        <span>{item.filesize}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="upload-btn-section">
+                <input
+                  className="upload-input-file"
+                  id="file-upload"
+                  type="file"
+                  accept=".jpg, .png"
+                  onChange={(e) => handleUploadFile(e)}
+                  multiple
+                />
+                <label htmlFor="file-upload" className="upload-btn">
+                  <span className="upload-img"></span>
+                  Upload
+                </label>
+              </div>
+              <div className="document-footer">
+                <div className="footer-banner">
+                  <div className="footer-content">
+                    <p className="sec-2">
+                      {" "}
+                      {footeContent}
+                      <span className="tipsLink" onClick={callModal}>
+                        {" "}
+                        here{" "}
+                      </span>{" "}
+                      on tips for uploading
+                    </p>
+                  </div>
+                  <span className="images"></span>
+                </div>
+              </div>
+              <div className="hk-copy-rights">
+                <p>{copyRights}</p>
+              </div>
+              <div className="footer footer-set">
+                {" "}
+                {
+                  <div title="back-btn-upload-doc1" className="back" onClick={closeFileUploadBack}>
+                    <span className="arrow"></span> Backeee
+                  </div>
+                }
+                <button
+                  role="button"
+                  title={fileSectionData.document_category}
+                  type="submit"
+                  style={{border: "20px"}}
+                  className={
+                    files?.length === 0
+                    ? `continue form-invalid`
+                    : `continue form-valid`
+                  }
+                  onClick={(e) => okBtnClick(e)}
+                  disabled={files?.length === 0}
+                  >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {fileSectionData.length !== 0 && fileSectionData?.document_category_code==="R0001"? 
-        <ColorIdentityProof
-        showIncomeProof={showIncomeProof}
-        setShowIncomeProof={setShowIncomeProof}
-        goBack={goBack}
-        setGoBack={dispatch(stagesAction.updategoBack(false))}
-        showQRCodePage={showQRCodePage}
-        setShowQRCodePage={setShowQRCodePage}
-        changeIconColorIdentityProof={changeIconColorIdentityProof}
-        // setChangeIconColorIdentityProof={dispatch(stagesAction.updatechangeIconColorIdentityProof(false))}
-        showUploadFileSuccess={showUploadFileSuccess}
-        setShowUploadFileSuccess={setShowUploadFileSuccess}
-        callQRCodeAPI={callQRCodeAPI}
-        HKIDVersion={HKIDVersion}
-        HKIDVersionValue={HKIDVersionValue}
-        setHKIDVersion={setHKIDVersion}
-        setHKIDVersionValue={setHKIDVersionValue}
-        setShowContinueBtn={setShowContinueBtn}
-      />
-      : fileSectionData.length !== 0 && <DocumentUpload
-        showIncomeProof={showIncomeProof}
-        setShowIncomeProof={setShowIncomeProof}
-        // documentCount={documentCount}
-        success={success}
-        // setDocumentCount={dispatch(stagesAction.updateDocumentCount(documentCount+1))}
-        // setSucsess={setSucsess}
-        // setSucsess={dispatch(stagesAction.updateSuccess(false))}
-        // changeSuccessState={ dispatch(stagesAction.updateSuccess(success))}
-        // goBack={dispatch(stagesAction.updategoBack(false))}
-        // goBack={goBack}
-        // setGoBack={dispatch(stagesAction.updategoBack(false))}
-        // setChangeIconColorIdentityProof={dispatch(stagesAction.updatechangeIconColorIdentityProof(false))}
-        showQRCodePage={showQRCodePage}
-        setShowQRCodePage={setShowQRCodePage}
-        changeIconColorIdentityProof={changeIconColorIdentityProof}
-        showUploadFileSuccess={showUploadFileSuccess}
-        setShowUploadFileSuccess={setShowUploadFileSuccess}
-        channel_reference={channel_reference}
-        HKIDQRCodeData={HKIDQRCodeData}
-        HKIDVersion={HKIDVersion}
-        HKIDVersionValue={HKIDVersionValue}
-        setHKIDVersion={setHKIDVersion}
-        setHKIDVersionValue={setHKIDVersionValue}
-        showContinueBtn={showContinueBtn}
-        setShowContinueBtn={setShowContinueBtn}
-        setZolozDocumentData={setZolozDocumentData}
-        changeIconIncomeProof={changeIconIncomeProof}
-      />
-      }
-    </div>
-
+    </>
   );
 };
 
-export default DocumentTypeDynamic;
+export default DocumentUpload;
