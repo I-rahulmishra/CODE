@@ -1,62 +1,113 @@
-yHere's the React UI with SCSS for styling:
+yHere is the React code with SCSS to implement the UI for three cards, where only one can be selected, and the selection displays a green tick with the "SELECTED" label. The "Continue" button becomes enabled after a card is selected.
 
-React Code (CreditCardApplication.tsx)
 
-import React from 'react';
-import './CreditCardApplication.scss';
+---
 
-const CreditCardApplication: React.FC = () => {
+React Code (CreditCardSelector.tsx)
+
+import React, { useState } from 'react';
+import './CreditCardSelector.scss';
+
+const cardData = [
+  {
+    id: 1,
+    title: "Standard Chartered Cathay Mastercard",
+    description: [
+      "Enjoy up to 60,000 Asia Miles Welcome Offer",
+      "HKD4 = 1 Asia Mile for eligible spending on dining, hotels, and overseas category",
+      "First Year Annual Fee Waiver",
+    ],
+    image: "/path-to-image1.jpg", // Replace with actual image path
+  },
+  {
+    id: 2,
+    title: "Standard Chartered Priority Mastercard",
+    description: [
+      "Access exclusive privileges at airports and hotels",
+      "Up to 8% cashback on spending overseas",
+      "No annual fee for the first year",
+    ],
+    image: "/path-to-image2.jpg", // Replace with actual image path
+  },
+  {
+    id: 3,
+    title: "Standard Chartered Platinum Mastercard",
+    description: [
+      "Unlimited cashback on every purchase",
+      "Additional benefits for local and international spending",
+      "Annual fee waived for the first year",
+    ],
+    image: "/path-to-image3.jpg", // Replace with actual image path
+  },
+];
+
+const CreditCardSelector: React.FC = () => {
+  const [selectedCard, setSelectedCard] = useState<number | null>(null);
+
+  const handleSelectCard = (id: number) => {
+    setSelectedCard(id);
+  };
+
   return (
-    <div className="credit-card-container">
+    <div className="credit-card-selector">
       <header className="header">
         <h1>You are applying for</h1>
-        <h2>Standard Chartered Cathay Mastercard</h2>
+        <h2>Standard Chartered Credit Card</h2>
         <p>
           To apply for a Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident.
         </p>
       </header>
 
-      <section className="card-selection">
-        <div className="card">
-          <img
-            src="https://via.placeholder.com/300x180" // Replace with the actual card image URL
-            alt="Cathay Mastercard"
-            className="card-image"
-          />
-          <div className="card-details">
-            <h3>Standard Chartered Cathay Mastercard</h3>
-            <ul>
-              <li>Enjoy up to 60,000 Asia Miles Welcome Offer</li>
-              <li>HKD4 = 1 Asia Mile for eligible spending on dining, hotels, and overseas category</li>
-              <li>First Year Annual Fee Waiver</li>
-            </ul>
-            <button className="select-button">SELECT</button>
+      <div className="cards-container">
+        {cardData.map((card) => (
+          <div
+            key={card.id}
+            className={`card ${selectedCard === card.id ? 'selected' : ''}`}
+            onClick={() => handleSelectCard(card.id)}
+          >
+            <img src={card.image} alt={card.title} className="card-image" />
+            <div className="card-content">
+              <h3>{card.title}</h3>
+              <ul>
+                {card.description.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+              {selectedCard === card.id ? (
+                <div className="selected-label">
+                  <span>&#10003;</span> SELECTED
+                </div>
+              ) : (
+                <button className="select-button">SELECT</button>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        ))}
+      </div>
+
+      <button
+        className="continue-button"
+        disabled={selectedCard === null}
+        onClick={() => alert(`Card ${selectedCard} selected!`)}
+      >
+        Continue
+      </button>
     </div>
   );
 };
 
-export default CreditCardApplication;
+export default CreditCardSelector;
 
 
 ---
 
-SCSS Code (CreditCardApplication.scss)
+SCSS Code (CreditCardSelector.scss)
 
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f9f9f9;
-}
-
-.credit-card-container {
+.credit-card-selector {
   max-width: 800px;
   margin: 20px auto;
   padding: 20px;
-  background-color: white;
+  background-color: #fff;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 
@@ -81,49 +132,66 @@ body {
     }
   }
 
-  .card-selection {
+  .cards-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
 
     .card {
-      text-align: center;
+      display: flex;
       border: 1px solid #ddd;
       border-radius: 10px;
-      padding: 20px;
-      max-width: 400px;
-      background: #fff;
+      overflow: hidden;
+      cursor: pointer;
+      transition: 0.3s all;
 
-      .card-image {
-        width: 100%;
-        border-radius: 10px;
-        margin-bottom: 15px;
+      &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
 
-      .card-details {
+      &.selected {
+        border: 2px solid #28a745;
+
+        .selected-label {
+          display: flex;
+          align-items: center;
+          color: #28a745;
+          font-weight: bold;
+          margin-top: 10px;
+        }
+      }
+
+      .card-image {
+        width: 150px;
+        object-fit: cover;
+      }
+
+      .card-content {
+        flex: 1;
+        padding: 15px;
+
         h3 {
+          margin: 0;
           font-size: 18px;
-          color: #333;
-          margin-bottom: 10px;
         }
 
         ul {
           list-style: none;
           padding: 0;
-          margin: 0 0 20px 0;
-          text-align: left;
+          margin: 10px 0;
 
           li {
             font-size: 14px;
             color: #555;
-            margin: 5px 0;
+            margin-bottom: 5px;
           }
         }
 
         .select-button {
-          padding: 10px 20px;
-          font-size: 16px;
-          background-color: #007bff;
+          padding: 8px 16px;
+          font-size: 14px;
           color: white;
+          background-color: #007bff;
           border: none;
           border-radius: 5px;
           cursor: pointer;
@@ -135,6 +203,29 @@ body {
       }
     }
   }
+
+  .continue-button {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    font-size: 16px;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    &:not(:disabled):hover {
+      background-color: #0056b3;
+    }
+  }
 }
 
 
@@ -142,20 +233,23 @@ body {
 
 Steps:
 
-1. Install SCSS: If not already set up, install node-sass:
+1. Replace the image paths in cardData with your actual images.
+
+
+2. Install SCSS if not already set up:
 
 npm install node-sass
 
 
-2. Create SCSS File: Save the SCSS code above as CreditCardApplication.scss.
+3. Save the SCSS code in CreditCardSelector.scss.
 
 
-3. Import SCSS File: Import the SCSS file in the component as shown above.
+4. Import the SCSS file in the component.
 
 
-4. Run the App: Start your development server using npm start.
+5. Start the app and test the behavior.
 
 
 
-This will apply the SCSS styling to your React component. Let me know if you need further help!
+This implementation will allow only one card to be selected at a time, highlight it with a green border and label, and enable the "Continue" button after selection.
 
