@@ -1,9 +1,9 @@
-To help you create the React UI shown in the screenshot, here’s an example code that replicates the structure and style based on your description.
+yHere's the React UI with SCSS for styling:
 
-React Code
+React Code (CreditCardApplication.tsx)
 
 import React from 'react';
-import './App.css';
+import './CreditCardApplication.scss';
 
 const CreditCardApplication: React.FC = () => {
   return (
@@ -27,7 +27,7 @@ const CreditCardApplication: React.FC = () => {
             <h3>Standard Chartered Cathay Mastercard</h3>
             <ul>
               <li>Enjoy up to 60,000 Asia Miles Welcome Offer</li>
-              <li>HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category</li>
+              <li>HKD4 = 1 Asia Mile for eligible spending on dining, hotels, and overseas category</li>
               <li>First Year Annual Fee Waiver</li>
             </ul>
             <button className="select-button">SELECT</button>
@@ -40,7 +40,10 @@ const CreditCardApplication: React.FC = () => {
 
 export default CreditCardApplication;
 
-CSS Code (App.css)
+
+---
+
+SCSS Code (CreditCardApplication.scss)
 
 body {
   font-family: Arial, sans-serif;
@@ -56,93 +59,103 @@ body {
   background-color: white;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  .header {
+    text-align: center;
+    margin-bottom: 30px;
+
+    h1 {
+      font-size: 24px;
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 10px 0;
+      color: #444;
+    }
+
+    p {
+      font-size: 14px;
+      color: #666;
+    }
+  }
+
+  .card-selection {
+    display: flex;
+    justify-content: center;
+
+    .card {
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 400px;
+      background: #fff;
+
+      .card-image {
+        width: 100%;
+        border-radius: 10px;
+        margin-bottom: 15px;
+      }
+
+      .card-details {
+        h3 {
+          font-size: 18px;
+          color: #333;
+          margin-bottom: 10px;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 20px 0;
+          text-align: left;
+
+          li {
+            font-size: 14px;
+            color: #555;
+            margin: 5px 0;
+          }
+        }
+
+        .select-button {
+          padding: 10px 20px;
+          font-size: 16px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+
+          &:hover {
+            background-color: #0056b3;
+          }
+        }
+      }
+    }
+  }
 }
 
-.header {
-  text-align: center;
-  margin-bottom: 30px;
-}
 
-.header h1 {
-  font-size: 24px;
-  margin: 0;
-}
-
-.header h2 {
-  font-size: 20px;
-  margin: 10px 0;
-  color: #444;
-}
-
-.header p {
-  font-size: 14px;
-  color: #666;
-}
-
-.card-selection {
-  display: flex;
-  justify-content: center;
-}
-
-.card {
-  text-align: center;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  max-width: 400px;
-  background: #fff;
-}
-
-.card-image {
-  width: 100%;
-  border-radius: 10px;
-  margin-bottom: 15px;
-}
-
-.card-details h3 {
-  font-size: 18px;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.card-details ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 20px 0;
-  text-align: left;
-}
-
-.card-details li {
-  font-size: 14px;
-  color: #555;
-  margin: 5px 0;
-}
-
-.select-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.select-button:hover {
-  background-color: #0056b3;
-}
+---
 
 Steps:
 
-1. Create a React App: Use create-react-app or another starter to initialize your project.
+1. Install SCSS: If not already set up, install node-sass:
+
+npm install node-sass
 
 
-2. Add the Component: Save the code as CreditCardApplication.tsx and import it into App.tsx.
+2. Create SCSS File: Save the SCSS code above as CreditCardApplication.scss.
 
 
-3. Style the Component: Copy the CSS code into a App.css file or add it to your styling framework.
+3. Import SCSS File: Import the SCSS file in the component as shown above.
+
+
+4. Run the App: Start your development server using npm start.
 
 
 
-Let me know if you need help customizing further!
+This will apply the SCSS styling to your React component. Let me know if you need further help!
 
