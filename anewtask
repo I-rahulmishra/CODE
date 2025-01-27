@@ -1,373 +1,148 @@
-import React, { useState, useEffect } from "react";
-import "./documentUpload.scss";
-import { useDispatch, useSelector } from "react-redux";
-import { preApprovalAction } from  "../../../store/preApproval-slice";
-import Modal from "../modals/tipsModal/tips-modal";
-import PopupModel from "../../../../../shared/components/popup-model/popup-model";
+To help you create the React UI shown in the screenshot, here’s an example code that replicates the structure and style based on your description.
 
-import Carousel from "../carousel/carousel";
-import banner1 from "../images-du/illustration-03@3x.png";
-import banner2 from "../images-du/illustration-06@3x.png";
-import banner3 from "../images-du/illustration-05@3x.png";
-import banner4 from "../images-du/illustration-02@3x.png";
-import banner5 from "../images-du/illustration-01@3x.png";
-import banner6 from "../images-du/illustration-04@3x.png";
-import ImagePreviewModal from "../modals/imagePreviewModal/image-preview-modal";
-import { getImagePreview } from "../../../services/preApprovalServices";
-import {  postDocuments,} from "../../../services/preApprovalPostServices";
-import AlertModel from "../../../alertModal/alert-modal";
-import { dispatchLoader } from "../../../../../services/common-service";
-import { StoreModel } from "../../../../../utils/model/common-model";
-import { store } from "../../../../../utils/store/store";
-import { stagesAction } from "../../../../../utils/store/stages-slice";
-import { CONSTANTS } from "../../../../../utils/common/constants";
+React Code
 
-const DocumentUpload: React.FC<any> = ({
-  setShowIncomeProof,
-  showQRCodePage,
-  setShowQRCodePage,
-  channel_reference,
-  setHKIDVersion,
-  setShowContinueBtn,
-}) => {
-  const dispatch = useDispatch();
+import React from 'react';
+import './App.css';
 
-  const storeDummy = useSelector((state: StoreModel) => state)
-  console.log(storeDummy, "storeDummy")
-
-  const footeContent =
-    "File format should be in JPG or PNG. The individual file size must not exceed 5MB. Click";
-  const copyRights = "© Standard Chartered Bank (HK) Limited";
-  const images: any = [
-    {
-      banner: banner1,
-      step: "Step 1",
-      stepText: "Scan the QR code with a mobile phone",
-    },
-    {
-      banner: banner2,
-      step: "Step 2",
-      stepText:
-        "Remove card holder and place it on a flat surface under adequate lighting",
-    },
-    {
-      banner: banner3,
-      step: "Step 3",
-      stepText:
-        "Capture ID from above and align the edges with the rectangular frames",
-    },
-    {
-      banner: banner4,
-      step: "Step 4",
-      stepText: "Tilt mobile phone about 30-degree and capture from aside",
-    },
-    {
-      banner: banner5,
-      step: "Step 5",
-      stepText:
-        "Remove accessories and face mask and place full face in the circular frame and blink once as instructed",
-    },
-    {
-      banner: banner6,
-      step: "Step 6",
-      stepText: "Return to desktop browser and click “Submit” to continue",
-    },
-  ];
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [imagePreview, setImagePreview] = useState(false);
-  const [imgeURL, setImageURL] = useState("");
-  const [name, setName] = useState("");
-  const [files, setFiles] = useState<any>([]);
-  const [openSuccessModal, setOpenSuccessModal] = useState(false);
-  const [validImageSizeModel, setValidImageSizeModel] = useState(false);
-  const [continueBtnVisiblity, setContinueBtnVisiblity] = useState(false);
-  const stageSelector = useSelector(
-    (state: StoreModel) => state.stages.stages[0].stageInfo
-  );
-  const docName = useSelector((state: any) => {
-    return state?.preApproval?.documentZoloCheckRes?.data?.documents[0]
-    ?.documentName;
-  });
-  const documentCount = useSelector((state: any) => state.stages.dynamicDocumentsUpload.documentCount);
-  const fileSectionData = useSelector((state: any) => state.stages.dynamicDocumentsUpload.fileSectionData);
-  const imgUrl = useSelector((state: any) => {
-    return state?.preApproval?.imgPrevURL;
-  });
-
-  useEffect(() => {
-    dispatch(dispatchLoader(false));
-
-    var isMobile = false;
-    if (
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      )
-    ) {
-      isMobile = true;
-    }
-    console.log(isMobile);
-    
-    
-  }, []);
-
-  const closeFileUpload = () => {
-    setShowIncomeProof("");
-    setShowQRCodePage(false);
-    setHKIDVersion("");
-    setShowContinueBtn(false);
-  };
-
-  const closeFileUploadBack = () => {
-    dispatch(stagesAction.updatefileSectionData([]))
-  };
-
-  const handleUploadFile = async (e: any) => {
-    const filename = e.target.files[0].name;
-    const filesize = `${(e.target.files[0].size / (1024 * 1012)).toFixed(2)}MB`;
-    const file = e.target.files[0];
-    const maxSize = 5 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      setValidImageSizeModel(true);
-
-      return;
-    }
-    try {
-      await dispatch(dispatchLoader(true));
-      const response = await postDocuments(
-        channel_reference,
-        e.target.files[0]
-      );
-      const tempData = {
-        file: file,
-        filename: filename,
-        filesize: filesize,
-        ...response.data,
-      };
-      if (response.statusText === "Accepted") {
-         let newFiles = files;
-         newFiles.push(tempData)
-          setFiles(newFiles)     
-      }
-      await dispatch(dispatchLoader(false));
-    } catch (err) {
-      console.log("err:", err);
-    }
-  };
-  const okBtnClick = (e: any) => {
-    const { title } = e.target;
-    let filesValue= stageSelector.applicant_documents[0].document_list
-    let filesData: any = JSON.parse(JSON.stringify(filesValue))
-    for (let i in filesData) {
-      if (filesData[i].document_category === fileSectionData.document_category) {
-        filesData[i].document_options[0].document_types[0].uploaded_documents = files
-      }
-    }
-    let stageData = JSON.parse(
-      JSON.stringify(stageSelector)
-    );
-    stageData.applicant_documents[0].document_list = filesData;
-    dispatch(
-      stagesAction.getStage({
-        id: CONSTANTS.STAGE_NAMES.DOC_3,
-        formConfig: stageData,
-      })
-    );
-    setContinueBtnVisiblity(true);
-    dispatch(stagesAction.updateDocumentCount(documentCount + 1));
-    dispatch(stagesAction.updatefileSectionData([]))
-    setShowIncomeProof("");
-    dispatch(stagesAction.updatechangechangeIconIncomeProof(false));
-    dispatch(stagesAction.updateSuccess(true))
-    setHKIDVersion("");
-    setShowContinueBtn(false);
-  };
-
-  const handleDelete = (docId: any) => {
-    dispatch(preApprovalAction.setDeleteIncomeProofDocument(docId));
-  };
-  const handleRefresh = (fileID: any, index: any) => { };
-
-  const callModal = () => {
-    setIsModalOpen(true);
-  };
-  const openImagePreview = (img: any, name: any) => {
-    setImageURL(img);
-    setName(name);
-    setImagePreview(true);
-  };
-
-  const successModalClose = () => {
-    setOpenSuccessModal(false);
-  };
-
-  const modelClose = () => {
-    setValidImageSizeModel(false);
-  };
+const CreditCardApplication: React.FC = () => {
   return (
-    <>
-      <div className={"document-view"}>
-        {
-          <PopupModel displayPopup={openSuccessModal}>
-            <AlertModel alertType="Success" goBack={successModalClose} />
-          </PopupModel>
-        }
+    <div className="credit-card-container">
+      <header className="header">
+        <h1>You are applying for</h1>
+        <h2>Standard Chartered Cathay Mastercard</h2>
+        <p>
+          To apply for a Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident.
+        </p>
+      </header>
 
-        {validImageSizeModel && (
-          <PopupModel displayPopup={validImageSizeModel}>
-            <AlertModel alertType={"invalideimagesize"} goBack={modelClose} />
-          </PopupModel>
-        )}
-        {imagePreview && (
-          <ImagePreviewModal
-            imgeURL={imgeURL}
-            name={name}
-            imagePreview={imagePreview}
-            setImagePreview={setImagePreview}
+      <section className="card-selection">
+        <div className="card">
+          <img
+            src="https://via.placeholder.com/300x180" // Replace with the actual card image URL
+            alt="Cathay Mastercard"
+            className="card-image"
           />
-        )}
-        {!showQRCodePage && (
-          <>
-            <Modal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
-            <div className="container">
-              <div className="uploadHkDocument">
-                <p className="doc-close" onClick={closeFileUpload}>
-                  <span className="doc-close-btn"></span>
-                  CLOSE
-                </p>
-                <p className="hk-proof-name">{fileSectionData.document_category}</p>
-              </div>
-              {files?.map((item: any, index: any) => {
-                console.log(item, "check item")
-                return (
-                  <div className="upload-btn1" key={index}>
-                    <div className="thumbnail-img-container">
-                      <a>
-                        <img
-                          data-testid="image-preview-id"
-                          src={URL.createObjectURL(item.file)}
-                          alt={item.filename}
-                          onClick={() =>
-                            openImagePreview(
-                              URL.createObjectURL(item.file),
-                              item.filename
-                            )
-                          }
-                        ></img>
-                      </a>
-                    </div>
-                    <div className="container-image">
-                      <div className="uploading-doc-name">
-                        <span className="span-file-name">{item.filename}</span>
-                        <div className="progress-text-icon"></div>
-                        {item.documentStatus === "UPLOADED" && (
-                          <div
-                            data-testid="delete-btn"
-                            role="button"
-                            className="trash-icon"
-                            onClick={() => {
-                              handleDelete(item.docId);
-                            }}
-                          ></div>
-                         )} 
-                        {item.documentStatus === "Upload failed" && (
-                          <div
-                            data-testid="refresh-btn"
-                            className="retry-icon"
-                            onClick={() => {
-                              handleRefresh(item.docId, index);
-                            }}
-                          ></div>
-                        )}
-                      </div>
-                      <div
-                        className={
-                          item.documentStatus === "UPLOADED"
-                            ? "uploaded"
-                            : "retry-uploaded"
-                        }
-                      ></div>
-                      <div
-                        className={
-                          item.documentStatus === "UPLOADED"
-                            ? "tick-mark"
-                            : "no-tick-mark"
-                        }
-                      >
-                        {item.documentStatus === "UPLOADED"
-                          ? `${"Upload completed"} !`
-                          : `${item.documentStatus} Retry?`}
-                      </div>
-                      <div className="fileSizeDetails">
-                        <span>{item.filesize}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="upload-btn-section">
-                <input
-                  className="upload-input-file"
-                  id="file-upload"
-                  type="file"
-                  accept=".jpg, .png"
-                  onChange={(e) => handleUploadFile(e)}
-                  multiple
-                />
-                <label htmlFor="file-upload" className="upload-btn">
-                  <span className="upload-img"></span>
-                  Upload
-                </label>
-              </div>
-              <div className="document-footer">
-                <div className="footer-banner">
-                  <div className="footer-content">
-                    <p className="sec-2">
-                      {" "}
-                      {footeContent}
-                      <span className="tipsLink" onClick={callModal}>
-                        {" "}
-                        here{" "}
-                      </span>{" "}
-                      on tips for uploading
-                    </p>
-                  </div>
-                  <span className="images"></span>
-                </div>
-              </div>
-              <div className="hk-copy-rights">
-                <p>{copyRights}</p>
-              </div>
-              <div className="footer footer-set">
-                {" "}
-                {
-                  <div title="back-btn-upload-doc1" className="back" onClick={closeFileUploadBack}>
-                    <span className="arrow"></span> Backeee
-                  </div>
-                }
-                <button
-                  role="button"
-                  title={fileSectionData.document_category}
-                  type="submit"
-                  style={{border: "20px"}}
-                  className={
-                    files?.length === 0
-                    ? `continue form-invalid`
-                    : `continue form-valid`
-                  }
-                  onClick={(e) => okBtnClick(e)}
-                  disabled={files?.length === 0}
-                  >
-                  Continue
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-    </>
+          <div className="card-details">
+            <h3>Standard Chartered Cathay Mastercard</h3>
+            <ul>
+              <li>Enjoy up to 60,000 Asia Miles Welcome Offer</li>
+              <li>HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category</li>
+              <li>First Year Annual Fee Waiver</li>
+            </ul>
+            <button className="select-button">SELECT</button>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 };
 
-export default DocumentUpload;
+export default CreditCardApplication;
+
+CSS Code (App.css)
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+}
+
+.credit-card-container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.header h1 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.header h2 {
+  font-size: 20px;
+  margin: 10px 0;
+  color: #444;
+}
+
+.header p {
+  font-size: 14px;
+  color: #666;
+}
+
+.card-selection {
+  display: flex;
+  justify-content: center;
+}
+
+.card {
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 400px;
+  background: #fff;
+}
+
+.card-image {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.card-details h3 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.card-details ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  text-align: left;
+}
+
+.card-details li {
+  font-size: 14px;
+  color: #555;
+  margin: 5px 0;
+}
+
+.select-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.select-button:hover {
+  background-color: #0056b3;
+}
+
+Steps:
+
+1. Create a React App: Use create-react-app or another starter to initialize your project.
+
+
+2. Add the Component: Save the code as CreditCardApplication.tsx and import it into App.tsx.
+
+
+3. Style the Component: Copy the CSS code into a App.css file or add it to your styling framework.
+
+
+
+Let me know if you need help customizing further!
+
