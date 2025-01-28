@@ -1,727 +1,98 @@
-import React, { useState } from 'react';
-import './asiaMiles.scss';
-import ccIcon from '../../../preApproval/images/Tier-0-front.png'
-import ccIcon1 from '../../../preApproval/images/Tier-1-front.png'
-import ccIcon2 from '../../../preApproval/images/Tier-2-front.png'
-import tick from '../../../preApproval/images/tick-blue@3x.png'
+yIf the tick mark appears white, it's likely due to the default background color blending with the design. Here's an improved implementation using an SVG tick mark, ensuring it remains visible regardless of the background:
 
-const cardData = [
-  {
-    id: 1,
-    title: "Standard Chartered Cathay Mastercard",
-    description: [
-      "Enjoy up to 60,000 Asia Miles Welcome Offer",
-      "HKD4 = 1 Asia Mile for eligible spending on dining, hotels, and overseas category",
-      "First Year Annual Fee Waiver",
-    ],
-    image: ccIcon, // Replace with actual image path
-  },
-  {
-    id: 2,
-    title: "Standard Chartered Priority Mastercard",
-    description: [
-      "Access exclusive privileges at airports and hotels",
-      "Up to 8% cashback on spending overseas",
-      "No annual fee for the first year",
-    ],
-    image: ccIcon1, // Replace with actual image path
-  },
-  {
-    id: 3,
-    title: "Standard Chartered Platinum Mastercard",
-    description: [
-      "Unlimited cashback on every purchase",
-      "Additional benefits for local and international spending",
-      "Annual fee waived for the first year",
-    ],
-    image: ccIcon2, // Replace with actual image path
-  },
-];
+Updated Solution: SVG Tick Mark with #007bff
 
-const AsiaMiles: React.FC = () => {
-  const [selectedCard, setSelectedCard] = useState<number | null>(null);
+SCSS for Styling
 
-  const handleSelectCard = (id: number) => {
-    setSelectedCard(id);
-  };
-
-  return (
-    <>
-    <div  className="header-container">
-    <header className="header">
-    <div className='column01'>
-        <div className="col-sm">
-            <p id="applyingfor">You are applying for</p>
-            <h3 id="header">Standard Chartered Cathay Mastercard</h3>
-        </div>
-         <div className="column2">
-          <hr/>
-        <p className='credit'>To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident</p>
-          </div>
-    </div>
-    </header>
-    </div>
-    <div className="col-smtr">
-            <p className="select-maincard">Please select one type of credit card</p>
-          </div>
-    <div className="credit-card-selector">
-  
-        <div className="cards-container">
-       
-        {cardData.map((card) => (
-          <div
-            key={card.id}
-            className={`card ${selectedCard === card.id ? 'selected' : ''}`}
-            onClick={() => handleSelectCard(card.id)}
-          >
-           <div className='main-image'>
-
-            <img src={card.image} alt={card.title} className="card-image" />
-           </div>
-            <div className="card-content">
-              <ul>
-              <h3 className="card-content-title">{card.title}</h3>
-                {card.description.map((item, index) => (
-                  <li key={index} className="card-content-text">{item}</li>
-                ))}
-              </ul>
-              <div className='button-container'> 
-              {selectedCard === card.id ? (
-                  <div className="selected-label">
-                  <span> <img className="tick" src={tick} />  </span>SELECTED
-                </div>
-              ) : (
-                  <button className="select-button">Select</button>
-                  )}
-                </ div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <p className="footermsg">Your Integrated Deposit Account and Banking Plan application would be handled in the process as well&nbsp;(if applicable)</p>
-      <button
-        className="continue-button"
-        disabled={selectedCard === null}
-        onClick={() => alert(`Card ${selectedCard} selected!`)}
-      >
-        OK, NEXT
-      </button>
-    </div>
-    </>
-  );
-};
-
-export default AsiaMiles;
-
-
-
-
-.header-container {
-  width: 100%;
-  padding: 20px 10px;
-  background-image: url(../../../preApproval/images/group1.jpg);
-  width: 100%;
-  background-position: center;
-  background-size: cover;
-    
-
-  .col-sm p {
-    color: #fff;
-    margin-bottom: 10px;
-  }
-  .col-sm h3 {
-    color: #fff;
-    font-size: 25px;
-}
-
-.column2 hr {
-  margin: 130px 10px 20px;
-  width: 96%;
-  border-top: 1px solid rgb(138 138 138);
-}
-
-.column2 .credit {
-  color: #fff
-}
-}
-
-.col-smtr{
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 5px;
-  background-color: #fff;
-  border-radius: 10px;
-
-  // box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  .select-maincard{
-    position: relative;
-  width: 100%;
+.selected-label {
   display: flex;
+  align-items: center;
   justify-content: center;
-  // min-height: 1px;
-  padding: 5px;
-  // padding-right: 15px;
-  // padding-left: 15px;
   color: #007bff;
-  }
-}
+  font-weight: bold;
 
-.credit-card-selector {
-  max-width: 38rem;
-  margin: 0 auto;
-  // padding: 0 15px;
-  background-color: #fff;
-  border-radius: 10px;
-  // box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  .tick {
+    width: 16px;
+    height: 16px;
+    margin-left: 5px;
 
-  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  --font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-
-  .header {
-    text-align: center;
-    margin-bottom: 30px;
-
-    h1 {
-      font-size: 24px;
-      margin: 0;
-    }
-
-    h2 {
-      font-size: 20px;
-      margin: 10px 0;
-      color: #444;
-    }
-
-    p {
-      font-size: 14px;
-      color: #666;
-    }
-  }
-
-  .footermsg{
-    margin-top:1rem;
-    margin-bottom: 1rem;
-  }
-  .select-maincard{
-  margin-top: 1rem;
-  text-align: center;
-  color: #0091ea;
-}
-
-  .cards-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-
-    .card {
-      display: flex;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: 0.3s all;
-      flex-direction: column;
-      &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      &.selected {
-        border: 2px solid #28a745;
-
-        .selected-label {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: rgb(255, 255, 255);
-          color: #007bff;
-          cursor: pointer;
-          padding: 5px;
-          --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-          --font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-          border-radius: 7px;
-          border: 2px solid #fff;
-          padding: 7px 10px 7px;
-
-          .tick{
-            height: 10px;
-            width: 19px;
-          }
-        }
-      }
-
-      .card-image {
-        height: 23rem;
-      }
-
-      .main-image {
-        display: flex;
-        justify-content: center;
-        background-image: url(https://origination-test.sc.com/onboarding/hk/assets/images/clouds.jpg);
-        background-repeat: no-repeat;
-        padding: 30px;
-        background-size: cover;
-        background-position: center;
-      }
-
-      .card-content {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        padding: 15px 0;
-        align-items: center;
-        background-image: linear-gradient(to left, #282828 30%, rgba(32, 32, 32, 0.79));
-
-
-        .card-content-title{
-          color: #fff;
-          margin: 0px 10px;
-        }
-      
-        .card-content-text{
-          color: #fff;
-          margin: 15px;
-        }
-
-        h3 {
-          margin: 0;
-          font-size: 18px;
-        }
-
-        ul {
-          list-style: none;
-          padding: 0;
-          margin: 10px 0;
-
-          li {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 5px;
-          }
-        }
-
-        .select-button {
-          color: #fff;
-          background-color: #007bff;
-          border: 2px solid #fff;
-          padding: 7px 15px 7px;
-          cursor: pointer;
-          border-radius: 7px;
-          text-transform: uppercase;
-        }
-
-        .button-container{
-          padding: 0 15px;
-        }
-      }
-    }
-  }
-
-  .continue-button {
-    display: block;
-    width: 100%;
-    margin-top: 20px;
-    padding: 12px;
-    font-size: 16px;
-    color: white;
-    background-color: #007bff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-
-    &:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-
-    &:not(:disabled):hover {
-      background-color: #0056b3;
+    svg {
+      fill: #007bff;
+      width: 100%;
+      height: 100%;
     }
   }
 }
 
+Updated HTML Example
+
+<div class="selected-label">
+  SELECTED
+  <span class="tick">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#007bff"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  </span>
+</div>
+
+Key Notes
+
+1. The tick mark is represented as an inline SVG for consistent visibility.
 
 
-.credit-card-selector {
-  .cards-container {
-    .card {
-      display: flex;
-      flex-direction: column;
+2. The color #007bff is applied to the stroke attribute of the SVG.
 
-      &.selected {
-        .selected-label {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          background: #fff;
-          color: #28a745;
-          padding: 7px 15px;
-          border: 2px solid #28a745;
-          border-radius: 5px;
-          font-size: 14px;
-          font-weight: bold;
 
-          .tick {
-            height: 15px;
-            width: 15px;
-            margin-right: 5px;
-          }
-        }
-      }
-
-      .card-content {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px;
-
-        .button-container {
-          padding: 0 15px;
-
-          .select-button {
-            display: inline-block;
-            color: #fff;
-            background-color: #007bff;
-            border: 2px solid #fff;
-            padding: 7px 15px;
-            cursor: pointer;
-            border-radius: 7px;
-            text-transform: uppercase;
-            font-size: 14px;
-
-            &:hover {
-              background-color: #0056b3;
-            }
-          }
-        }
-      }
-
-      // Responsive styles for mobile
-      @media (max-width: 768px) {
-        flex-direction: column;
-
-        .card-content {
-          flex-direction: column;
-          align-items: flex-start;
-
-          .card-content-title {
-            margin-bottom: 10px;
-          }
-
-          ul {
-            margin-bottom: 10px;
-          }
-
-          .button-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
-
-            .select-button {
-              width: 100%; // Make button full width
-              text-align: center;
-            }
-          }
-        }
-
-        &.selected .selected-label {
-          width: 100%; // Make label full width
-          justify-content: center;
-          text-align: center;
-        }
-      }
-    }
-  }
-}
+3. The polyline inside the SVG creates the checkmark shape.
 
 
 
-@media screen and (max-width: 768px) {
-  .cards-container {
-    .card {
-      flex-direction: column;
+Alternative CSS-Only Solution
 
-      .card-content {
-        flex-direction: column;
-        align-items: center;
+If you don't want to use an SVG, you can use pure CSS with a pseudo-element:
 
-        .button-container {
-          display: flex;
-          justify-content: center;
-          width: 100%;
-          margin-top: 10px;
+.selected-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #007bff;
+  font-weight: bold;
 
-          .select-button {
-            display: block;
-            margin: 0 auto;
-          }
-        }
-
-        .selected-label {
-          display: block;
-          margin: 10px auto;
-          text-align: center;
-
-          .tick {
-            margin-right: 5px;
-            vertical-align: middle;
-          }
-        }
-      }
-    }
-  }
-}
-
-
-
-.header-container {
-  width: 100%;
-  padding: 20px 10px;
-  background-image: url(../../../preApproval/images/group1.jpg);
-  background-position: center;
-  background-size: cover;
-
-  .col-sm p {
-    color: #fff;
-    margin-bottom: 10px;
-  }
-  .col-sm h3 {
-    color: #fff;
-    font-size: 25px;
-  }
-
-  .column2 hr {
-    margin: 130px 10px 20px;
-    width: 96%;
-    border-top: 1px solid rgb(138 138 138);
-  }
-
-  .column2 .credit {
-    color: #fff;
-  }
-}
-
-.col-smtr {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 5px;
-  background-color: #fff;
-  border-radius: 10px;
-
-  .select-maincard {
+  .tick {
     position: relative;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    padding: 5px;
-    color: #007bff;
-  }
-}
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-left: 5px;
 
-.credit-card-selector {
-  max-width: 38rem;
-  margin: 0 auto;
-  background-color: #fff;
-  border-radius: 10px;
-
-  .header {
-    text-align: center;
-    margin-bottom: 30px;
-
-    h1 {
-      font-size: 24px;
-      margin: 0;
-    }
-
-    h2 {
-      font-size: 20px;
-      margin: 10px 0;
-      color: #444;
-    }
-
-    p {
-      font-size: 14px;
-      color: #666;
-    }
-  }
-
-  .footermsg {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .select-maincard {
-    margin-top: 1rem;
-    text-align: center;
-    color: #0091ea;
-  }
-
-  .cards-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-
-    .card {
-      display: flex;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: 0.3s all;
-      flex-direction: column;
-
-      &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      &.selected {
-        border: 2px solid #28a745;
-
-        .selected-label {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: rgb(255, 255, 255);
-          color: #007bff;
-          cursor: pointer;
-          padding: 5px;
-          border-radius: 7px;
-          border: 2px solid #fff;
-          padding: 7px 10px 7px;
-
-          .tick {
-            height: 10px;
-            width: 19px;
-          }
-        }
-      }
-
-      .card-image {
-        height: 23rem;
-      }
-
-      .main-image {
-        display: flex;
-        justify-content: center;
-        background-image: url(https://origination-test.sc.com/onboarding/hk/assets/images/clouds.jpg);
-        background-repeat: no-repeat;
-        padding: 30px;
-        background-size: cover;
-        background-position: center;
-      }
-
-      .card-content {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        padding: 15px 0;
-        align-items: center;
-        background-image: linear-gradient(to left, #282828 30%, rgba(32, 32, 32, 0.79));
-
-        .card-content-title {
-          color: #fff;
-          margin: 0px 10px;
-        }
-
-        .card-content-text {
-          color: #fff;
-          margin: 15px;
-        }
-
-        h3 {
-          margin: 0;
-          font-size: 18px;
-        }
-
-        ul {
-          list-style: none;
-          padding: 0;
-          margin: 10px 0;
-
-          li {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 5px;
-          }
-        }
-
-        .select-button {
-          color: #fff;
-          background-color: #007bff;
-          border: 2px solid #fff;
-          padding: 7px 15px 7px;
-          cursor: pointer;
-          border-radius: 7px;
-          text-transform: uppercase;
-        }
-
-        .button-container {
-          padding: 0 15px;
-        }
-      }
-    }
-  }
-
-  .continue-button {
-    display: block;
-    width: 100%;
-    margin-top: 20px;
-    padding: 12px;
-    font-size: 16px;
-    color: white;
-    background-color: #007bff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-
-    &:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-
-    &:not(:disabled):hover {
-      background-color: #0056b3;
+    &:before {
+      content: '';
+      position: absolute;
+      width: 5px;
+      height: 10px;
+      border: solid #007bff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      left: 0;
+      top: 0;
     }
   }
 }
 
-/* Media query for mobile devices */
-@media screen and (max-width: 768px) {
-  .cards-container {
-    .card {
-      flex-direction: column;
+HTML for CSS-Only Solution
 
-      .card-content {
-        flex-direction: column;
-        align-items: center;
+<div class="selected-label">
+  SELECTED
+  <span class="tick"></span>
+</div>
 
-        .button-container {
-          display: flex;
-          justify-content: center;
-          width: 100%;
-          margin-top: 10px;
+This should render a visible tick mark in blue (#007bff). Let me know which one works best for your use case!
 
-          .select-button {
-            display: block;
-            margin: 0 auto;
-          }
-        }
-
-        .selected-label {
-          display: block;
-          margin: 10px auto;
-          text-align: center;
-
-          .tick {
-            margin-right: 5px;
-            vertical-align: middle;
-          }
-        }
-      }
-    }
-  }
-}
