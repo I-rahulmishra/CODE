@@ -434,3 +434,164 @@ const AsiaMiles: React.FC = () => {
 };
 
 export default AsiaMiles;
+
+
+
+
+
+import React, { useEffect, useState } from "react";
+import "./asiaMiles.scss";
+import ccIcon from "../../../preApproval/images/Tier-0-front.png";
+import ccIcon1 from "../../../preApproval/images/Tier-1-front.png";
+import ccIcon2 from "../../../preApproval/images/Tier-2-front.png";
+import { asiaMilesJson } from "../../../../services/common-service";
+
+// Map card images
+const cardImages = {
+  1: ccIcon,
+  2: ccIcon1,
+  3: ccIcon2,
+};
+
+// Extract and map APIData to match the UI structure
+const mapAPIDataToCards = (apiData: any) => {
+  const data = apiData?.A00[1]; // Adjust key (e.g., A00) as per APIData requirement
+  if (!data) return [];
+
+  return [
+    {
+      id: 1,
+      title: data.cardheader,
+      description: [
+        `1. ${data.benefit01}`,
+        `2. ${data.benefit02}`,
+        `3. ${data.benefit03}`,
+      ],
+      image: cardImages[1],
+    },
+    {
+      id: 2,
+      title: data.cardheader2,
+      description: [
+        `1. ${data.benefit11}`,
+        `2. ${data.benefit12}`,
+        `3. ${data.benefit13}`,
+        `4. ${data.benefit14}`,
+      ],
+      image: cardImages[2],
+    },
+    {
+      id: 3,
+      title: data.cardheader3,
+      description: [
+        `1. ${data.benefit21}`,
+        `2. ${data.benefit22}`,
+        `3. ${data.benefit23}`,
+        `4. ${data.benefit24}`,
+      ],
+      image: cardImages[3],
+    },
+  ];
+};
+
+const AsiaMiles: React.FC = () => {
+  const [selectedCard, setSelectedCard] = useState<number | null>(null);
+  const [cards, setCards] = useState<any[]>([]);
+
+  useEffect(() => {
+    asiaMilesJson();
+    // Map APIData to card data
+    const mappedCards = mapAPIDataToCards(APIData);
+    setCards(mappedCards);
+  }, []);
+
+  const handleSelectCard = (id: number) => {
+    setSelectedCard(id);
+  };
+
+  return (
+    <>
+      <div className="header-container">
+        <header className="header">
+          <div className="column01">
+            <div className="col-sm">
+              <p id="applyingfor">You are applying for</p>
+              <h3 id="header">Standard Chartered Cathay Mastercard</h3>
+            </div>
+            <div className="column2">
+              <hr />
+              <p className="credit">
+                To apply for Standard Chartered credit card, you need to be 18+
+                years old, and a Hong Kong resident
+              </p>
+            </div>
+          </div>
+        </header>
+      </div>
+      <div className="col-smtr">
+        <p className="select-maincard">Please select one type of credit card</p>
+      </div>
+      <div className="credit-card-selector">
+        <div className="cards-container">
+          {cards.map((card) => (
+            <div
+              key={card.id}
+              className={`card ${selectedCard === card.id ? "selected" : ""}`}
+              onClick={() => handleSelectCard(card.id)}
+            >
+              <div className="main-image">
+                <img src={card.image} alt={card.title} className="card-image" />
+              </div>
+              <div className="card-content">
+                <ul>
+                  <h3 className="card-content-title">{card.title}</h3>
+                  {card.description.map((item, index) => (
+                    <li key={index} className="card-content-text">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="button-container">
+                  {selectedCard === card.id ? (
+                    <div className="selected-label">
+                      <span className="tick">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#007bff"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>{" "}
+                      SELECTED
+                    </div>
+                  ) : (
+                    <button className="select-button">Select</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="footermsg">
+          Your Integrated Deposit Account and Banking Plan application would be
+          handled in the process as well&nbsp;(if applicable)
+        </p>
+        <button
+          className="continue-button"
+          disabled={selectedCard === null}
+          onClick={() => alert(`Card ${selectedCard} selected!`)}
+        >
+          OK, NEXT
+        </button>
+      </div>
+    </>
+  );
+};
+
+export default AsiaMiles;
