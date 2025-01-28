@@ -340,3 +340,99 @@ export default AsiaMiles;
     }
   }
 }
+
+
+
+.credit-card-selector {
+  .cards-container {
+    .card {
+      display: flex;
+      flex-direction: column;
+
+      &.selected {
+        .selected-label {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: #fff;
+          color: #28a745;
+          padding: 7px 15px;
+          border: 2px solid #28a745;
+          border-radius: 5px;
+          font-size: 14px;
+          font-weight: bold;
+
+          .tick {
+            height: 15px;
+            width: 15px;
+            margin-right: 5px;
+          }
+        }
+      }
+
+      .card-content {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+
+        .button-container {
+          padding: 0 15px;
+
+          .select-button {
+            display: inline-block;
+            color: #fff;
+            background-color: #007bff;
+            border: 2px solid #fff;
+            padding: 7px 15px;
+            cursor: pointer;
+            border-radius: 7px;
+            text-transform: uppercase;
+            font-size: 14px;
+
+            &:hover {
+              background-color: #0056b3;
+            }
+          }
+        }
+      }
+
+      // Responsive styles for mobile
+      @media (max-width: 768px) {
+        flex-direction: column;
+
+        .card-content {
+          flex-direction: column;
+          align-items: flex-start;
+
+          .card-content-title {
+            margin-bottom: 10px;
+          }
+
+          ul {
+            margin-bottom: 10px;
+          }
+
+          .button-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+
+            .select-button {
+              width: 100%; // Make button full width
+              text-align: center;
+            }
+          }
+        }
+
+        &.selected .selected-label {
+          width: 100%; // Make label full width
+          justify-content: center;
+          text-align: center;
+        }
+      }
+    }
+  }
+}
