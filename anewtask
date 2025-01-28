@@ -474,3 +474,254 @@ export default AsiaMiles;
     }
   }
 }
+
+
+
+.header-container {
+  width: 100%;
+  padding: 20px 10px;
+  background-image: url(../../../preApproval/images/group1.jpg);
+  background-position: center;
+  background-size: cover;
+
+  .col-sm p {
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .col-sm h3 {
+    color: #fff;
+    font-size: 25px;
+  }
+
+  .column2 hr {
+    margin: 130px 10px 20px;
+    width: 96%;
+    border-top: 1px solid rgb(138 138 138);
+  }
+
+  .column2 .credit {
+    color: #fff;
+  }
+}
+
+.col-smtr {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 5px;
+  background-color: #fff;
+  border-radius: 10px;
+
+  .select-maincard {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 5px;
+    color: #007bff;
+  }
+}
+
+.credit-card-selector {
+  max-width: 38rem;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 10px;
+
+  .header {
+    text-align: center;
+    margin-bottom: 30px;
+
+    h1 {
+      font-size: 24px;
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 10px 0;
+      color: #444;
+    }
+
+    p {
+      font-size: 14px;
+      color: #666;
+    }
+  }
+
+  .footermsg {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .select-maincard {
+    margin-top: 1rem;
+    text-align: center;
+    color: #0091ea;
+  }
+
+  .cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .card {
+      display: flex;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: 0.3s all;
+      flex-direction: column;
+
+      &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      &.selected {
+        border: 2px solid #28a745;
+
+        .selected-label {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: rgb(255, 255, 255);
+          color: #007bff;
+          cursor: pointer;
+          padding: 5px;
+          border-radius: 7px;
+          border: 2px solid #fff;
+          padding: 7px 10px 7px;
+
+          .tick {
+            height: 10px;
+            width: 19px;
+          }
+        }
+      }
+
+      .card-image {
+        height: 23rem;
+      }
+
+      .main-image {
+        display: flex;
+        justify-content: center;
+        background-image: url(https://origination-test.sc.com/onboarding/hk/assets/images/clouds.jpg);
+        background-repeat: no-repeat;
+        padding: 30px;
+        background-size: cover;
+        background-position: center;
+      }
+
+      .card-content {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 0;
+        align-items: center;
+        background-image: linear-gradient(to left, #282828 30%, rgba(32, 32, 32, 0.79));
+
+        .card-content-title {
+          color: #fff;
+          margin: 0px 10px;
+        }
+
+        .card-content-text {
+          color: #fff;
+          margin: 15px;
+        }
+
+        h3 {
+          margin: 0;
+          font-size: 18px;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 10px 0;
+
+          li {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 5px;
+          }
+        }
+
+        .select-button {
+          color: #fff;
+          background-color: #007bff;
+          border: 2px solid #fff;
+          padding: 7px 15px 7px;
+          cursor: pointer;
+          border-radius: 7px;
+          text-transform: uppercase;
+        }
+
+        .button-container {
+          padding: 0 15px;
+        }
+      }
+    }
+  }
+
+  .continue-button {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    font-size: 16px;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    &:not(:disabled):hover {
+      background-color: #0056b3;
+    }
+  }
+}
+
+/* Media query for mobile devices */
+@media screen and (max-width: 768px) {
+  .cards-container {
+    .card {
+      flex-direction: column;
+
+      .card-content {
+        flex-direction: column;
+        align-items: center;
+
+        .button-container {
+          display: flex;
+          justify-content: center;
+          width: 100%;
+          margin-top: 10px;
+
+          .select-button {
+            display: block;
+            margin: 0 auto;
+          }
+        }
+
+        .selected-label {
+          display: block;
+          margin: 10px auto;
+          text-align: center;
+
+          .tick {
+            margin-right: 5px;
+            vertical-align: middle;
+          }
+        }
+      }
+    }
+  }
+}
