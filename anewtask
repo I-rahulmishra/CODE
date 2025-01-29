@@ -594,3 +594,223 @@ describe('DocumentUpload Component', () => {
     expect(mockProps.setShowContinueBtn).toHaveBeenCalledWith(false);
   });
 });
+
+
+
+
+
+
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import DocumentUpload from "./documentUpload";
+import { postDocuments } from "../../../services/preApprovalPostServices";
+import userEvent from "@testing-library/user-event";
+
+// Mock services and modules
+jest.mock("../../../services/preApprovalPostServices", () => ({
+  postDocuments: jest.fn(),
+}));
+jest.mock("../../../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+}));
+
+const mockStore = configureStore([]);
+
+describe("DocumentUpload Component", () => {
+  let store: any;
+  const mockProps = {
+    setShowIncomeProof: jest.fn(),
+    showQRCodePage: false,
+    setShowQRCodePage: jest.fn(),
+    channel_reference: "test-reference",
+    setHKIDVersion: jest.fn(),
+    setShowContinueBtn: jest.fn(),
+  };
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              applicant_documents: [
+                {
+                  document_list: [
+                    {
+                      document_category: "Income Proof",
+                      document_options: [
+                        {
+                          document_types: [
+                            {
+                              uploaded_documents: [],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+        dynamicDocumentsUpload: {
+          documentCount: 0,
+          fileSectionData: {
+            document_category: "Income Proof",
+          },
+        },
+      },
+      preApproval: {
+        documentZoloCheckRes: {
+          data: {
+            documents: [
+              {
+                documentName: "test-doc",
+              },
+            ],
+          },
+        },
+        imgPrevURL: "test-url",
+      },
+    });
+
+    store.dispatch = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("renders document upload component", () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...mockProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText("Income Proof")).toBeInTheDocument();
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+  });
+
+  test("handles file size validation", async () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...mockProps} />
+      </Provider>
+    );
+
+    const largeFile = new File(["test"], "large.jpg", { type: "image/jpeg" });
+    Object.defineProperty(largeFile, "size", { value: 6 * 1024 * 1024 }); // 6MB (exceeds limit)
+
+    const fileInput = screen.getByLabelText("Upload");
+    await userEvent.upload(fileInput, largeFile);
+
+    expect(
+      screen.getByText("invalideimagesize")
+    ).toBeInTheDocument();
+  });
+
+  test("handles successful file upload", async () => {
+    postDocuments.mockResolvedValueOnce({
+      statusText: "Accepted",
+      data: {
+        docId: "123",
+        documentStatus: "UPLOADED",
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...mockProps} />
+      </Provider>
+    );
+
+    const validFile = new File(["test"], "test.jpg", { type: "image/jpeg" });
+
+    const fileInput = screen.getByLabelText("Upload");
+    await userEvent.upload(fileInput, validFile);
+
+    await waitFor(() => {
+      expect(postDocuments).toHaveBeenCalledWith("test-reference", validFile);
+    });
+
+    expect(screen.getByText("Upload completed !")).toBeInTheDocument();
+  });
+
+  test("handles file deletion", async () => {
+    postDocuments.mockResolvedValueOnce({
+      statusText: "Accepted",
+      data: {
+        docId: "123",
+        documentStatus: "UPLOADED",
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...mockProps} />
+      </Provider>
+    );
+
+    const validFile = new File(["test"], "test.jpg", { type: "image/jpeg" });
+
+    const fileInput = screen.getByLabelText("Upload");
+    await userEvent.upload(fileInput, validFile);
+
+    await waitFor(() => {
+      expect(postDocuments).toHaveBeenCalledWith("test-reference", validFile);
+    });
+
+    expect(screen.getByText("Upload completed !")).toBeInTheDocument();
+
+    // Simulate delete button click
+    const deleteButton = screen.getByTestId("delete-btn");
+    fireEvent.click(deleteButton);
+
+    // Ensure the file is removed from UI
+    expect(screen.queryByText("test.jpg")).not.toBeInTheDocument();
+  });
+
+  test("closes document upload modal", async () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...mockProps} />
+      </Provider>
+    );
+
+    const closeButton = screen.getByText("CLOSE");
+    fireEvent.click(closeButton);
+
+    expect(mockProps.setShowIncomeProof).toHaveBeenCalledWith("");
+    expect(mockProps.setShowQRCodePage).toHaveBeenCalledWith(false);
+    expect(mockProps.setHKIDVersion).toHaveBeenCalledWith("");
+    expect(mockProps.setShowContinueBtn).toHaveBeenCalledWith(false);
+  });
+
+  test("clicking 'Continue' triggers stage update", async () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...mockProps} />
+      </Provider>
+    );
+
+    // Upload a file
+    const validFile = new File(["test"], "test.jpg", { type: "image/jpeg" });
+    const fileInput = screen.getByLabelText("Upload");
+    await userEvent.upload(fileInput, validFile);
+
+    await waitFor(() => {
+      expect(postDocuments).toHaveBeenCalledWith("test-reference", validFile);
+    });
+
+    // Click continue button
+    const continueButton = screen.getByText("Continue");
+    fireEvent.click(continueButton);
+
+    // Ensure dispatch is called
+    expect(store.dispatch).toHaveBeenCalled();
+  });
+});
