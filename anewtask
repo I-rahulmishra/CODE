@@ -1,103 +1,95 @@
-yHere are two test cases for okBtnClick and handleUploadFile using Jest and React Testing Library.
+yFixing the act Error in React Testing Library
 
-Test Cases
+If you're encountering an error related to act in React Testing Library, it typically happens because state updates are occurring outside of act(), and the test is not waiting for asynchronous updates.
 
-1. okBtnClick should update stage data and dispatch actions
+Possible fixes:
 
-it("should update stage data and dispatch necessary actions on okBtnClick", async () => {
-  const { getByRole } = render(
-    <Provider store={store}>
-      <DocumentUpload setShowIncomeProof={jest.fn()} setShowQRCodePage={jest.fn()} setHKIDVersion={jest.fn()} setShowContinueBtn={jest.fn()} />
-    </Provider>
-  );
+1. Wrap async updates in act
 
-  // Simulate file upload
-  act(() => {
-    store.dispatch(stagesAction.updateDocumentCount(1));
-    store.dispatch(stagesAction.updatefileSectionData([]));
-  });
-
-  // Click Continue button
-  const continueButton = getByRole("button", { name: "Income Proof" });
-  fireEvent.click(continueButton);
-
-  // Check if dispatch was called with correct actions
-  expect(store.dispatch).toHaveBeenCalledWith(expect.any(Function)); 
-  expect(store.dispatch).toHaveBeenCalledWith(stagesAction.updateDocumentCount(1));
-  expect(store.dispatch).toHaveBeenCalledWith(stagesAction.updatefileSectionData([]));
+await act(async () => {
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 });
 
-2. handleUploadFile should upload a valid file and update state
 
-it("should handle file upload and update state when valid file is uploaded", async () => {
-  const file = new File(["dummy content"], "test-image.png", { type: "image/png" });
-  const { getByLabelText } = render(
-    <Provider store={store}>
-      <DocumentUpload setShowIncomeProof={jest.fn()} setShowQRCodePage={jest.fn()} setHKIDVersion={jest.fn()} setShowContinueBtn={jest.fn()} />
-    </Provider>
-  );
+2. Use waitFor
+If the state update is async, use waitFor:
 
-  // Simulate file selection
-  const fileInput = getByLabelText("Upload");
-  fireEvent.change(fileInput, { target: { files: [file] } });
-
-  // Expect dispatchLoader to be called
-  expect(store.dispatch).toHaveBeenCalledWith(dispatchLoader(true));
-
-  // Mock API response
-  await act(async () => {
-    await store.dispatch({
-      type: "MOCK_UPLOAD_SUCCESS",
-      payload: { statusText: "Accepted", data: { docId: "123" } },
-    });
-  });
-
-  // Expect file to be added to state
-  expect(store.dispatch).toHaveBeenCalledWith(expect.any(Function));
-  expect(store.dispatch).toHaveBeenCalledWith(dispatchLoader(false));
+await waitFor(() => {
+  fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 });
+
+
+3. Use userEvent instead of fireEvent
+userEvent.click ensures proper event propagation, preventing act errors:
+
+await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+
 
 
 ---
 
-Modified beforeEach Mock
+Ways to Click okBtnClick in Tests
 
-beforeEach(() => {
-  store = mockStore({
-    stages: {
-      stages: [{
-        stageInfo: {
-          applicant_documents: [{
-            document_list: [{
-              document_category: "Income Proof",
-              document_options: [{
-                document_types: [{
-                  uploaded_documents: [{ docId: "123", filename: "test-image.png", documentStatus: "UPLOADED" }]
-                }]
-              }]
-            }]
-          }]
-        }
-      }],
-      dynamicDocumentsUpload: {
-        documentCount: 1,
-        fileSectionData: {
-          document_category: "Income Proof"
-        }
-      }
-    },
-    preApproval: {
-      documentZoloCheckRes: {
-        data: {
-          documents: [{ documentName: "test-doc" }]
-        }
-      },
-      imgPrevURL: "test-url"
-    }
-  });
+Here are different ways you can trigger okBtnClick inside your tests:
 
-  store.dispatch = jest.fn();
+1. Using fireEvent.click
+
+fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+2. Using userEvent.click (Preferred)
+
+await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+3. Using querySelector
+
+const button = container.querySelector('.continue');
+button && fireEvent.click(button);
+
+4. Using findByRole for async elements
+
+const button = await screen.findByRole('button', { name: /continue/i });
+fireEvent.click(button);
+
+5. Directly calling the function
+
+If needed, you can call the function directly:
+
+okBtnClick({ target: { title: 'Income Proof' } });
+
+
+---
+
+Test Cases for okBtnClick and handleUploadFile
+
+Test for okBtnClick
+
+test('should dispatch actions and update state when okBtnClick is triggered', async () => {
+  render(<DocumentUpload {...mockProps} />);
+
+  const button = screen.getByRole('button', { name: /continue/i });
+
+  await userEvent.click(button);
+
+  expect(store.dispatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: 'stages/getStage',
+    })
+  );
 });
 
-This ensures the mock store correctly represents a document already uploaded. Let me know if you need more!
+Test for handleUploadFile
+
+test('should call postDocuments and update files state when a file is uploaded', async () => {
+  render(<DocumentUpload {...mockProps} />);
+
+  const file = new File(['sample content'], 'test-file.jpg', { type: 'image/jpeg' });
+
+  const input = screen.getByLabelText(/upload/i);
+  await userEvent.upload(input, file);
+
+  expect(store.dispatch).toHaveBeenCalledWith(expect.any(Function));
+});
+
+Would you like additional test cases or modifications?
 
