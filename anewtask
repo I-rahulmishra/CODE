@@ -360,3 +360,203 @@ const DocumentUpload: React.FC<any> = ({
 };
 
 export default DocumentUpload;
+
+
+
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import DocumentUpload from "../DocumentUpload"; // Adjust path as needed
+import { postDocuments } from "../../../services/preApprovalPostServices";
+
+jest.mock("../../../services/preApprovalPostServices", () => ({
+  postDocuments: jest.fn(),
+}));
+
+// Mock the redux store
+const mockStore = configureStore([]);
+const store = mockStore({
+  stages: {
+    stages: [{ stageInfo: { applicant_documents: [{ document_list: [] }] } }],
+    dynamicDocumentsUpload: { documentCount: 0, fileSectionData: { document_category: "ID Proof" } },
+  },
+  preApproval: {
+    documentZoloCheckRes: { data: { documents: [{ documentName: "Test Document" }] } },
+    imgPrevURL: "test-image-url",
+  },
+});
+
+// Mock dispatch function
+const mockDispatch = jest.fn();
+jest.mock("react-redux", () => ({
+  useDispatch: () => mockDispatch,
+  useSelector: (callback) => callback(store.getState()),
+}));
+
+describe("DocumentUpload Component", () => {
+  const defaultProps = {
+    setShowIncomeProof: jest.fn(),
+    showQRCodePage: false,
+    setShowQRCodePage: jest.fn(),
+    channel_reference: "12345",
+    setHKIDVersion: jest.fn(),
+    setShowContinueBtn: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("should render the component correctly", () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText("CLOSE")).toBeInTheDocument();
+    expect(screen.getByText("ID Proof")).toBeInTheDocument();
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+  });
+
+  test("should open and close modal", () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("here"));
+    expect(screen.getByTestId("modal")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("close-modal-btn"));
+    expect(screen.queryByTestId("modal")).not.toBeInTheDocument();
+  });
+
+  test("should handle file upload successfully", async () => {
+    const file = new File(["dummy content"], "test.jpg", { type: "image/jpeg" });
+
+    (postDocuments as jest.Mock).mockResolvedValue({
+      statusText: "Accepted",
+      data: { documentStatus: "UPLOADED" },
+    });
+
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    const input = screen.getByLabelText("Upload");
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => expect(postDocuments).toHaveBeenCalledTimes(1));
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  test("should prevent file upload if file size exceeds limit", async () => {
+    const file = new File(["a".repeat(6 * 1024 * 1024)], "large-file.jpg", { type: "image/jpeg" });
+
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    const input = screen.getByLabelText("Upload");
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Invalid image size")).toBeInTheDocument();
+    });
+  });
+
+  test("should handle delete file functionality", async () => {
+    (postDocuments as jest.Mock).mockResolvedValue({
+      statusText: "Accepted",
+      data: { documentStatus: "UPLOADED", docId: "123" },
+    });
+
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    const file = new File(["dummy content"], "test.jpg", { type: "image/jpeg" });
+    const input = screen.getByLabelText("Upload");
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => screen.getByTestId("delete-btn"));
+    fireEvent.click(screen.getByTestId("delete-btn"));
+
+    expect(screen.queryByTestId("image-preview-id")).not.toBeInTheDocument();
+  });
+
+  test("should open image preview modal", async () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    const file = new File(["dummy content"], "test.jpg", { type: "image/jpeg" });
+    const input = screen.getByLabelText("Upload");
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => screen.getByTestId("image-preview-id"));
+    fireEvent.click(screen.getByTestId("image-preview-id"));
+
+    expect(screen.getByTestId("image-preview-modal")).toBeInTheDocument();
+  });
+
+  test("should close file upload section when 'Close' is clicked", () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("CLOSE"));
+    expect(defaultProps.setShowIncomeProof).toHaveBeenCalledWith("");
+    expect(defaultProps.setShowQRCodePage).toHaveBeenCalledWith(false);
+    expect(defaultProps.setHKIDVersion).toHaveBeenCalledWith("");
+    expect(defaultProps.setShowContinueBtn).toHaveBeenCalledWith(false);
+  });
+
+  test("should trigger continue button click", async () => {
+    (postDocuments as jest.Mock).mockResolvedValue({
+      statusText: "Accepted",
+      data: { documentStatus: "UPLOADED" },
+    });
+
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    const file = new File(["dummy content"], "test.jpg", { type: "image/jpeg" });
+    const input = screen.getByLabelText("Upload");
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => screen.getByRole("button", { name: "Continue" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  test("should trigger back button click", () => {
+    render(
+      <Provider store={store}>
+        <DocumentUpload {...defaultProps} />
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByTitle("back-btn-upload-doc1"));
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+});
