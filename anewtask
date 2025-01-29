@@ -1,431 +1,362 @@
-import React, { useEffect, useState } from "react";
-import "./asiaMiles.scss";
-import ccIcon from "../../../preApproval/images/Tier-0-front.png";
-import ccIcon1 from "../../../preApproval/images/Tier-1-front.png";
-import ccIcon2 from "../../../preApproval/images/Tier-2-front.png";
+import React, { useState, useEffect } from "react";
+import "./documentUpload.scss";
+import { useDispatch, useSelector } from "react-redux";
+import Modal from "../modals/tipsModal/tips-modal";
+import PopupModel from "../../../../../shared/components/popup-model/popup-model";
+import Carousel from "../carousel/carousel";
+import banner1 from "../images-du/illustration-03@3x.png";
+import banner2 from "../images-du/illustration-06@3x.png";
+import banner3 from "../images-du/illustration-05@3x.png";
+import banner4 from "../images-du/illustration-02@3x.png";
+import banner5 from "../images-du/illustration-01@3x.png";
+import banner6 from "../images-du/illustration-04@3x.png";
+import ImagePreviewModal from "../modals/imagePreviewModal/image-preview-modal";
+import {  postDocuments,} from "../../../services/preApprovalPostServices";
+import AlertModel from "../../../alertModal/alert-modal";
+import { dispatchLoader } from "../../../../../services/common-service";
+import { StoreModel } from "../../../../../utils/model/common-model";
+import { stagesAction } from "../../../../../utils/store/stages-slice";
+import { CONSTANTS } from "../../../../../utils/common/constants";
 
-const APIData = {
-  A00: [
+const DocumentUpload: React.FC<any> = ({
+  setShowIncomeProof,
+  showQRCodePage,
+  setShowQRCodePage,
+  channel_reference,
+  setHKIDVersion,
+  setShowContinueBtn,
+}) => {
+  const dispatch = useDispatch();
+  const footeContent =
+    "File format should be in JPG or PNG. The individual file size must not exceed 5MB. Click";
+  const copyRights = "© Standard Chartered Bank (HK) Limited";
+  const images: any = [
     {
-      applyingfor: "You are applying for",
-      header: "Standard Chartered Cathay Mastercard",
-      warning:
-        "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
-      selectcard: "Please select one type of credit card",
-      benefits: "Benefits here",
-      myCheck2: "Select",
-      myCheck1: "Select",
-      myCheck: "Select",
-      footermsg:
-        "Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)",
-      nextBtnTxt: "OK, NEXT",
-      greet: "Great! Let's get you started with the application.",
-      docreq: "Documents required during the application",
-      hkidcard: "Hong Kong Identity Card or Passport",
-      latresadd: "Latest residential address showing your name",
-      lastpayslip:
-        "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
-      eligibility: "Eligibility",
-      hkresi: "Hong Kong resident",
-      ageres: "Aged 18 or above",
-      income: "Annual income of HKD96,000 or above",
-      existing: "Existing Asia Miles Member",
-      autosave: "Autosave feature",
-      footer:
-        "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
-      startapp: "Start Application",
-      navlink1:
-        "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/",
+      banner: banner1,
+      step: "Step 1",
+      stepText: "Scan the QR code with a mobile phone",
     },
     {
-      benefit01: "Enjoy up to 60,000 Asia Miles Welcome Offer",
-      benefit02:
-        "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
-      benefit03: "First Year Annual Fee Waiver",
-      benefit11: "Enjoy up to 80,000 Asia Miles Welcome Offer",
-      benefit12:
-        "HKD3 = 1 Asia Mile for eligible spending on overseas category",
-      benefit13:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit14: "Annual fee waiver for Qualified Priority Banking clients",
-      benefit21: "Enjoy up to 100,000 Asia Miles Welcome Offer",
-      benefit22:
-        "HKD2 = 1 Asia Mile for eligible spending on overseas category",
-      benefit23:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit24: "Annual fee waiver for Qualified Priority Private clients",
-      cardheader: "Standard Chartered Cathay Mastercard",
-      cardheader2: "Standard Chartered Cathay Mastercard – Priority Banking",
-      cardheader3: " Standard Chartered Cathay Mastercard – Priority Private",
-    },
-  ],
-  A01: [
-    {
-      applyingfor: "You are applying for",
-      header: "Standard Chartered Cathay Mastercard",
-      warning:
-        "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
-      selectcard: "Please select one type of credit card",
-      benefits: "Benefits here",
-      myCheck2: "Select",
-      myCheck1: "Select",
-      myCheck: "Select",
-      footermsg:
-        "Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)",
-      nextBtnTxt: "OK, NEXT",
-      greet: "Great! Let's get you started with the application.",
-      docreq: "Documents required during the application",
-      hkidcard: "Hong Kong Identity Card or Passport",
-      latresadd: "Latest residential address showing your name",
-      lastpayslip:
-        "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
-      eligibility: "Eligibility",
-      hkresi: "Hong Kong resident",
-      ageres: "Aged 18 or above",
-      income: "Annual income of HKD96,000 or above",
-      existing: "Existing Asia Miles Member",
-      autosave: "Autosave feature",
-      footer:
-        "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
-      startapp: "Start Application",
-      navlink1:
-        "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/",
+      banner: banner2,
+      step: "Step 2",
+      stepText:
+        "Remove card holder and place it on a flat surface under adequate lighting",
     },
     {
-      benefit01: "Enjoy up to 60,000 Asia Miles Welcome Offer",
-      benefit02: "Extra 5,000 Asia Miles, no spending requirement",
-      benefit03:
-        "HKD4 = 1 Asia Mile for eligible spending on dining, online and overseas category.",
-      benefit04: "First Year Annual Fee Waiver",
-      benefit11: "Enjoy up to 80,000 Asia Miles Welcome Offer",
-      benefit12:
-        "HKD4 = 1 Asia Mile for eligible spending on dining, online and overseas category",
-      benefit13: "Complimentary 12-month Marco Polo Club Silver Membership",
-      benefit14: "Annual fee waiver for Qualified Priority Banking clients",
-      benefit21: "Enjoy up to 100,000 Asia Miles Welcome Offer",
-      benefit22:
-        "HKD4 = 1 Asia Mile for eligible spending on dining, online and overseas category",
-      benefit23: "Complimentary 12-month Marco Polo Club Gold Membership",
-      benefit24: "Annual fee waiver for Qualified Priority Private clients",
-      cardheader: "Standard Chartered Cathay Mastercard",
-      cardheader2: "Standard Chartered Cathay Mastercard � Priority Banking",
-      cardheader3: "Standard Chartered Cathay Mastercard � Priority Private",
-    },
-  ],
-  A02: [
-    {
-      applyingfor: "You are applying for",
-      header: "Standard Chartered Cathay Mastercard",
-      warning:
-        "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
-      selectcard: "Please select one type of credit card",
-      benefits: "Benefits here",
-      myCheck2: "Select",
-      myCheck1: "Select",
-      myCheck: "Select",
-      footermsg:
-        "<p>Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)<br/><strong>“New Cardholder”</strong> means an applicant who does not currently hold and has not cancelled any Standard Chartered Credit Card in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.<br/><strong>“Existing Cardholder”</strong> means an applicant who currently holds or has cancelled any Standard Chartered Credit Card (except the Eligible Card) in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.",
-      nextBtnTxt: "OK, NEXT",
-      greet: "Great! Let's get you started with the application.",
-      docreq: "Documents required during the application",
-      hkidcard: "Hong Kong Identity Card or Passport",
-      latresadd: "Latest residential address showing your name",
-      lastpayslip:
-        "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
-      eligibility: "Eligibility",
-      hkresi: "Hong Kong resident",
-      ageres: "Aged 18 or above",
-      income: "Annual income of HKD96,000 or above",
-      existing: "Existing Asia Miles Member",
-      autosave: "Autosave feature",
-      footer:
-        "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
-      startapp: "Start Application",
-      navlink1:
-        "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/",
+      banner: banner3,
+      step: "Step 3",
+      stepText:
+        "Capture ID from above and align the edges with the rectangular frames",
     },
     {
-      benefit01:
-        "New Cardholder to enjoy up to 60,000 Asia Miles Welcome Offer",
-      benefit02:
-        "New Cardholder to earn extra 19,000 Asia Miles, existing cardholder to earn 9,000 Asia Miles. No spending requirement",
-      benefit03:
-        "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
-      benefit04: "First Year Annual Fee Waiver",
-      benefit11:
-        "New Cardholder to enjoy up to 80,000 Asia Miles Welcome Offer",
-      benefit12:
-        "New Cardholder to earn extra 19,000 Asia Miles, existing cardholder to earn 9,000 Asia Miles. No spending requirement",
-      benefit13:
-        "HKD3 = 1 Asia Mile for eligible spending on overseas category",
-      benefit14:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit15: "Annual fee waiver for Qualified Priority Banking clients",
-      benefit21:
-        "New Cardholder to enjoy up to 100,000 Asia Miles Welcome Offer",
-      benefit22:
-        "New Cardholder to earn extra 19,000 Asia Miles, existing cardholder to earn 9,000 Asia Miles. No spending requirement",
-      benefit23:
-        "HKD2 = 1 Asia Mile for eligible spending on overseas category",
-      benefit24:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit25: "Annual fee waiver for Qualified Priority Private clients",
-      cardheader: "Standard Chartered Cathay Mastercard",
-      cardheader2: "Standard Chartered Cathay Mastercard - Priority Banking",
-      cardheader3: "Standard Chartered Cathay Mastercard - Priority Private",
-    },
-  ],
-  A03: [
-    {
-      applyingfor: "You are applying for",
-      header: "Standard Chartered Cathay Mastercard",
-      warning:
-        "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
-      selectcard: "Please select one type of credit card",
-      benefits: "Benefits here",
-      myCheck2: "Select",
-      myCheck1: "Select",
-      myCheck: "Select",
-      footermsg:
-        "<p>Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)<br/><strong>“New Cardholder”</strong> means an applicant who does not currently hold and has not cancelled any Standard Chartered Credit Card in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.<br/><strong>“Existing Cardholder”</strong> means an applicant who currently holds or has cancelled any Standard Chartered Credit Card (except the Eligible Card) in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.</p>",
-      nextBtnTxt: "OK, NEXT",
-      greet: "Great! Let's get you started with the application.",
-      docreq: "Documents required during the application",
-      hkidcard: "Hong Kong Identity Card or Passport",
-      latresadd: "Latest residential address showing your name",
-      lastpayslip:
-        "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
-      eligibility: "Eligibility",
-      hkresi: "Hong Kong resident",
-      ageres: "Aged 18 or above",
-      income: "Annual income of HKD96,000 or above",
-      existing: "Existing Asia Miles Member",
-      autosave: "Autosave feature",
-      footer:
-        "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
-      startapp: "Start Application",
-      navlink1:
-        "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/",
+      banner: banner4,
+      step: "Step 4",
+      stepText: "Tilt mobile phone about 30-degree and capture from aside",
     },
     {
-      benefit01:
-        "New Cardholder to enjoy up to 60,000 Asia Miles Welcome Offer",
-      benefit02:
-        "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
-      benefit03: "First Year Annual Fee Waiver",
-      benefit04: "",
-      benefit11:
-        "New Cardholder to enjoy up to 80,000 Asia Miles Welcome Offer",
-      benefit12:
-        "New Cardholder to receive Cathay x Samsonite suitcase (20 inch), existing cardholder to earn 5,000 Asia Miles. No spending requirement",
-      benefit13:
-        "HKD3 = 1 Asia Mile for eligible spending on overseas category",
-      benefit14:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit15: "Annual fee waiver for Qualified Priority Banking clients",
-      benefit21:
-        "New Cardholder to enjoy up to 100,000 Asia Miles Welcome Offer",
-      benefit22:
-        "New Cardholder to receive Cathay x Samsonite suitcase (20 inch), existing cardholder to earn 5,000 Asia Miles. No spending requirement",
-      benefit23:
-        "HKD2 = 1 Asia Mile for eligible spending on overseas category",
-      benefit24:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit25: "Annual fee waiver for Qualified Priority Private clients",
-      cardheader: "Standard Chartered Cathay Mastercard",
-      cardheader2: "Standard Chartered Cathay Mastercard - Priority Banking",
-      cardheader3: "Standard Chartered Cathay Mastercard - Priority Private",
-    },
-  ],
-  A04: [
-    {
-      applyingfor: "You are applying for",
-      header: "Standard Chartered Cathay Mastercard",
-      warning:
-        "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
-      selectcard: "Please select one type of credit card",
-      benefits: "Benefits here",
-      myCheck2: "Select",
-      myCheck1: "Select",
-      myCheck: "Select",
-      footermsg:
-        "<p>Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)<br/><strong>“New Cardholder”</strong> means an applicant who does not currently hold and has not cancelled any Standard Chartered Credit Card in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.<br/><strong>“Existing Cardholder”</strong> means an applicant who currently holds or has cancelled any Standard Chartered Credit Card (except the Eligible Card) in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.</p>",
-      nextBtnTxt: "OK, NEXT",
-      greet: "Great! Let's get you started with the application.",
-      docreq: "Documents required during the application",
-      hkidcard: "Hong Kong Identity Card or Passport",
-      latresadd: "Latest residential address showing your name",
-      lastpayslip:
-        "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
-      eligibility: "Eligibility",
-      hkresi: "Hong Kong resident",
-      ageres: "Aged 18 or above",
-      income: "Annual income of HKD96,000 or above",
-      existing: "Existing Asia Miles Member",
-      autosave: "Autosave feature",
-      footer:
-        "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
-      startapp: "Start Application",
-      navlink1:
-        "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/",
+      banner: banner5,
+      step: "Step 5",
+      stepText:
+        "Remove accessories and face mask and place full face in the circular frame and blink once as instructed",
     },
     {
-      benefit01:
-        "New Cardholder to enjoy up to 60,000 Asia Miles Welcome Offer",
-      benefit02:
-        "New Cardholder to earn extra 9,000 Asia Miles, existing cardholder to earn 4,000 Asia Miles. No spending requirement",
-      benefit03:
-        "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
-      benefit04: "First Year Annual Fee Waiver",
-      benefit11:
-        "New Cardholder to enjoy up to 80,000 Asia Miles Welcome Offer",
-      benefit12:
-        "New Cardholder to earn extra 9,000 Asia Miles, existing cardholder to earn 4,000 Asia Miles. No spending requirement",
-      benefit13:
-        "HKD3 = 1 Asia Mile for eligible spending on overseas category",
-      benefit14:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit15: "Annual fee waiver for Qualified Priority Banking clients",
-      benefit21:
-        "New Cardholder to enjoy up to 100,000 Asia Miles Welcome Offer",
-      benefit22:
-        "New Cardholder to earn extra 9,000 Asia Miles, existing cardholder to earn 4,000 Asia Miles. No spending requirement",
-      benefit23:
-        "HKD2 = 1 Asia Mile for eligible spending on overseas category",
-      benefit24:
-        "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      benefit25: "Annual fee waiver for Qualified Priority Private clients",
-      cardheader: "Standard Chartered Cathay Mastercard",
-      cardheader2: "Standard Chartered Cathay Mastercard - Priority Banking",
-      cardheader3: "Standard Chartered Cathay Mastercard - Priority Private",
+      banner: banner6,
+      step: "Step 6",
+      stepText: "Return to desktop browser and click “Submit” to continue",
     },
-  ],
-};
-const cardData = [
-  {
-    id: 1,
-    title: "Standard Chartered Cathay Mastercard",
-    description: [
-      "1. Enjoy up to 60,000 Asia Miles Welcome Offer",
-      "2. HKD4 = 1 Asia Mile for eligible spending on dining, hotels, and overseas category",
-      "3. First Year Annual Fee Waiver",
-    ],
-    image: ccIcon,
-  },
-  {
-    id: 2,
-    title: "Standard Chartered Cathay Mastercard – Priority Banking",
-    description: [
-      "1. Enjoy up to 80,000 Asia Miles Welcome Offer",
-      "2. HKD3 = 1 Asia Mile for eligible spending on overseas category",
-      "3. HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      "4. Annual fee waiver for Qualified Priority Banking clients",
-    ],
-    image: ccIcon1,
-  },
-  {
-    id: 3,
-    title: "Standard Chartered Cathay Mastercard – Priority Private",
-    description: [
-      "1. Enjoy up to 100,000 Asia Miles Welcome Offer",
-      "2. HKD2 = 1 Asia Mile for eligible spending on overseas category",
-      "3. HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
-      "4. Annual fee waiver for Qualified Priority Private clients",
-    ],
-    image: ccIcon2,
-  },
-];
+  ];
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState(false);
+  const [imgeURL, setImageURL] = useState("");
+  const [name, setName] = useState("");
+  const [files, setFiles] = useState<any>([]);
+  const [openSuccessModal, setOpenSuccessModal] = useState(false);
+  const [validImageSizeModel, setValidImageSizeModel] = useState(false);
+  const [continueBtnVisiblity, setContinueBtnVisiblity] = useState(false);
+  const stageSelector = useSelector(
+    (state: StoreModel) => state.stages.stages[0].stageInfo
+  );
+  const docName = useSelector((state: any) => {
+    return state?.preApproval?.documentZoloCheckRes?.data?.documents[0]
+    ?.documentName;
+  });
+  const documentCount = useSelector((state: any) => state.stages.dynamicDocumentsUpload.documentCount);
+  const fileSectionData = useSelector((state: any) => state.stages.dynamicDocumentsUpload.fileSectionData);
+  const imgUrl = useSelector((state: any) => {
+    return state?.preApproval?.imgPrevURL;
+  });
 
-const AsiaMiles: React.FC = () => {
-  const [selectedCard, setSelectedCard] = useState<number | null>(null);
+  useEffect(() => {
+    dispatch(dispatchLoader(false));
 
-  const handleSelectCard = (id: number) => {
-    setSelectedCard(id);
+    var isMobile = false;
+    if (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      )
+    ) {
+      isMobile = true;
+    }
+    console.log(isMobile);
+    
+    
+  }, []);
+
+  const closeFileUpload = () => {
+    setShowIncomeProof("");
+    setShowQRCodePage(false);
+    setHKIDVersion("");
+    setShowContinueBtn(false);
   };
 
+  const closeFileUploadBack = () => {
+    dispatch(stagesAction.updatefileSectionData([]))
+  };
+
+  const handleUploadFile = async (e: any) => {
+    const filename = e.target.files[0].name;
+    const filesize = `${(e.target.files[0].size / (1024 * 1012)).toFixed(2)}MB`;
+    const file = e.target.files[0];
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      setValidImageSizeModel(true);
+      return;
+    }
+    try {
+      await dispatch(dispatchLoader(true));
+      const response = await postDocuments(
+        channel_reference,
+        e.target.files[0]
+      );
+      const tempData = {
+        file: file,
+        filename: filename,
+        filesize: filesize,
+        ...response.data,
+      };
+      if (response.statusText === "Accepted") {
+         let newFiles = files;
+         newFiles.push(tempData)
+          setFiles(newFiles)     
+      }
+      await dispatch(dispatchLoader(false));
+    } catch (err) {
+      console.log("err:", err);
+    }
+  };
+  const okBtnClick = (e: any) => {
+    const { title } = e.target;
+    let filesValue= stageSelector.applicant_documents[0].document_list
+    let filesData: any = JSON.parse(JSON.stringify(filesValue))
+    for (let i in filesData) {
+      if (filesData[i].document_category === fileSectionData.document_category) {
+        filesData[i].document_options[0].document_types[0].uploaded_documents = files
+      }
+    }
+    let stageData = JSON.parse(JSON.stringify(stageSelector));
+    stageData.applicant_documents[0].document_list = filesData;
+    dispatch(
+      stagesAction.getStage({
+        id: CONSTANTS.STAGE_NAMES.DOC_3,
+        formConfig: stageData,
+      })
+    );
+    setContinueBtnVisiblity(true);
+    dispatch(stagesAction.updateDocumentCount(documentCount + 1));
+    dispatch(stagesAction.updatefileSectionData([]))
+    setShowIncomeProof("");
+    dispatch(stagesAction.updatechangechangeIconIncomeProof(false));
+    dispatch(stagesAction.updateSuccess(true))
+    setHKIDVersion("");
+    setShowContinueBtn(false);
+  };
+
+  const handleDelete = (docId: any) => {
+    const updateFiles = files.filter((file: any)=>file.docId !== docId);
+    setFiles(updateFiles)
+  };
+  const handleRefresh = (fileID: any, index: any) => { };
+
+  const callModal = () => {
+    setIsModalOpen(true);
+  };
+  const openImagePreview = (img: any, name: any) => {
+    setImageURL(img);
+    setName(name);
+    setImagePreview(true);
+  };
+
+  const successModalClose = () => {
+    setOpenSuccessModal(false);
+  };
+
+  const modelClose = () => {
+    setValidImageSizeModel(false);
+  };
   return (
     <>
-      <div className="header-container">
-        <header className="header">
-          <div className="column01">
-            <div className="col-sm">
-              <p id="applyingfor">You are applying for</p>
-              <h3 id="header">Standard Chartered Cathay Mastercard</h3>
-            </div>
-            <div className="column2">
-              <hr />
-              <p className="credit">
-                To apply for Standard Chartered credit card, you need to be 18+
-                years old, and a Hong Kong resident
-              </p>
-            </div>
-          </div>
-        </header>
-      </div>
-      <div className="col-smtr">
-        <p className="select-maincard">Please select one type of credit card</p>
-      </div>
-      <div className="credit-card-selector">
-        <div className="cards-container">
-          {cardData.map((card) => (
-            <div
-              key={card.id}
-              className={`card ${selectedCard === card.id ? "selected" : ""}`}
-              onClick={() => handleSelectCard(card.id)}
-            >
-              <div className="main-image">
-                <img src={card.image} alt={card.title} className="card-image" />
+      <div className={"document-view"}>
+        {
+          <PopupModel displayPopup={openSuccessModal}>
+            <AlertModel alertType="Success" goBack={successModalClose} />
+          </PopupModel>
+        }
+
+        {validImageSizeModel && (
+          <PopupModel displayPopup={validImageSizeModel}>
+            <AlertModel alertType={"invalideimagesize"} goBack={modelClose} />
+          </PopupModel>
+        )}
+        {imagePreview && (
+          <ImagePreviewModal
+            imgeURL={imgeURL}
+            name={name}
+            imagePreview={imagePreview}
+            setImagePreview={setImagePreview}
+          />
+        )}
+        {!showQRCodePage && (
+          <>
+            <Modal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
+            <div className="container">
+              <div className="uploadHkDocument">
+                <p className="doc-close" onClick={closeFileUpload}>
+                  <span className="doc-close-btn"></span>
+                  CLOSE
+                </p>
+                <p className="hk-proof-name">{fileSectionData.document_category}</p>
               </div>
-              <div className="card-content">
-                <ul>
-                  <h3 className="card-content-title">{card.title}</h3>
-                  {card.description.map((item, index) => (
-                    <li key={index} className="card-content-text">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <div className="button-container">
-                  {selectedCard === card.id ? (
-                    <div className="selected-label">
-                      <span className="tick">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#007bff"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </span>{" "}
-                      SELECTED
+              {files?.map((item: any, index: any) => {
+                return (
+                  <div className="upload-btn1" key={index}>
+                    <div className="thumbnail-img-container">
+                      <a>
+                        <img
+                          data-testid="image-preview-id"
+                          src={URL.createObjectURL(item.file)}
+                          alt={item.filename}
+                          onClick={() =>
+                            openImagePreview(
+                              URL.createObjectURL(item.file),
+                              item.filename
+                            )
+                          }
+                        ></img>
+                      </a>
                     </div>
-                  ) : (
-                    <button className="select-button">Select</button>
-                  )}
+                    <div className="container-image">
+                      <div className="uploading-doc-name">
+                        <span className="span-file-name">{item.filename}</span>
+                        <div className="progress-text-icon"></div>
+                        {item.documentStatus === "UPLOADED" && (
+                          <div
+                            data-testid="delete-btn"
+                            role="button"
+                            className="trash-icon"
+                            onClick={() => {
+                              handleDelete(item.docId);
+                            }}
+                          ></div>
+                         )} 
+                        {item.documentStatus === "Upload failed" && (
+                          <div
+                            data-testid="refresh-btn"
+                            className="retry-icon"
+                            onClick={() => {
+                              handleRefresh(item.docId, index);
+                            }}
+                          ></div>
+                        )}
+                      </div>
+                      <div
+                        className={
+                          item.documentStatus === "UPLOADED"
+                            ? "uploaded"
+                            : "retry-uploaded"
+                        }
+                      ></div>
+                      <div
+                        className={
+                          item.documentStatus === "UPLOADED"
+                            ? "tick-mark"
+                            : "no-tick-mark"
+                        }
+                      >
+                        {item.documentStatus === "UPLOADED"
+                          ? `${"Upload completed"} !`
+                          : `${item.documentStatus} Retry?`}
+                      </div>
+                      <div className="fileSizeDetails">
+                        <span>{item.filesize}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="upload-btn-section">
+                <input
+                  className="upload-input-file"
+                  id="file-upload"
+                  type="file"
+                  accept=".jpg, .png"
+                  onChange={(e) => handleUploadFile(e)}
+                  multiple
+                />
+                <label htmlFor="file-upload" className="upload-btn">
+                  <span className="upload-img"></span>
+                  Upload
+                </label>
+              </div>
+              <div className="document-footer">
+                <div className="footer-banner">
+                  <div className="footer-content">
+                    <p className="sec-2">
+                      {" "}
+                      {footeContent}
+                      <span className="tipsLink" onClick={callModal}>
+                        {" "}
+                        here{" "}
+                      </span>{" "}
+                      on tips for uploading
+                    </p>
+                  </div>
+                  <span className="images"></span>
                 </div>
               </div>
+              <div className="hk-copy-rights">
+                <p>{copyRights}</p>
+              </div>
+              <div className="footer footer-set">
+                {" "}
+                {
+                  <div title="back-btn-upload-doc1" className="back" onClick={closeFileUploadBack}>
+                    <span className="arrow"></span> Back
+                  </div>
+                }
+                <button
+                  role="button"
+                  title={fileSectionData.document_category}
+                  type="submit"
+                  style={{border: "20px"}}
+                  className={
+                    files?.length === 0
+                    ? `continue form-invalid`
+                    : `continue form-valid`
+                  }
+                  onClick={(e) => okBtnClick(e)}
+                  disabled={files?.length === 0}
+                  >
+                  Continue
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-
-        <p className="footermsg">
-          Your Integrated Deposit Account and Banking Plan application would be
-          handled in the process as well&nbsp;(if applicable)
-        </p>
-        <button
-          className="continue-button"
-          disabled={selectedCard === null}
-          onClick={() => alert(`Card ${selectedCard} selected!`)}
-        >
-          OK, NEXT
-        </button>
+          </>
+        )}
       </div>
+
     </>
   );
 };
 
-export default AsiaMiles;
+export default DocumentUpload;
