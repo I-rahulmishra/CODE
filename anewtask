@@ -1,178 +1,232 @@
-test('renders file size validation modal when file exceeds max size', async () => {
-  const file = new File(["dummy content"], "large-image.png", { type: "image/png" });
-  Object.defineProperty(file, 'size', { value: 6 * 1024 * 1024 }); // 6MB
-
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  const fileInput = screen.getByLabelText("Upload");
-  fireEvent.change(fileInput, { target: { files: [file] } });
-
-  expect(screen.getByText(/File format should be in JPG or PNG/)).toBeInTheDocument();
-  expect(screen.getByText('invalideimagesize')).toBeInTheDocument();
-});
-
-test('uploads valid file and updates file list', async () => {
-  const file = new File(["dummy content"], "valid-image.png", { type: "image/png" });
-
-  (postDocuments as jest.Mock).mockResolvedValue({
-    statusText: "Accepted",
-    data: { docId: "456", filename: "valid-image.png", documentStatus: "UPLOADED" },
-  });
-
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  const fileInput = screen.getByLabelText("Upload");
-  fireEvent.change(fileInput, { target: { files: [file] } });
-
-  await waitFor(() => {
-    expect(store.dispatch).toHaveBeenCalledWith(expect.any(Function));
-  });
-
-  expect(screen.getByText("valid-image.png")).toBeInTheDocument();
-  expect(screen.getByText("Upload completed")).toBeInTheDocument();
-});
-
-test('removes uploaded file when delete button is clicked', async () => {
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  expect(screen.getByText("test-image.png")).toBeInTheDocument();
-
-  const deleteButton = screen.getByTestId("delete-btn");
-  fireEvent.click(deleteButton);
-
-  await waitFor(() => {
-    expect(screen.queryByText("test-image.png")).not.toBeInTheDocument();
-  });
-});
-
-test('calls refresh function when upload fails', async () => {
-  store = mockStore({
-    ...store.getState(),
-    stages: {
-      ...store.getState().stages,
-      stages: [{
-        stageInfo: {
-          applicant_documents: [{
-            document_list: [{
-              document_category: "Income Proof",
-              document_options: [{
-                document_types: [{
-                  uploaded_documents: [{ docId: "123", filename: "failed-image.png", documentStatus: "Upload failed" }]
-                }]
-              }]
-            }]
-          }]
+{
+    "A00": [
+        {
+            "applyingfor": "You are applying for",
+            "header": "Standard Chartered Cathay Mastercard",
+            "warning": "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
+            "selectcard": "Please select one type of credit card",
+            "benefits": "Benefits here",
+            "myCheck2": "Select",
+            "myCheck1": "Select",
+            "myCheck": "Select",
+            "footermsg": "Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)",
+            "nextBtnTxt": "OK, NEXT",
+            "greet": "Great! Let's get you started with the application.",
+            "docreq": "Documents required during the application",
+            "hkidcard": "Hong Kong Identity Card or Passport",
+            "latresadd": "Latest residential address showing your name",
+            "lastpayslip": "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
+            "eligibility": "Eligibility",
+            "hkresi": "Hong Kong resident",
+            "ageres": "Aged 18 or above",
+            "income": "Annual income of HKD96,000 or above",
+            "existing": "Existing Asia Miles Member",
+            "autosave": "Autosave feature",
+            "footer": "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
+            "startapp": "Start Application",
+            "navlink1": "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/"
+        },
+        {
+            "benefit01": "Enjoy up to 60,000 Asia Miles Welcome Offer",
+            "benefit02": "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
+            "benefit03": "First Year Annual Fee Waiver",
+            "benefit11": "Enjoy up to 80,000 Asia Miles Welcome Offer",
+            "benefit12": "HKD3 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit13": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit14": "Annual fee waiver for Qualified Priority Banking clients",
+            "benefit21": "Enjoy up to 100,000 Asia Miles Welcome Offer",
+            "benefit22": "HKD2 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit23": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit24": "Annual fee waiver for Qualified Priority Private clients",
+            "cardheader": "Standard Chartered Cathay Mastercard",
+            "cardheader2": "Standard Chartered Cathay Mastercard – Priority Banking",
+            "cardheader3": " Standard Chartered Cathay Mastercard – Priority Private"
         }
-      }]
-    }
-  });
-
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  expect(screen.getByText("Upload failed Retry?")).toBeInTheDocument();
-
-  const retryButton = screen.getByTestId("refresh-btn");
-  fireEvent.click(retryButton);
-
-  expect(store.dispatch).toHaveBeenCalled();
-});
-
-test('displays image preview modal when clicking on an uploaded image', async () => {
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  const uploadedImage = screen.getByTestId("image-preview-id");
-  fireEvent.click(uploadedImage);
-
-  expect(screen.getByText("test-image.png")).toBeInTheDocument();
-});
-
-test('closes success modal when clicking close button', async () => {
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  const successModal = screen.getByText("Success");
-  fireEvent.click(successModal);
-
-  expect(screen.queryByText("Success")).not.toBeInTheDocument();
-});
-
-test('disables continue button when no files are uploaded', async () => {
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  const continueButton = screen.getByRole("button", { name: /Continue/i });
-  expect(continueButton).toBeDisabled();
-});
-
-test('enables continue button when files are uploaded', async () => {
-  store = mockStore({
-    ...store.getState(),
-    stages: {
-      ...store.getState().stages,
-      stages: [{
-        stageInfo: {
-          applicant_documents: [{
-            document_list: [{
-              document_category: "Income Proof",
-              document_options: [{
-                document_types: [{
-                  uploaded_documents: [{ docId: "789", filename: "new-image.png", documentStatus: "UPLOADED" }]
-                }]
-              }]
-            }]
-          }]
+    ],
+    "A01": [
+        {
+            "applyingfor": "You are applying for",
+            "header": "Standard Chartered Cathay Mastercard",
+            "warning": "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
+            "selectcard": "Please select one type of credit card",
+            "benefits": "Benefits here",
+            "myCheck2": "Select",
+            "myCheck1": "Select",
+            "myCheck": "Select",
+            "footermsg": "Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)",
+            "nextBtnTxt": "OK, NEXT",
+            "greet": "Great! Let's get you started with the application.",
+            "docreq": "Documents required during the application",
+            "hkidcard": "Hong Kong Identity Card or Passport",
+            "latresadd": "Latest residential address showing your name",
+            "lastpayslip": "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
+            "eligibility": "Eligibility",
+            "hkresi": "Hong Kong resident",
+            "ageres": "Aged 18 or above",
+            "income": "Annual income of HKD96,000 or above",
+            "existing": "Existing Asia Miles Member",
+            "autosave": "Autosave feature",
+            "footer": "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
+            "startapp": "Start Application",
+            "navlink1": "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/"
+        },
+        {
+            "benefit01": "Enjoy up to 60,000 Asia Miles Welcome Offer",
+            "benefit02": "Extra 5,000 Asia Miles, no spending requirement",
+            "benefit03": "HKD4 = 1 Asia Mile for eligible spending on dining, online and overseas category.",
+            "benefit04": "First Year Annual Fee Waiver",
+            "benefit11": "Enjoy up to 80,000 Asia Miles Welcome Offer",
+            "benefit12": "HKD4 = 1 Asia Mile for eligible spending on dining, online and overseas category",
+            "benefit13": "Complimentary 12-month Marco Polo Club Silver Membership",
+            "benefit14": "Annual fee waiver for Qualified Priority Banking clients",
+            "benefit21": "Enjoy up to 100,000 Asia Miles Welcome Offer",
+            "benefit22": "HKD4 = 1 Asia Mile for eligible spending on dining, online and overseas category",
+            "benefit23": "Complimentary 12-month Marco Polo Club Gold Membership",
+            "benefit24": "Annual fee waiver for Qualified Priority Private clients",
+            "cardheader": "Standard Chartered Cathay Mastercard",
+            "cardheader2": "Standard Chartered Cathay Mastercard � Priority Banking",
+            "cardheader3": "Standard Chartered Cathay Mastercard � Priority Private"
         }
-      }]
-    }
-  });
-
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  const continueButton = screen.getByRole("button", { name: /Continue/i });
-  expect(continueButton).not.toBeDisabled();
-});
-
-test('handles form submission and updates state', async () => {
-  render(
-    <Provider store={store}>
-      <DocumentUpload {...mockProps} />
-    </Provider>
-  );
-
-  const continueButton = screen.getByRole("button", { name: /Continue/i });
-  fireEvent.click(continueButton);
-
-  await waitFor(() => {
-    expect(store.dispatch).toHaveBeenCalledWith(expect.any(Function));
-  });
-});
+    ],
+    "A02": [
+        {
+            "applyingfor": "You are applying for",
+            "header": "Standard Chartered Cathay Mastercard",
+            "warning": "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
+            "selectcard": "Please select one type of credit card",
+            "benefits": "Benefits here",
+            "myCheck2": "Select",
+            "myCheck1": "Select",
+            "myCheck": "Select",
+            "footermsg": "<p>Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)<br/><strong>“New Cardholder”</strong> means an applicant who does not currently hold and has not cancelled any Standard Chartered Credit Card in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.<br/><strong>“Existing Cardholder”</strong> means an applicant who currently holds or has cancelled any Standard Chartered Credit Card (except the Eligible Card) in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.",
+            "nextBtnTxt": "OK, NEXT",
+            "greet": "Great! Let's get you started with the application.",
+            "docreq": "Documents required during the application",
+            "hkidcard": "Hong Kong Identity Card or Passport",
+            "latresadd": "Latest residential address showing your name",
+            "lastpayslip": "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
+            "eligibility": "Eligibility",
+            "hkresi": "Hong Kong resident",
+            "ageres": "Aged 18 or above",
+            "income": "Annual income of HKD96,000 or above",
+            "existing": "Existing Asia Miles Member",
+            "autosave": "Autosave feature",
+            "footer": "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
+            "startapp": "Start Application",
+            "navlink1": "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/"
+        },
+        {
+            "benefit01": "New Cardholder to enjoy up to 60,000 Asia Miles Welcome Offer",
+            "benefit02": "New Cardholder to earn extra 19,000 Asia Miles, existing cardholder to earn 9,000 Asia Miles. No spending requirement",
+            "benefit03": "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
+            "benefit04": "First Year Annual Fee Waiver",
+            "benefit11": "New Cardholder to enjoy up to 80,000 Asia Miles Welcome Offer",
+            "benefit12": "New Cardholder to earn extra 19,000 Asia Miles, existing cardholder to earn 9,000 Asia Miles. No spending requirement",
+            "benefit13": "HKD3 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit14": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit15": "Annual fee waiver for Qualified Priority Banking clients",
+            "benefit21": "New Cardholder to enjoy up to 100,000 Asia Miles Welcome Offer",
+            "benefit22": "New Cardholder to earn extra 19,000 Asia Miles, existing cardholder to earn 9,000 Asia Miles. No spending requirement",
+            "benefit23": "HKD2 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit24": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit25": "Annual fee waiver for Qualified Priority Private clients",
+            "cardheader": "Standard Chartered Cathay Mastercard",
+            "cardheader2": "Standard Chartered Cathay Mastercard - Priority Banking",
+            "cardheader3": "Standard Chartered Cathay Mastercard - Priority Private"
+        }
+    ],
+    "A03": [
+        {
+            "applyingfor": "You are applying for",
+            "header": "Standard Chartered Cathay Mastercard",
+            "warning": "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
+            "selectcard": "Please select one type of credit card",
+            "benefits": "Benefits here",
+            "myCheck2": "Select",
+            "myCheck1": "Select",
+            "myCheck": "Select",
+            "footermsg": "<p>Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)<br/><strong>“New Cardholder”</strong> means an applicant who does not currently hold and has not cancelled any Standard Chartered Credit Card in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.<br/><strong>“Existing Cardholder”</strong> means an applicant who currently holds or has cancelled any Standard Chartered Credit Card (except the Eligible Card) in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.</p>",
+            "nextBtnTxt": "OK, NEXT",
+            "greet": "Great! Let's get you started with the application.",
+            "docreq": "Documents required during the application",
+            "hkidcard": "Hong Kong Identity Card or Passport",
+            "latresadd": "Latest residential address showing your name",
+            "lastpayslip": "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
+            "eligibility": "Eligibility",
+            "hkresi": "Hong Kong resident",
+            "ageres": "Aged 18 or above",
+            "income": "Annual income of HKD96,000 or above",
+            "existing": "Existing Asia Miles Member",
+            "autosave": "Autosave feature",
+            "footer": "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
+            "startapp": "Start Application",
+            "navlink1": "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/"
+        },
+        {
+            "benefit01": "New Cardholder to enjoy up to 60,000 Asia Miles Welcome Offer",
+            "benefit02": "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
+            "benefit03": "First Year Annual Fee Waiver",
+            "benefit04": "",
+            "benefit11": "New Cardholder to enjoy up to 80,000 Asia Miles Welcome Offer",
+            "benefit12": "New Cardholder to receive Cathay x Samsonite suitcase (20 inch), existing cardholder to earn 5,000 Asia Miles. No spending requirement",
+            "benefit13": "HKD3 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit14": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit15": "Annual fee waiver for Qualified Priority Banking clients",
+            "benefit21": "New Cardholder to enjoy up to 100,000 Asia Miles Welcome Offer",
+            "benefit22": "New Cardholder to receive Cathay x Samsonite suitcase (20 inch), existing cardholder to earn 5,000 Asia Miles. No spending requirement",
+            "benefit23": "HKD2 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit24": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit25": "Annual fee waiver for Qualified Priority Private clients",
+            "cardheader": "Standard Chartered Cathay Mastercard",
+            "cardheader2": "Standard Chartered Cathay Mastercard - Priority Banking",
+            "cardheader3": "Standard Chartered Cathay Mastercard - Priority Private"
+        }
+    ],
+    "A04": [
+        {
+            "applyingfor": "You are applying for",
+            "header": "Standard Chartered Cathay Mastercard",
+            "warning": "To apply for Standard Chartered credit card, you need to be 18+ years old, and a Hong Kong resident",
+            "selectcard": "Please select one type of credit card",
+            "benefits": "Benefits here",
+            "myCheck2": "Select",
+            "myCheck1": "Select",
+            "myCheck": "Select",
+            "footermsg": "<p>Your Integrated Deposit Account and Banking Plan application would be handled in the process as well (if applicable)<br/><strong>“New Cardholder”</strong> means an applicant who does not currently hold and has not cancelled any Standard Chartered Credit Card in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.<br/><strong>“Existing Cardholder”</strong> means an applicant who currently holds or has cancelled any Standard Chartered Credit Card (except the Eligible Card) in the past 6 months from the date of approval of his/her current application for a principal card of an Eligible Card.</p>",
+            "nextBtnTxt": "OK, NEXT",
+            "greet": "Great! Let's get you started with the application.",
+            "docreq": "Documents required during the application",
+            "hkidcard": "Hong Kong Identity Card or Passport",
+            "latresadd": "Latest residential address showing your name",
+            "lastpayslip": "Latest 1-month salary slip OR Bank Statements/ Passbook showing your name, account number and salary entries",
+            "eligibility": "Eligibility",
+            "hkresi": "Hong Kong resident",
+            "ageres": "Aged 18 or above",
+            "income": "Annual income of HKD96,000 or above",
+            "existing": "Existing Asia Miles Member",
+            "autosave": "Autosave feature",
+            "footer": "In the event that you exit the application form before completing it, your progress will be saved and we will send an email with the link to resume this application.",
+            "startapp": "Start Application",
+            "navlink1": "https://www.sc.com/hk/deposits/savings-accounts/integrated-deposits-account/"
+        },
+        {
+            "benefit01": "New Cardholder to enjoy up to 60,000 Asia Miles Welcome Offer",
+            "benefit02": "New Cardholder to earn extra 9,000 Asia Miles, existing cardholder to earn 4,000 Asia Miles. No spending requirement",
+            "benefit03": "HKD4 = 1 Asia Mile for eligible spending on dining, hotels and overseas category",
+            "benefit04": "First Year Annual Fee Waiver",
+            "benefit11": "New Cardholder to enjoy up to 80,000 Asia Miles Welcome Offer",
+            "benefit12": "New Cardholder to earn extra 9,000 Asia Miles, existing cardholder to earn 4,000 Asia Miles. No spending requirement",
+            "benefit13": "HKD3 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit14": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit15": "Annual fee waiver for Qualified Priority Banking clients",
+            "benefit21": "New Cardholder to enjoy up to 100,000 Asia Miles Welcome Offer",
+            "benefit22": "New Cardholder to earn extra 9,000 Asia Miles, existing cardholder to earn 4,000 Asia Miles. No spending requirement",
+            "benefit23": "HKD2 = 1 Asia Mile for eligible spending on overseas category",
+            "benefit24": "HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+            "benefit25": "Annual fee waiver for Qualified Priority Private clients",
+            "cardheader": "Standard Chartered Cathay Mastercard",
+            "cardheader2": "Standard Chartered Cathay Mastercard - Priority Banking",
+            "cardheader3": "Standard Chartered Cathay Mastercard - Priority Private"
+        }
+    ]
+}
