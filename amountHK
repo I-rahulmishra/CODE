@@ -719,3 +719,730 @@
     }
   };
 })();
+
+
+
+
+
+
+(function () {
+  'use strict';
+
+  angular
+    .module('rtoForms.longAndShortFormHk')
+    .controller('LongAndShortFormHkpd1aController', LongAndShortFormHkpd1aController);
+
+  LongAndShortFormHkpd1aController.$inject = ['$scope', '$http', '$rootScope', '$interval', '$uibModal', '$state', '$timeout', '_', 'submitService', 'appData', 'stageFeildsService', 'stageService', 'UtilityService', 'AutoSaveService', 'dataService', 'singpostService', 'environmentConfig', 'GAService', '$stateParams', 'countryConfigs', 'hk_rules', 'serverResponseServiceHK', '$window'];
+  /* @ngInject */
+  function LongAndShortFormHkpd1aController($scope, $http, $rootScope, $interval, $uibModal, $state, $timeout, _, submitService, appData, stageFeildsService, stageService, UtilityService, AutoSaveService, dataService, singpostService, environmentConfig, GAService, $stateParams, countryConfigs, hk_rules, serverResponseServiceHK, $window) {
+    var vm = this;
+    var rScope = $rootScope;
+    var ctrl = $scope;
+    rScope.headerReq = false; // header
+    $scope.imageURL = environmentConfig.ozResourcepath;
+    $rootScope.footerVisible = true;
+    ctrl.stageName = $state.current.title.replace(' ', '');
+    ctrl.imageURL = environmentConfig.ozResourcepath;
+    ctrl.best_offer_applicable = false;
+    ctrl.showpreliminaryContent = false;
+    ctrl.requestedOffer = true;
+    $scope.repaymentDetailsEnable = true;
+    ctrl.calculatAPRResult = false;
+    ctrl.ShowSlider = false;
+    rScope.showSplash = false;
+    ctrl.TenorMonthlist = ['60','48','36','24','12'];
+    // Added For Radio Buttons
+    var $radioButtons = $("input[name='offerValue']");
+    var $RangeSelect = $("#myRangeSlider");
+    var $AmtTextBoxChange= $("#LoanAmountTextBoxValue");
+    var $MinErrorMsgEle= $("#minAmterrorMsg");
+    $MinErrorMsgEle.hide();
+      
+    ctrl.field = {
+      "logical_field_name": 'requested_loan_tenor',
+      "pageId": "aip-1"
+    };
+    //Setting Offer_Details
+    var productss = UtilityService.getData('offer_details_HK');
+
+    init();
+
+    GAService.pageViewHk('loan-preliminary-assessment');
+
+    function init() {
+      ctrl.journey_Type = appData.applicationdata.applicant_documents[0].journey_type;
+      loadContent();
+
+      appData.applicationdata.products = productss;
+      ctrl.offer_statusRequested = productss[0].offer_details[0]; // For Requested Offer Only.
+      ctrl.approvedLimit = productss[0].offer_details[0].approved_amount;
+      ctrl.approvedTenor = productss[0].offer_details[0].approved_tenor;
+      ctrl.offer_status = productss;
+      
+      scrollTopFunc();
+      
+      tenorInitialSelector(ctrl.approvedTenor);
+      // Resume Call
+      if ($rootScope.retrieveCall && appData.applicationdata.stage.page_id == 'acd-2') {
+        $rootScope.retrieveCall = false;
+        ctrl.best_offer_applicable = true;
+        ctrl.requestedOffer = false;
+
+        for (var i = 0; i < appData.applicationdata.products[0].offer_details.length; i++) {
+          if (appData.applicationdata.products[0].offer_details[i].service_type === "ACD2") {
+            if (appData.applicationdata.products[0].offer_details[i].offer_status === "1001" || appData.applicationdata.products[0].offer_details[i].offer_status === "1003") {
+              aipTwoSuccessResponse(appData.applicationdata);
+            } else if (appData.applicationdata.products[0].offer_details[i].offer_status === "1002" || appData.applicationdata.products[0].offer_details[i].offer_status === "1004") {
+              $rootScope.$broadcast('hideSpinner');
+              cardDeclineForm('decline-page');
+            } else {
+              triggerACD2Call();
+            }
+          }
+        }
+      }
+      else if ($rootScope.retrieveCall && appData.applicationdata.stage.page_id == 'acd-3') {
+        $rootScope.retrieveCall = false;
+        ctrl.best_offer_applicable = true;
+        ctrl.requestedOffer = false;
+        for (var i = 0; i < appData.applicationdata.products[0].offer_details.length; i++) {
+          if (appData.applicationdata.products[0].offer_details[i].service_type === "ACD3") {
+            if (appData.applicationdata.products[0].offer_details[i].offer_status === "1001" || appData.applicationdata.products[0].offer_details[i].offer_status === "1003") {
+              aipThreeSuccessResponse(appData.applicationdata);
+            } else if (appData.applicationdata.products[0].offer_details[i].offer_status === "1002") {
+              $rootScope.$broadcast('hideSpinner');
+              cardDeclineForm('decline-page');
+            }else if (appData.applicationdata.products[0].offer_details[i].offer_status === "1004"){
+              $rootScope.showNstp = true;
+              UtilityService.setData('enquiryProductType', appData.applicationdata.products[0].product_category);
+              UtilityService.setData('enquiryServiceNSTP', true);
+              UtilityService.setData('cos_ref_number', appData.applicationdata.application.cos_ref_number);
+              $state.go('/main/ffd-1');
+            }
+             else {
+              triggerAIP3Call();
+            }
+          }
+        }
+      }
+      else if ($rootScope.retrieveCall && appData.applicationdata.stage.page_id == 'acd-4') {
+        $rootScope.retrieveCall = false;
+        ctrl.best_offer_applicable = true;
+        ctrl.requestedOffer = false;
+        for (var i = 0; i < appData.applicationdata.products[0].offer_details.length; i++) {
+          if (appData.applicationdata.products[0].offer_details[i].service_type === "ACD4") {
+            if (appData.applicationdata.products[0].offer_details[i].offer_status === "1001" || appData.applicationdata.products[0].offer_details[i].offer_status === "1003") {
+              aipFourSuccessResponse(appData.applicationdata);
+            } else if (appData.applicationdata.products[0].offer_details[i].offer_status === "1002") {
+              $rootScope.$broadcast('hideSpinner');
+              cardDeclineForm('decline-page');
+            }else if (appData.applicationdata.products[0].offer_details[i].offer_status === "1004"){
+              $rootScope.showNstp = true;
+              UtilityService.setData('enquiryProductType', appData.applicationdata.products[0].product_category);
+              UtilityService.setData('enquiryServiceNSTP', true);
+              UtilityService.setData('cos_ref_number', appData.applicationdata.application.cos_ref_number);
+              $state.go('/main/ffd-1');
+            } else {
+              triggeraipPL();
+            }
+          }
+        }
+      }
+      else if (appData.applicationdata.products[0].offer_details[0].bestOffer == 'Y') {
+        ctrl.best_offer_applicable = true;
+        ctrl.requestedOffer = false;
+        triggerACD2Call();
+      }
+      else if (appData.applicationdata.products[0].offer_details[0].bestOffer == 'N') {
+        ctrl.best_offer_applicable = false;
+        ctrl.showpreliminaryContent = false;
+        ctrl.requestedOffer = true;// only ACD1 Requested offer
+      }
+    }
+
+    function loadContent() {
+      if ($rootScope.language == 'zh-HK') {
+        ctrl.headerContent = '	恭喜';
+        ctrl.subHeader = '你的初步審批已經完成。請確認貸款方案以繼續申請程序：'
+        ctrl.preliminaryContent = '初步批核貸款金額';
+        ctrl.preliminaryContent2 = '初步批核最高貸款額';
+        ctrl.tenorLabel = '還款期數(月)/每月供款';
+        ctrl.loanAmount = '申請金額';
+        ctrl.monthlyRepayment = '每月還款金額';
+        ctrl.monthlyFlatRate = '	每月平息';
+        ctrl.period = '還款期(月) ';
+        ctrl.months = '期'
+        ctrl.APR = '實際年利率';
+        ctrl.betterOffer = '初步批核最高貸款金額';
+        ctrl.confirmProceed = '確認到下一步';
+        ctrl.tips = '最終獲批之貸款額將取決於最後評估. 並可能與上述初步批核貸款額有所出入.';
+        ctrl.remark = '您可以轉移您的信用卡額度以享受下列貸款金額。我們的客戶服務主任將會於兩個工作天内聯絡閣下以完成您的申請。'
+        ctrl.earlyfeesSection = '提前還款/提前清償/贖回的收費: 當閣下提前償還全數貸款時，將收取欠款結餘的2.5%。';
+        ctrl.maximumEligibleAmount = '最高可享貸款額HK$ ';
+        ctrl.remarksTitle = '註:';
+        ctrl.minAmtErrorMsg = '申請貸款額為HK$';
+        
+      } else {
+        ctrl.headerContent = 'Congratulations!';
+        ctrl.subHeader = 'Your preliminary assessment is completed. Please confirm the loan offer to continue the application processing:'
+        ctrl.preliminaryContent = 'Preliminary approved loan amount';
+        ctrl.preliminaryContent2 = 'Preliminary Maximum Approved Loan Amount';
+        ctrl.tenorLabel = 'Tenor & Monthly Repayment';
+        ctrl.loanAmount = 'Loan Amount';
+        ctrl.monthlyRepayment = 'Monthly Repayment';
+        ctrl.monthlyFlatRate = 'Monthly Flat Rate';
+        ctrl.period = 'Loan Tenor ';
+        ctrl.months = 'months'
+        ctrl.APR = 'Annualized Percentage Rate (APR)';
+        ctrl.betterOffer = 'Preliminary maximum approved loan amount';
+        ctrl.confirmProceed = 'Confirm to Proceed';
+        ctrl.tips = 'The above offers are preliminary result. The final result may vary after further assessment.';
+        ctrl.remark = 'You may enjoy the loan amount below by transferring your credit card limit. We will contact you within 2 working days to complete your application.'
+        ctrl.earlyfeesSection = 'Prepayment / Early Settlement / Redemption Fee: 2.5% of the outstanding balance if you repay the loan in full early.';
+        ctrl.maximumEligibleAmount = 'The maximum eligible amount is HK$';
+        ctrl.remarksTitle = 'Remarks:';
+        ctrl.minAmtErrorMsg = 'Your  requested amount is HK$';
+      }
+    }
+
+    function scrollTopFunc() {
+      var scrollTo;
+      scrollTo = angular.element('#hk-wrapper-id').offset().top - 100;
+      angular.element('html').animate({
+        scrollTop: scrollTo
+      }, 400);
+    }
+
+    function tenorInitialSelector(tenorDataSelect) {
+      setTimeout(function(){
+           $('.tenorButton').removeClass('selected');
+           $('#tenor'+tenorDataSelect).addClass('selected');
+         },1000);
+      }
+
+
+    ctrl.$on('submitApplicant', function () {
+      vm.submitted = true;
+      ctrl.isbuttonclicked = Math.random();
+      if((appData.applicationdata.application.downshell ||  $rootScope.downShellOffer == true) && ctrl.bestOffer[0].approved_amount){
+        appData.applicationdata.applicants.requested_loan_amount_a_1 = ctrl.bestOffer[0].approved_amount;
+        appData.applicationdata.applicants.tenor_a_1 = ctrl.bestOffer[0].approved_tenor;
+        appData.applicationdata.applicants.requested_loan_tenor_a_1 = ctrl.bestOffer[0].approved_tenor;
+        appData.applicationdata.applicants.offer_a_1 = 'B';
+        triggeraipPL();
+      }
+      else if(ctrl.bestOffer && ctrl.bestOffer[0].approved_amount == $AmtTextBoxChange.val()  && ctrl.bestOffer[0].approved_tenor == appData.applicationdata.applicants.requested_loan_tenor_a_1){
+        appData.applicationdata.applicants.offer_a_1 = 'B';
+        triggeraipPL();
+      }
+      else if (((ctrl.requestedAmount && $rootScope.TenorInit == ctrl.requestedAmount[0].approved_tenor)
+        && (ctrl.requestedAmount && $rootScope.textBoxValue == ctrl.requestedAmount[0].approved_amount))) {
+        appData.applicationdata.applicants.offer_a_1 = 'R';
+        triggeraipPL();
+      } 
+      else if (ctrl.approvedLimit == appData.applicationdata.applicants.requested_loan_amount_a_1 && ctrl.approvedTenor == appData.applicationdata.applicants.requested_loan_tenor_a_1) {
+        appData.applicationdata.applicants.offer_a_1 = 'R';
+        triggeraipPL();
+      } 
+      else if (ctrl.requestedAmount && $rootScope.textBoxValue != ctrl.requestedAmount[0].approved_amount || (ctrl.requestedAmount && $rootScope.TenorInit != ctrl.requestedAmount[0].approved_tenor)){
+        triggerAIP3Call();
+      }else if((ctrl.bestOffer && $rootScope.textBoxValue != ctrl.bestOffer[0].approved_amount) || (ctrl.bestOffer && $rootScope.TenorInit != ctrl.bestOffer[0].approved_tenor)){
+        triggerAIP3Call();
+      }
+      else {
+        appData.applicationdata.applicants.offer_a_1 = 'B';
+        triggeraipPL();
+      }
+      //triggeraipPL();
+    });
+
+  
+    vm.calculateAPR = function (tenor_month) {
+      ctrl.calculatAPRResult = true;
+      if (tenor_month) {
+        $('.tenorButton').removeClass('selected');
+        $('#tenor' + tenor_month).addClass('selected');
+        if (tenor_month == '60') {
+          appData.applicationdata.applicants.tenor_a_1 = 60;
+        }
+        else if (tenor_month == '48') {
+          appData.applicationdata.applicants.tenor_a_1 = 48;
+        }
+        else if (tenor_month == '36') {
+          appData.applicationdata.applicants.tenor_a_1 = 36;
+        }
+        else if (tenor_month == '24') {
+          appData.applicationdata.applicants.tenor_a_1 = 24;
+        } else if (tenor_month == '12') {
+          appData.applicationdata.applicants.tenor_a_1 = 12;
+        }
+        appData.applicationdata.applicants.requested_loan_tenor_a_1 =  appData.applicationdata.applicants.tenor_a_1;
+
+      }
+
+      var apiEndpoint = UtilityService.getApiEndpoint();
+      var APRCalculationURL = apiEndpoint + "/applications/calc/fetch-apr-details";
+      var tenorValue = appData.applicationdata.applicants.tenor_a_1 ? appData.applicationdata.applicants.tenor_a_1 : ctrl.approvedTenor;
+      var channel_reference = appData.applicationdata.application.channel_reference;
+      var cos_ref = appData.applicationdata.application.cos_ref_number;
+      var app_ref = appData.applicationdata.application.application_reference;
+      var channel_reference = appData.applicationdata.application.channel_reference;
+      var ssName = appData.applicationdata.application.source_system_name;
+
+      var headers = submitService.getPostHeader(channel_reference);
+      var APRCalBody = {
+        "channel_ref_number": channel_reference,
+        "cos_ref_number": cos_ref,
+        "application_reference": app_ref,
+        "requested_tenure": tenorValue,
+        "requested_amount": $rootScope.textBoxValue,
+        "source_system_name": ssName,
+      }
+      console.log(APRCalBody);
+
+      $http({
+        headers: headers,
+        method: 'POST',
+        url: APRCalculationURL,
+        data: APRCalBody
+      }).then(function (response) {
+
+        console.log("response : " + JSON.stringify(response.data));
+        ctrl.calculatAPRResult = false;
+        ctrl.requestedAmount[0].repaymentAmount = response.data.repayment_amount;
+        ctrl.requestedAmount[0].apr = response.data.apr;
+        ctrl.requestedAmount[0].approved_tenor = response.data.requested_tenure;
+        ctrl.requestedAmount[0].flatRate = response.data.monthly_flat_rate;
+        appData.applicationdata.applicants['requested_loan_tenor_a_1'] = ctrl.requestedAmount[0].approved_tenor;
+        appData.applicationdata.applicants['requested_loan_amount_a_1'] = $rootScope.textBoxValue;
+
+      }).catch(function (error) {
+
+        console.log("error : " + JSON.stringify(error));
+      });
+    }
+
+    $scope.$watch(
+      function ($scope) {
+        if ((appData.applicationdata.application.downshell ||  $rootScope.downShellOffer == true)) {
+          ctrl.$emit('submitEnabled', {
+            enabled: true
+          });
+        }
+        else if ($AmtTextBoxChange.val() == '' || (parseInt($AmtTextBoxChange.val()) < parseInt(ctrl.requestedAmount[0].approved_amount))) {
+          ctrl.$emit('submitEnabled', {
+            enabled: false
+          });
+        }
+        else if ($AmtTextBoxChange.val() == '' || (parseInt($AmtTextBoxChange.val()) > parseInt(ctrl.bestOffer[0].approved_amount))) {
+          ctrl.$emit('submitEnabled', {
+            enabled: false
+          });
+        }
+        else if (appData.applicationdata.applicants.offer_a_1) {
+          ctrl.$emit('submitEnabled', {
+            enabled: true
+          });
+        }
+        else {
+          ctrl.$emit('submitEnabled', {
+            enabled: true
+          });
+        }
+      }
+    );
+
+
+    ctrl.$watchGroup(
+      ['formName[ctrl.stageName].$valid'],
+      function (newValues) {
+        if (ctrl.formName[ctrl.stageName].$valid) {
+          ctrl.$emit('submitEnabled', {
+            enabled: true
+          });
+        } else {
+          ctrl.$emit('submitEnabled', {
+            enabled: true
+          });
+        }
+      },
+      false
+    );
+
+    //Adding parent class to selected radio button
+    $radioButtons.click(function () {
+      $radioButtons.each(function () {
+        $(this).parent().parent().parent().parent().parent().toggleClass('offerChecked', this.checked);
+        appData.applicationdata.applicants.offer_a_1 = $("input[name='offerValue']:checked").val();
+      });
+    });
+
+    $RangeSelect.change(function () {
+      $MinErrorMsgEle.hide();
+      $rootScope.textBoxValue = $("#myRangeSlider").val();
+      vm.calculateAPR();
+    });
+
+    $AmtTextBoxChange.on("keyup", function (event) {
+      if((parseInt($(this).val().length === 1))){
+        $MinErrorMsgEle.show();
+      }
+      else if ((parseInt($(this).val()) < ctrl.requestedAmount[0].approved_amount)) {
+        $MinErrorMsgEle.show();
+      } else if ((parseInt($(this).val()) > ctrl.bestOffer[0].approved_amount)) {
+        $(this).val(ctrl.bestOffer[0].approved_amount);
+        $("#myRangeSlider").val(ctrl.bestOffer[0].approved_amount);
+        $rootScope.textBoxValue = $("#myRangeSlider").val();
+        $MinErrorMsgEle.hide();
+        vm.calculateAPR();
+        // DOB-219275 error messsage remove and round of calculation
+      } else if((parseInt($(this).val()) > ctrl.requestedAmount[0].approved_amount) && (parseInt($(this).val()) < ctrl.bestOffer[0].approved_amount)) {
+        var result = Math.round(parseInt($(this).val())/1000)*1000;
+        $(this).val(result);
+        $("#myRangeSlider").val(result);
+        $rootScope.textBoxValue = $("#myRangeSlider").val();
+        $MinErrorMsgEle.hide();
+        vm.calculateAPR();
+      } else {
+        if (((event.keyCode >= 48 && event.keyCode <= 57) || (event.keyCode >= 96 && event.keyCode <= 105) || (event.keyCode == 38) || (event.keyCode == 40)) && (parseInt($(this).val()) >= ctrl.requestedAmount[0].approved_amount) && (parseInt($(this).val()) <= ctrl.bestOffer[0].approved_amount)) {
+          $MinErrorMsgEle.hide();
+          $("#myRangeSlider").val($(this).val());
+          $rootScope.textBoxValue = $("#myRangeSlider").val();
+          vm.calculateAPR();
+        }
+      }
+     }
+    );
+
+
+    //AIP 3 for best offer
+    function triggerAIP3Call() {
+      if ($rootScope.chinese) {
+        $rootScope.$broadcast('showSpinner', '請稍候');
+      } else {
+        $rootScope.$broadcast('showSpinner', 'Please Wait');
+      }
+      appData.applicationdata.stage.stage_status = 'incomplete';
+      appData.applicationdata.stage.page_id = 'acd-3';
+      appData.applicationdata.stage.stage_id = 'ACD';
+      appData.applicationdata.application['service_type'] = 'ACD3';
+      $state.current.settings.submitUrl = '/applications/{channel-ref-no}/offer';
+      appData.applicationdata.applicants.offer_a_1 = 'R';
+      appData.applicationdata.application['cos_ref_number'] = UtilityService.getData('cos_ref_number');
+      appData.applicationdata.stage.next_page_values = $rootScope.next_page_value;
+      //Changed Loan Amount/Tenor
+      appData.applicationdata.applicants['requested_loan_tenor_a_1'] = ctrl.requestedAmount[0].approved_tenor;
+      appData.applicationdata.applicants['requested_loan_amount_a_1'] = $rootScope.textBoxValue;
+      
+      submitService.postData().then(function (data) {
+        if (data.application.error && data.application.error.application_error[0] && data.application.error.application_error[0].rtobCode == 'CSL-REG-RETRY') {
+          $rootScope.retryData = true;
+          errorHandlingServiceHk.initalizeRetry(appData.applicationdata.application.channel_reference, '', 'ACD', 'acd-3', 'aipThreeSuccessResponse', 10000, 1, error);
+        } else {
+          var isSuccessful = serverResponseServiceHK.checkServerResponse(data);
+          if (isSuccessful) {
+            if (data.application.response_type || data.application.response_action) {
+              var resType = data.application.response_type.toUpperCase();
+              var resAction = data.application.response_action.toUpperCase();
+            }
+            if (resType == 'HARD' && resAction == 'STOP') {
+              $rootScope.$broadcast('hideSpinner');
+              cardDeclineForm('decline-page');
+            } else {
+              appData.applicationdata.products = data.products;
+              aipThreeSuccessResponse(data);
+            }
+          } else {
+            $rootScope.$broadcast('hideSpinner');
+            UtilityService.errorModal(true);
+          }
+        }
+
+
+      }, function (error) {
+        /*
+          ****************
+          Timeout Retry
+          ****************
+          Value to be passed : channel_reference,url,stageId,pageId,timeout
+          url:submit URL
+          timeout: dynamic Timeout
+          'retryACDSuccessResume' : callBack function (broadCast Method)
+         */
+        $rootScope.retryData = true;
+        errorHandlingServiceHk.initalizeRetry(appData.applicationdata.application.channel_reference, '', 'ACD', 'acd-3', 'aipThreeSuccessResponse', 10000, 6, error);
+      });
+    }
+    //ACD3 CallBack Method - Retry 
+    $rootScope.$on('retryACD3Call', function (e, data) {
+      triggerAIP3Call();
+    })
+
+    function aipThreeSuccessResponse(data) {
+      ctrl.editedOffer = _.where(data.products[0].offer_details, {
+        'service_type': 'ACD3'
+      });
+      appData.applicationdata = data;
+      if (data.application.response_type || data.application.response_action) {
+        var resType = data.application.response_type.toUpperCase();
+        var resAction = data.application.response_action.toUpperCase();
+      }
+      //Error From TU
+      if (resType == 'HARD' && resAction == 'RESUBMIT') {
+        $rootScope.$broadcast('hideSpinner');
+        UtilityService.errorModal(true);
+      } else if (ctrl.editedOffer[0].offer_status == '1002') {
+        $rootScope.$broadcast('hideSpinner');
+        cardDeclineForm('decline-page');
+      } else if (ctrl.editedOffer[0].offer_status == '1004'){
+        $rootScope.showNstp = true;
+        UtilityService.setData('enquiryProductType', appData.applicationdata.products[0].product_category);
+        UtilityService.setData('enquiryServiceNSTP', true);
+        UtilityService.setData('cos_ref_number', appData.applicationdata.application.cos_ref_number);
+        $state.go('/main/ffd-1');
+      }
+      else {
+        triggeraipPL();
+      }
+
+    }
+    //AIP 3 for best offer
+
+    function cardDeclineForm() {
+      $uibModal.open({
+        ariaLabelledBy: 'modal-title-top',
+        ariaDescribedBy: 'modal-body-top',
+        templateUrl: 'app/rto-forms-hk/application/decline-template.html',
+        backdrop: 'static',
+        controller: 'applicationController as vm',
+        backdropClass: 'backdrop-close',
+        windowClass: 'error-popup',
+        size: 'lg'
+      });
+    }
+    //AIP 4 final call
+    function triggeraipPL() {
+      if ($rootScope.chinese) {
+        $rootScope.$broadcast('showSpinner', '請稍候');
+      } else {
+        $rootScope.$broadcast('showSpinner', 'Please Wait');
+      }
+      appData.applicationdata.stage.stage_status = 'incomplete';
+      appData.applicationdata.stage.page_id = 'acd-4';
+      appData.applicationdata.stage.stage_id = 'ACD';
+      if (appData.applicationdata.products[0].product_category == 'PL') {
+        appData.applicationdata.application['service_type'] = 'ACD4';
+      }
+      $state.current.settings.submitUrl = '/applications/{channel-ref-no}/offer';
+      appData.applicationdata.application['cos_ref_number'] = UtilityService.getData('cos_ref_number');
+      appData.applicationdata.stage.next_page_values = $rootScope.next_page_value;
+      submitService.postData().then(function (data) {
+        if (data.application.error && data.application.error.application_error[0] && data.application.error.application_error[0].rtobCode == 'CSL-REG-RETRY') {
+          $rootScope.retryData = true;
+          errorHandlingServiceHk.initalizeRetry(appData.applicationdata.application.channel_reference, '', 'ACD', 'acd-4', 'aipFourSuccessResponse', 10000, 1, error);
+        } else {
+          var isSuccessful = serverResponseServiceHK.checkServerResponse(data);
+          if (data.application.response_type || data.application.response_action) {
+            var resType = data.application.response_type.toUpperCase();
+            var resAction = data.application.response_action.toUpperCase();
+          }
+          if (isSuccessful) {
+            appData.applicationdata = data;
+            if (resType == 'HARD' && resAction == 'STOP') {
+              $rootScope.$broadcast('hideSpinner');
+              cardDeclineForm('decline-page');
+            } else if (resType == 'HARD' && resAction == 'RESUBMIT') {
+              $rootScope.$broadcast('hideSpinner');
+              UtilityService.errorModal(true);
+            } 
+            for (var i = 0; i < appData.applicationdata.products[0].offer_details.length; i++) {
+              if (appData.applicationdata.products[0].offer_details[i].service_type === "ACD4") {
+                if (appData.applicationdata.products[0].offer_details[i].offer_status === "1002") {
+                  $rootScope.$broadcast('hideSpinner');
+                  cardDeclineForm('decline-page');
+                } else if (appData.applicationdata.products[0].offer_details[i].offer_status === "1004") {
+                  $rootScope.showNstp = true;
+                  UtilityService.setData('enquiryProductType', appData.applicationdata.products[0].product_category);
+                  UtilityService.setData('enquiryServiceNSTP', true);
+                  UtilityService.setData('cos_ref_number', appData.applicationdata.application.cos_ref_number);
+                  $state.go('/main/ffd-1');
+                }
+                else {
+                  aipFourSuccessResponse(data);
+                } 
+              }
+            }
+           
+          } else if (resType == 'HARD' && resAction == 'STOP') {
+            cardDeclineForm('decline-page');
+          } else {
+            $rootScope.$broadcast('hideSpinner');
+            UtilityService.errorModal(true);
+          }
+        }
+
+      }, function (error) {
+        /*
+          ****************
+          Timeout Retry
+          ****************
+          Value to be passed : channel_reference,url,stageId,pageId,timeout
+          url:submit URL
+          timeout: dynamic Timeout
+          'retryACDSuccessResume' : callBack function (broadCast Method)
+         */
+        $rootScope.retryData = true;
+        errorHandlingServiceHk.initalizeRetry(appData.applicationdata.application.channel_reference, '', 'ACD', 'acd-4', 'aipFourSuccessResponse', 10000, 6, error);
+      });
+    }
+    //ACD4 CallBack Method - Retry 
+    $rootScope.$on('retryACD4Call', function (e, data) {
+      triggeraipPL();
+    })
+    function aipFourSuccessResponse(data) {
+      UtilityService.setData('applicant_documents_HK', data.applicant_documents ? data.applicant_documents : '');
+      appData.applicationdata = data;
+      // if (!(UtilityService.getData('offer_details_PLHK'))) {
+      UtilityService.setData('offer_details_PLHK', data.products ? data.products : '');
+      // }
+      aipFourResponse(data);
+    }
+
+    function aipFourResponse() {
+      //preApprovedForm();
+      if ($rootScope.chinese) {
+        $rootScope.$broadcast('showSpinner', '請稍候');
+      } else {
+        $rootScope.$broadcast('showSpinner', 'Please Wait');
+      }
+      triggerAOFCall();
+      $state.go('/main/doc-3');
+    }
+
+    //AIP 4 final call
+
+    //ApiEndpoint
+    function getApiEndpoint() {
+      var apiHost = '',
+        apiEndpoint = environmentConfig.apiEndpoint;
+      if (window.cordova) {
+        apiHost = environmentConfig.apiHost;
+
+      }
+      apiEndpoint = apiHost.concat(apiEndpoint);
+      return apiEndpoint;
+    }
+
+    // AOFCall
+    function triggerAOFCall() {
+      $rootScope.$broadcast('hideSpinner');
+      var apiEndpoint = getApiEndpoint();
+      var AOFURL = apiEndpoint + '/dynamic-document/' + appData.applicationdata.application['channel_reference'] + '/pdfPreview';
+      var AOFData =
+      {
+        "appInRefNumber": appData.applicationdata.application['application_reference'],
+        "template_name": "all_in_one",
+        "action": "generate",
+        "page_id": "HK_ALIPAY_AOF_ENG.thy"
+      }
+      var header = submitService.getHeader();
+      header['Content-Type'] = "application/json";
+      submitService.sendData(AOFURL, AOFData, header).then(function (success) {
+        UtilityService.setData('aof_doc_id', success.docId ? success.docId : '');
+        appData.applicationdata.applicants.aof_doc_id = success.docId;
+      }, function (error) {
+
+      });
+    }
+
+    //ACD 2 call
+    function triggerACD2Call() {
+      if ($rootScope.chinese) {
+        $rootScope.$broadcast('showSpinner', '請稍候');
+      } else {
+        $rootScope.$broadcast('showSpinner', 'Please Wait');
+      }
+      ctrl.bestOfferSplash = true;
+      ctrl.parentSplash = true;
+      appData.applicationdata.stage.stage_status = 'incomplete';
+      appData.applicationdata.stage.page_id = 'acd-2';
+      appData.applicationdata.stage.stage_id = 'ACD';
+      appData.applicationdata.application['service_type'] = 'ACD2';
+      $state.current.settings.submitUrl = '/applications/{channel-ref-no}/offer';
+      appData.applicationdata.application['cos_ref_number'] = UtilityService.getData('cos_ref_number');
+      appData.applicationdata.stage.next_page_values = $rootScope.next_page_value;
+      submitService.postData().then(function (data) {
+        if (data.application.error && data.application.error.application_error[0] && data.application.error.application_error[0].rtobCode == 'CSL-REG-RETRY') {
+          $rootScope.retryData = true;
+          errorHandlingServiceHk.initalizeRetry(appData.applicationdata.application.channel_reference, '', 'ACD', 'acd-4', 'aipFourSuccessResponse', 10000, 1, error);
+        } else {
+          appData.applicationdata = data;
+
+          var isSuccessful = serverResponseServiceHK.checkServerResponse(data);
+          if (isSuccessful) {
+            aipTwoSuccessResponse(data);
+          } else {
+            $rootScope.$broadcast('hideSpinner');
+            UtilityService.errorModal(true);
+          }
+        }
+      }, function (error) {
+        $rootScope.retryData = true;
+        errorHandlingServiceHk.initalizeRetry(appData.applicationdata.application.channel_reference, '', 'ACD', 'acd-4', 'aipFourSuccessResponse', 10000, 6, error);
+      });
+    }
+    //ACD2 CallBack Method - Retry 
+    $rootScope.$on('retryACD2Call', function (e, data) {
+      triggerACD2Call(data);
+    })
+
+    function aipTwoSuccessResponse(data) {
+      rScope.downShellOffer ? appData.applicationdata.application.downshell = true : '';
+      ctrl.bestOffer = _.where(data.products[0].offer_details, {
+        'service_type': 'ACD2'
+      });
+      ctrl.requestedAmount = _.where(appData.applicationdata.products[0].offer_details, {
+        'service_type': 'ACD'
+      });
+
+      if (data.application.response_type || data.application.response_action) {
+        var resType = data.application.response_type.toUpperCase();
+        var resAction = data.application.response_action.toUpperCase();
+      }
+      $rootScope.textBoxValue = ctrl.requestedAmount[0].approved_amount;
+      $rootScope.TenorInit = ctrl.requestedAmount[0].approved_tenor;
+      $rootScope.bestOfferFlag = ctrl.requestedAmount[0].bestOffer;
+
+      if(appData.applicationdata.application.downshell == true || $rootScope.downShellOffer == true){
+        ctrl.showpreliminaryContent = true;
+        ctrl.best_offer_applicable = false;
+        ctrl.requestedOffer = false;
+        $rootScope.downShellOffer = true;
+        ctrl.offer_status =_.where(data.products[0].offer_details, {
+          'service_type': 'ACD2' 
+          });
+    }
+
+      if (resType == 'HARD' && resAction == 'RESUBMIT') {
+        $rootScope.$broadcast('hideSpinner');
+        UtilityService.errorModal(true);
+      } else if (ctrl.bestOffer[0].offer_status == '1002' || ctrl.bestOffer[0].offer_status == '1004') {
+        $rootScope.$broadcast('hideSpinner');
+        cardDeclineForm();
+      } else {
+        $rootScope.$broadcast('hideSpinner');
+        $rootScope.setBestOfferapprovedTenor = ctrl.bestOffer[0].approved_tenor;
+        ctrl.bestOfferSplash = false;
+        ctrl.parentSplash = false;
+        appData.applicationdata = data;
+
+        if ((ctrl.requestedAmount[0].offer_status == '1002' || ctrl.requestedAmount[0].offer_status == '1004') && $rootScope.downShellOffer !=true) {
+          //appData.applicationdata.application.downshell ? rScope.downShellOffer = true:''; 
+          ctrl.showpreliminaryContent = false;
+          ctrl.requestedOffer = false;
+          ctrl.requestedAmount[0].approved_amount = data.products[0].product_minimum;
+        }
+      }
+    }
+  };
+})();
