@@ -1446,3 +1446,171 @@
     }
   };
 })();
+
+
+
+
+Analysis of the AngularJS Code:
+
+The provided AngularJS code defines a controller named LongAndShortFormHkpd1aController inside an Angular module. Here are the key features of this controller:
+
+1. Dependency Injection: The controller uses Angular services like $scope, $rootScope, $http, $timeout, $uibModal, $state, etc.
+
+
+2. Controller Variables: It initializes multiple properties on ctrl (controller alias) and $scope, such as imageURL, requestedOffer, best_offer_applicable, etc.
+
+
+3. Functions: It defines functions like init(), scrollTopFunc(), and tenorInitialSelector().
+
+
+4. Event Handling: There are event handlers related to UI elements like radio buttons and sliders.
+
+
+5. API Calls & Services: Uses services like UtilityService, submitService, and GAService.
+
+
+
+
+---
+
+React Equivalent:
+
+In React, we don't use $scope. Instead, we use the useState, useEffect, and useContext hooks to manage state and lifecycle events. Below is the equivalent React functional component using hooks.
+
+Converted React Code:
+
+import { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom"; // React Router for navigation
+
+// Import necessary services (these would need to be implemented separately)
+import { UtilityService, GAService, AppDataContext } from "../services"; 
+
+const LongAndShortFormHkpd1a = () => {
+  const [imageURL, setImageURL] = useState("");
+  const [bestOfferApplicable, setBestOfferApplicable] = useState(false);
+  const [showPreliminaryContent, setShowPreliminaryContent] = useState(false);
+  const [requestedOffer, setRequestedOffer] = useState(true);
+  const [approvedLimit, setApprovedLimit] = useState(null);
+  const [approvedTenor, setApprovedTenor] = useState(null);
+  const [offerStatus, setOfferStatus] = useState([]);
+  const [tenorMonthList] = useState(["60", "48", "36", "24", "12"]);
+  
+  const appData = useContext(AppDataContext); // Context API for global state
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Setting image URL from environment config
+    setImageURL(process.env.REACT_APP_OZ_RESOURCE_PATH);
+
+    // Track page view
+    GAService.pageViewHk("loan-preliminary-assessment");
+
+    // Load initial data
+    init();
+  }, []);
+
+  const init = () => {
+    const journeyType = appData.applicationdata.applicant_documents[0].journey_type;
+    loadContent();
+
+    const productss = UtilityService.getData("offer_details_HK");
+    appData.applicationdata.products = productss;
+
+    setOfferStatus(productss);
+    setApprovedLimit(productss[0]?.offer_details[0]?.approved_amount);
+    setApprovedTenor(productss[0]?.offer_details[0]?.approved_tenor);
+    
+    scrollTopFunc();
+    tenorInitialSelector(productss[0]?.offer_details[0]?.approved_tenor);
+  };
+
+  const loadContent = () => {
+    // Function to load page content
+  };
+
+  const scrollTopFunc = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const tenorInitialSelector = (tenor) => {
+    setApprovedTenor(tenor);
+  };
+
+  return (
+    <div className="long-short-form-container">
+      <h1>Loan Preliminary Assessment</h1>
+      <p>Approved Limit: {approvedLimit}</p>
+      <p>Approved Tenor: {approvedTenor} months</p>
+      <p>Requested Offer: {requestedOffer ? "Yes" : "No"}</p>
+
+      <button onClick={() => setBestOfferApplicable(!bestOfferApplicable)}>
+        Toggle Best Offer
+      </button>
+    </div>
+  );
+};
+
+export default LongAndShortFormHkpd1a;
+
+
+---
+
+Key Changes & Features in React Version
+
+1. State Management:
+
+Used useState for managing local state instead of $scope.
+
+Converted controller variables like imageURL, approvedLimit, requestedOffer, etc.
+
+
+
+2. Lifecycle Methods:
+
+Used useEffect to mimic AngularJS’s $onInit() for component initialization.
+
+
+
+3. Services & Context API:
+
+Used useContext(AppDataContext) to access global data (similar to $rootScope in Angular).
+
+Imported UtilityService, GAService to replace Angular services.
+
+
+
+4. Event Handling:
+
+Used event listeners like onClick for handling button interactions.
+
+
+
+5. Routing:
+
+Used useNavigate from react-router-dom as a replacement for Angular's $state.
+
+
+
+6. DOM Manipulation:
+
+Used window.scrollTo() instead of Angular’s scrollTopFunc().
+
+
+
+
+
+---
+
+Next Steps
+
+Ensure UtilityService.getData() is correctly implemented to fetch data.
+
+Replace process.env.REACT_APP_OZ_RESOURCE_PATH with actual environment config.
+
+Implement loadContent() based on AngularJS logic.
+
+Add styles using CSS/SCSS.
+
+
+Would you like any further refinements?
+
