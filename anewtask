@@ -55,3 +55,59 @@ const CreditCardApplication: React.FC = () => {
 };
 
 export default CreditCardApplication;
+
+
+
+
+
+import React from "react";
+
+const Data = {
+  A00: [...], // Your full Data object here
+  A01: [...],
+  A02: [...],
+  A03: [...],
+};
+
+const TARGET_CARDS = [
+  "Standard Chartered Cathay Mastercard",
+  "Standard Chartered Cathay Mastercard – Priority Banking",
+  "Standard Chartered Cathay Mastercard – Priority Private",
+];
+
+const filterCards = (data: typeof Data) => {
+  let filteredCards: any[] = [];
+  Object.values(data).forEach((items) => {
+    items.forEach((item: any) => {
+      if (
+        TARGET_CARDS.includes(item.cardheader) ||
+        TARGET_CARDS.includes(item.cardheader2) ||
+        TARGET_CARDS.includes(item.cardheader3)
+      ) {
+        filteredCards.push(item);
+      }
+    });
+  });
+  return filteredCards;
+};
+
+const CreditCardDisplay: React.FC = () => {
+  const filteredCards = filterCards(Data);
+
+  return (
+    <div>
+      <h1>Available Credit Cards</h1>
+      {filteredCards.map((card, index) => (
+        <div key={index} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px 0" }}>
+          <h2>{card.cardheader || card.cardheader2 || card.cardheader3}</h2>
+          <p><strong>Benefits:</strong></p>
+          {Object.keys(card).map((key) => key.startsWith("benefit") && card[key] && <p key={key}>- {card[key]}</p>)}
+          {card.footer && <p><strong>Note:</strong> {card.footer}</p>}
+          <button>Apply Now</button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default CreditCardDisplay;
