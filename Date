@@ -1,201 +1,141 @@
-Here’s a React version of your HTML and JavaScript code. This conversion includes:
-
-Functional components using hooks (useState, useEffect)
-
-CSS imported as a separate file
-
-JavaScript logic moved into React state and event handlers
-
-
-Steps Taken:
-
-1. Removed jQuery and vanilla JS manipulation – Now handled with useState and event handlers.
+import React, { useEffect, useState } from "react";
+import "./asiaMiles.scss";
+import ccIcon from "../../../preApproval/images/Tier-0-front.png";
+import ccIcon1 from "../../../preApproval/images/Tier-1-front.png";
+import ccIcon2 from "../../../preApproval/images/Tier-2-front.png";
+import { asiaMilesJson } from "../../../../services/common-service";
 
 
-2. Dynamic Data Handling – Used useEffect to fetch JSON data and update state.
+const cardData = [
+  {
+    t: "t0",
+    title: "Standard Chartered Cathay Mastercard",
+    description: [
+      "1. Enjoy up to 60,000 Asia Miles Welcome Offer",
+      "2. HKD4 = 1 Asia Mile for eligible spending on dining, hotels, and overseas category",
+      "3. First Year Annual Fee Waiver",
+    ],
+    image: ccIcon,
+  },
+  {
+    t:'t1',
+    title: "Standard Chartered Cathay Mastercard – Priority Banking",
+    description: [
+      "1. Enjoy up to 80,000 Asia Miles Welcome Offer",
+      "2. HKD3 = 1 Asia Mile for eligible spending on overseas category",
+      "3. HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+      "4. Annual fee waiver for Qualified Priority Banking clients",
+    ],
+    image: ccIcon1,
+  },
+  {
+    t: 't3',
+    title: "Standard Chartered Cathay Mastercard – Priority Private",
+    description: [
+      "1. Enjoy up to 100,000 Asia Miles Welcome Offer",
+      "2. HKD2 = 1 Asia Mile for eligible spending on overseas category",   //A01 not there
+      "3. HKD4 = 1 Asia Mile for eligible spending on dining and hotels category",
+      "4. Annual fee waiver for Qualified Priority Private clients", //all
+    ],
+    image: ccIcon2,
+  },
+];
 
-
-3. Button Click Events – Converted inline JavaScript into separate event handlers.
-
-
-
-
----
-
-React Code (App.js)
-
-import React, { useState, useEffect } from "react";
-import "./App.css";
-
-const App = () => {
-  const [language, setLanguage] = useState("en");
-  const [offerCode, setOfferCode] = useState("A00");
-  const [selectedTier, setSelectedTier] = useState(null);
-  const [jsonData, setJsonData] = useState(null);
+const AsiaMiles: React.FC = () => {
+  const [selectedCard, setSelectedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Fetch the JSON based on language
-    const fetchJson = async () => {
-      const jsonFile = language === "zh" ? "/assets/json/cards_variants_c.json" : "/assets/json/cards_variants_e.json";
-      try {
-        const response = await fetch(jsonFile);
-        const data = await response.json();
-        setJsonData(data[offerCode] || {});
-      } catch (error) {
-        console.error("Error loading JSON:", error);
-      }
-    };
+    asiaMilesJson();
+  }, []);
 
-    fetchJson();
-  }, [language, offerCode]);
-
-  const handleSelectTier = (tier) => {
-    setSelectedTier(tier);
-  };
-
-  const handleNextClick = () => {
-    console.log("Proceeding with tier:", selectedTier);
-    // Redirect logic here
+  const handleSelectCard = (id: any) => {
+    setSelectedCard(id);
   };
 
   return (
-    <div className="container">
-      <div className="header">
-        <h3>{jsonData?.[0]?.header || "Loading..."}</h3>
-        <p>{jsonData?.[0]?.applyingfor}</p>
-        <p>{jsonData?.[0]?.warning}</p>
+    <>
+      <div className="header-container">
+        <header className="header">
+          <div className="column01">
+            <div className="col-sm">
+              <p id="applyingfor">You are applying for</p>
+              <h3 id="header">Standard Chartered Cathay Mastercard</h3>
+            </div>
+            <div className="column2">
+              <hr />
+              <p className="credit">
+                To apply for Standard Chartered credit card, you need to be 18+
+                years old, and a Hong Kong resident
+              </p>
+            </div>
+          </div>
+        </header>
       </div>
-
-      <div className="cards">
-        {/* Tier 0 */}
-        <div className="card">
-          <img src="/assets/images/Tier-0-front.jpg" alt="Tier 0" />
-          <h4>{jsonData?.[1]?.cardheader}</h4>
-          <ul>
-            <li>{jsonData?.[1]?.benefit01}</li>
-            <li>{jsonData?.[1]?.benefit02}</li>
-            <li>{jsonData?.[1]?.benefit03}</li>
-          </ul>
-          <button
-            className={selectedTier === "t0" ? "selected" : ""}
-            onClick={() => handleSelectTier("t0")}
-          >
-            {selectedTier === "t0" ? "Selected" : "Select"}
-          </button>
-        </div>
-
-        {/* Tier 1 */}
-        <div className="card">
-          <img src="/assets/images/Tier-1-front.jpg" alt="Tier 1" />
-          <h4>{jsonData?.[1]?.cardheader2}</h4>
-          <ul>
-            <li>{jsonData?.[1]?.benefit11}</li>
-            <li>{jsonData?.[1]?.benefit12}</li>
-            <li>{jsonData?.[1]?.benefit13}</li>
-          </ul>
-          <button
-            className={selectedTier === "t1" ? "selected" : ""}
-            onClick={() => handleSelectTier("t1")}
-          >
-            {selectedTier === "t1" ? "Selected" : "Select"}
-          </button>
-        </div>
-
-        {/* Tier 2 */}
-        <div className="card">
-          <img src="/assets/images/Tier-2-front.jpg" alt="Tier 2" />
-          <h4>{jsonData?.[1]?.cardheader3}</h4>
-          <ul>
-            <li>{jsonData?.[1]?.benefit21}</li>
-            <li>{jsonData?.[1]?.benefit22}</li>
-            <li>{jsonData?.[1]?.benefit23}</li>
-          </ul>
-          <button
-            className={selectedTier === "t2" ? "selected" : ""}
-            onClick={() => handleSelectTier("t2")}
-          >
-            {selectedTier === "t2" ? "Selected" : "Select"}
-          </button>
-        </div>
+      <div className="col-smtr">
+        <p className="select-maincard">Please select one type of credit card</p>
       </div>
+      <div className="credit-card-selector">
+        <div className="cards-container">
+          {cardData.map((card) => (
+            <div
+              key={card.t}
+              className={`card ${selectedCard === card.t ? "selected" : ""}`}
+              onClick={() => handleSelectCard(card.t)}
+            >
+              <div className="main-image">
+                <img src={card.image} alt={card.title} className="card-image" />
+              </div>
+              <div className="card-content">
+                <ul>
+                  <h3 className="card-content-title">{card.title}</h3>
+                  {card.description.map((item, index) => (
+                    <li key={index} className="card-content-text">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="button-container">
+                  {selectedCard === card.id ? (
+                    <div className="selected-label">
+                      <span className="tick">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#007bff"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>{" "}
+                      SELECTED
+                    </div>
+                  ) : (
+                    <button className="select-button">Select</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-      {/* Footer */}
-      <div className="footer">
-        <p>{jsonData?.[0]?.footermsg}</p>
-        <button onClick={handleNextClick} disabled={!selectedTier} className="next-btn">
-          Next
+        <p className="footermsg">
+          Your Integrated Deposit Account and Banking Plan application would be
+          handled in the process as well&nbsp;(if applicable)
+        </p>
+        <button
+          className="continue-button"
+          disabled={selectedCard === null}
+          onClick={() => alert(`Card ${selectedCard} selected!`)}
+        >
+          OK, NEXT
         </button>
       </div>
-    </div>
+    </>
   );
+
 };
 
-export default App;
-
-
----
-
-CSS (App.css)
-
-.container {
-  max-width: 800px;
-  margin: auto;
-  padding: 20px;
-  text-align: center;
-}
-
-.cards {
-  display: flex;
-  justify-content: space-around;
-}
-
-.card {
-  width: 200px;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.card img {
-  width: 100%;
-}
-
-button {
-  background-color: #007bff;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button.selected {
-  background-color: green;
-}
-
-.next-btn {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: gray;
-  cursor: not-allowed;
-}
-
-.next-btn:not(:disabled) {
-  background-color: #28a745;
-  cursor: pointer;
-}
-
-
----
-
-Features:
-
-✅ Uses React useState and useEffect
-✅ Loads JSON dynamically
-✅ Uses CSS for styles
-✅ Improves code structure and readability
-✅ Removes inline JS, making it more maintainable
-
-Would you like any additional changes?
-
+export default AsiaMiles;
