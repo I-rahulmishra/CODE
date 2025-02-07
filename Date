@@ -11,3 +11,20 @@
         return
       }
     }
+
+
+
+
+const regexNoLeadingTrailingSpaces = /^(?! ).*(?<! )$/;
+
+else if (props?.data?.logical_field_name === "name_of_employer" && event.target.value) {
+  if (!regexNoLeadingTrailingSpaces.test(event.target.value)) {
+    setError(`${language === CONSTANTS.LANG_EN ? errorMsg.companyNameInvalid : language === CONSTANTS.LANG_CN ? errorMsg.companyNameInvalid_CN : errorMsg.companyNameInvalid_HK}`);
+    dispatch(
+      fieldErrorAction.getFieldError({
+        fieldName: props.data.logical_field_name,
+      })
+    );
+    return;
+  }
+}
