@@ -1,30 +1,334 @@
- const regexAlphaNumeric = /^[a-zA-Z0-9 ]+$/;
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+	<link rel="stylesheet" href="https://pt.sc.com/onboarding/rtob/sg/assets/css/main.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
+	 <!-- Bootstrap CSS -->	
+	 <link rel="stylesheet" href="https://pt.sc.com/onboarding/rtob/sg/assets/css/bootstrap.min.css">
+      <link rel="stylesheet" href="https://pt.sc.com/onboarding/rtob/sg/assets/css/materialize.min.css">		 
+   <script src="https://pt.sc.com/onboarding/rtob/sg/assets/js/jquery.min.js"></script>
+   <script src="https://pt.sc.com/onboarding/rtob/sg/assets/js/angular.min.js"></script>
+   <script src="https://pt.sc.com/onboarding/rtob/sg/assets/js/bootstrap.min.js"></script>
+   <script src="https://pt.sc.com/onboarding/rtob/sg/assets/js/materialize.min.js"></script> 
+  
 
- else if (props?.data?.logical_field_name === "name_of_employer" && (event.target.value)) {
-      if (!regexAlphaNumeric.test(event.target.value)) {
-        setError(`${language === CONSTANTS.LANG_EN ? errorMsg.companyNameInvalid : language === CONSTANTS.LANG_CN ? errorMsg.companyNameInvalid_CN : errorMsg.companyNameInvalid_HK}`);
-        dispatch(
-          fieldErrorAction.getFieldError({
-          fieldName: props.data.logical_field_name,
-        }));
-        return
-      }
-    }
-
-
-
-
-const regexNoLeadingTrailingSpaces = /^(?! ).*(?<! )$/;
-
-else if (props?.data?.logical_field_name === "name_of_employer" && event.target.value) {
-  if (!regexNoLeadingTrailingSpaces.test(event.target.value)) {
-    setError(`${language === CONSTANTS.LANG_EN ? errorMsg.companyNameInvalid : language === CONSTANTS.LANG_CN ? errorMsg.companyNameInvalid_CN : errorMsg.companyNameInvalid_HK}`);
-    dispatch(
-      fieldErrorAction.getFieldError({
-        fieldName: props.data.logical_field_name,
-      })
-    );
-    return;
+    <title>sc.com</title>
+  </head>
+  <style>
+  .modal, .modal-footer {
+    text-align: center;
   }
+  .modal-footer {
+    border:none;
+  }
+  .btn-danger {
+    width: 100%;
+    background-color: #dc3545;
+  }
+  .modal-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) !important;
+    margin: auto !important;
+    width: 100% !important;
+    min-width: 55%;
+  }
+  .btn-danger:hover, .btn-danger:focus {
+    background-color: #c82333 !important;
+  }
+  .modal {
+      background-color: inherit;
+  }
+  .modal-content {
+      border: none;
+  }
+  .modal .modal-footer {
+      padding: 4px 66px;
+  }
+  
+  	.modal-dialog .qrCode img{
+	width: 65%;
+	height :100%;
+	}
+  </style>
+<script>
+var status = "less";
+
+function toggleText()
+{
+    var text="By clicking “Retrieve MyInfo”, you will be re-directed to the MyInfo portal, which is not owned or controlled by Standard Chartered Bank Limited or any member of the Standard Chartered Group (the”Bank”). The Bank bears no liability or responsibility over your usage of the MyInfo portal.";
+    
+    if (status == "less") {
+        document.getElementById("textArea").innerHTML=text;
+        document.getElementById("toggleButton").innerText = "See Less";
+        status = "more";
+    } else if (status == "more") {
+        document.getElementById("textArea").innerHTML = "";
+        document.getElementById("toggleButton").innerText = "See More";
+        status = "less"
+    }
 }
+</script>
+
+  <body>
+  
+  
+ 
+ <div ng-app="myApp" ng-controller="myCtrl">
+  <div class="header1">
+ <div class="container-fluid grid1">
+
+  <div class="row column01">
+
+     <div class="column">
+     <div class="column3">
+    <div class="col-3-0">
+	    <div class="col-3-3">
+		  <img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/my-info-logo.png" srcset="https://pt.sc.com/onboarding/rtob/sg/assets/img/my-info-logo@2x.png 2x,
+          https://pt.sc.com/onboarding/rtob/sg/assets/img/my-info-logo@3x.png 3x">
+		</div>
+		<div class="col-3-4">
+      <h5>If you are a SingPass Holder, you can</h5>
+	   <img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/description.png" srcset="https://pt.sc.com/onboarding/rtob/sg/assets/img/description@2x.png 2x,
+       https://pt.sc.com/onboarding/rtob/sg/assets/img/description@3x.png 3x">
+			 <p class="gry">No documents upload required.</p>
+			 </div>
+    </div>
+	    <div class="col-3-2">
+		
+      <button class="button" ng-disabled="disableInfoBtn" ng-click="proceedWithMyInfo()">Use MyInfo (using SingPass)</button>
+	   <button class="button2"  ng-click="proceedWithManual()">Proceed without MyInfo</button>
+	   <!-- <button class="button2" type="button" ng-click="qrPopUp()">Proceed with QR code</button> -->
+    </div>
+  </div>
+  </div>
+  </div>
+  <div class="row column02">
+     <div class="column2-1">
+
+
+<ul class="collapsible" data-collapsible="accordion">
+    <li>
+        <div class="collapsible-header">
+            <p>What is MyInfo?<img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/down-arrow.png"></p></div>
+        <div class="collapsible-body">
+            <div class="row">
+                <div class="col s12 m12">
+                    <p>By clicking “Retrieve MyInfo”, you will be re-directed to the MyInfo portal, which is not owned or controlled by Standard Chartered Bank Limited or any member of the Standard Chartered Group (the”Bank”). The Bank bears no liability or responsibility over your usage of the MyInfo portal.
+*Please note that MyInfo is temporaily </p>
+                </div>
+            </div>
+        </div>
+    </li>
+	<li>
+        <div class="collapsible-header">
+            <p>How do I use MyInfo?<img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/down-arrow.png"></p></div>
+        <div class="collapsible-body">
+            <div class="row">
+                <div class="col s12 m12">
+                    <p>By clicking “Retrieve MyInfo”, you will be re-directed to the MyInfo portal, which is not owned or controlled by Standard Chartered Bank Limited or any member of the Standard Chartered Group (the”Bank”). The Bank bears no liability or responsibility over your usage of the MyInfo portal.
+*Please note that MyInfo is temporaily </p>
+                </div>
+            </div>
+        </div>
+    </li>
+	<li>
+        <div class="collapsible-header">
+           <p>Why should I use MyInfo?<img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/down-arrow.png"></p></div>
+        <div class="collapsible-body">
+            <div class="row">
+                <div class="col s12 m12">
+                    <p>By clicking “Retrieve MyInfo”, you will be re-directed to the MyInfo portal, which is not owned or controlled by Standard Chartered Bank Limited or any member of the Standard Chartered Group (the”Bank”). The Bank bears no liability or responsibility over your usage of the MyInfo portal.
+*Please note that MyInfo is temporaily </p>
+                </div>
+            </div>
+        </div>
+    </li>
+
+</ul>
+  </div>
+  </div>
+    <div class="row column03">
+
+     <div class="column">
+     <div class="column4">
+	    <div class="col-4-2">
+      <p>By clicking “Retrieve MyInfo”, you will be re-directed to the MyInfo portal, which is not owned or controlled by Standard Chartered Bank Limited or any member of the Standard Chartered Group (the”Bank”). The Bank bears no liability or responsibility over your usage of the MyInfo portal.
+<span>*Please note that MyInfo is temporaily</span></p>
+    </div>
+  </div>
+  </div>
+  </div>
+      <div class="row column04">
+   <p id="textArea"></p>
+ <a id="toggleButton" onclick="toggleText();" href="javascript:void(0);">More Details</a>
+		 </div>
+	    <div class="col-6-1">
+      <a href=""><img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/group-2.png" srcset="assets/img/group-2@2x.png 2x,
+             assets/img/group-2@3x.png 3x"></a>
+    </div>
+  </div>
+
+</div>
+		<!-- QR code dialog -->
+		<!-- <div class="modal fade" id="qrPopUp" tabindex="-1" role="dialog"
+            aria-labelledby="errorModalLabel" aria-hidden="true">
+			
+			<div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-body qrCode">
+                        <img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/qr_bonus.png" width="50px" height="50px" alt="warning">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" ng-click="closePopUp()">Close</button>
+                    </div>
+                </div>
+            </div>
+		</div> -->
+		<!-- QR code dialog -->
+
+<!-- Display warning dialog -->
+    <div ng-controller="errorDialogCtrl" class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div style="margin-bottom: 20px;">
+                        <img src="https://pt.sc.com/onboarding/rtob/sg/assets/img/ico-warning-sign-red.svg" width="50px" height="50px" alt="warning">
+                    </div>
+                    <div>{{errorMsg}}</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" ng-click="retryFun()">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+ <script>
+var app = angular.module('myApp', []);
+    app.controller('errorDialogCtrl', function ($scope) {
+        const data = JSON.parse(localStorage.getItem('products'));
+        let TdProductLength = data.products.filter((res)=> res.product_category === 'TD').length;
+        let isFCYProducts = [];
+        data.products.map((res) => {
+            if (res.product_category === 'TD' && res.product_type === '601' || res.product_category === 'TD' && res.product_type === '602') {
+                isFCYProducts.push(res.product_type);
+            }
+        });
+        var selectedProducts = [];
+        angular.forEach(data.products, function (value, key) {
+            selectedProducts.push(value.product_type);
+        }); 
+        if ((selectedProducts.toString().includes('514') && data.applicants.count > 1) || (TdProductLength > 2 || isFCYProducts.length >= 2)) {
+            var dlgElem = angular.element("#errorModal")[0];
+            angular.element(".header1")[0].style.display = 'none';
+            angular.element("body")[0].style.background = 'black';
+            dlgElem.style.display = 'block';
+            dlgElem.style.opacity = 1;
+        }
+        if (TdProductLength > 2) {
+            $scope.errorMsg = 'Application declined since More than 2 TD products not allowed in single application';
+        } else if(isFCYProducts.length >= 2) {
+            $scope.errorMsg = 'Application declined - More than one FCY TD not allowed'
+        } else {
+            $scope.errorMsg = 'Multi applicant is not allowed for jump start product';
+        }
+        $scope.retryFun = function() {
+            window.open('../../../onboarding/multi-country/login/index.html#/productCatalogue?flow=productCatalogue', '_self');
+        }
+        
+    });
+    app.controller('myCtrl', function ($scope, $http, $sce) {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const product = urlParams.get('product');
+        const campaign = urlParams.get('campaign');
+        const productInfo = JSON.parse(localStorage.getItem('products'));
+        var productType = productInfo.products[0].product_type;
+        if (productType == "509" || productType == "510"){
+          $scope.disableInfoBtn = true;
+        } else {
+          $scope.disableInfoBtn = false;
+        }
+		$scope.qrPopUp = function (){
+			var dlgElem = angular.element("#qrPopUp")[0];
+                angular.element(".header1")[0].style.display = 'none';
+                angular.element("body")[0].style.background = 'black';
+                dlgElem.style.display = 'block';
+                dlgElem.style.opacity = 1;
+			}
+			
+			$scope.closePopUp = function (){
+				var dlgElem = angular.element("#qrPopUp")[0];
+                angular.element(".header1")[0].style.display = 'block';
+                angular.element("body")[0].style.background = 'white';
+                dlgElem.style.display = 'none';
+			}
+        var selectedProductsArray = [];
+
+        $scope.showMore = function () {
+            var dots = document.getElementById("dots");
+            var moreText = document.getElementById("more");
+            var btnText = document.getElementById("myBtn");
+
+            if (dots.style.display === "none") {
+                dots.style.display = "inline";
+                btnText.innerHTML = "SHOW MORE";
+                moreText.style.display = "none";
+            } else {
+                dots.style.display = "none";
+                btnText.innerHTML = "SHOW LESS";
+                moreText.style.display = "inline";
+            }
+        }
+
+        function onload() {
+            $scope.baseArray = [];
+
+            $http({
+                method: 'POST',
+                url: "/onboarding/sg/rtob/all.json"
+            })
+                .then(function (response) {
+                    $scope.baseArray = response.data.filter(function (array) {
+                        return array['product-type-code'] == product;
+                    });
+                    console.log($scope.baseArray);
+                })
+                .catch(function (e) {
+                    return exception.catcher('XHR Failed for field Meta data')(e);
+                });
+
+        }
+	onload();
+	//<!-- Manual Method -->
+	$scope.proceedWithManual = function (){
+		var rand=Math.floor((1 + Math.random()) * 0x10000);
+		// window.open("/onboarding/www/rtoForms/index.html?rand="+rand+"#/onboarding?country=SG&myinfo=false&products={'product_image':'','campaign':'"+campaign+"','name':'','product_category':'CC','product_category_name':'','product_url':'','product_type':'"+product+"','product_sequence_number':'1','company_category':'NA'}", "_self");	
+		// window.open("https://pt.sc.com/onboarding/sg-greenBranch/index.html?products=505&campaign=SA001&applicantNo=1&rmId=1405594");	
+		window.open("https://www.google.com/?safe=active&ssui=on");	
+	}
+	//<!-- Manual Method -->
+	
+	//<!-- Not Ibanking -->
+	$scope.proceedWithMyInfo = function(){
+		var rand=Math.floor((1 + Math.random()) * 0x10000);
+		// window.open("/onboarding/www/rtoForms/index.html?rand="+rand+"#/onboarding?country=SG&myinfo=true&products={'product_image':'','campaign':'"+campaign+"','name':'','product_category':'CC','product_category_name':'','product_url':'','product_type':'"+product+"','product_sequence_number':'1','company_category':'NA'}", "_self");
+		window.open("https://pt.sc.com/onboarding/sg-greenBranch/index.html?products=505&campaign=SA001&applicantNo=1&rmId=1405594&auth=myinfo");
+	}
+	//<!-- Not Ibanking -->
+	
+	//<!-- Ibanking Customer -->
+	$scope.ibankingCustomer = function(){
+	}
+	//<!-- Ibanking Customer -->
+    });
+    </script>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    </body>
+</html>
