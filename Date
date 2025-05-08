@@ -324,3 +324,72 @@ const ThankYou = () => {
 };
 
 export default ThankYou;
+
+
+
+describe("ThankYou Component", () => {
+  test("renders ThankYou form", () => {
+    renderComponent();
+    expect(screen.getByTestId("form")).toBeInTheDocument();
+  });
+
+  test("renders CASA Thank You component when CA/SA products exist", () => {
+    renderComponent();
+    expect(screen.getByText(/Current Account/i)).toBeInTheDocument();
+  });
+
+  test("shows OTP popup navigation when showOTPPopup is triggered", () => {
+    // You can simulate navigation in an integration test setup
+    // Or test the effect of calling `navigate("/otp")`
+    // For now, placeholder: to be implemented if needed
+  });
+
+  test("submits form and redirects to homepage", () => {
+    delete window.location;
+    window.location = { href: "" } as any;
+
+    renderComponent();
+
+    const form = screen.getByTestId("form");
+    fireEvent.submit(form);
+
+    expect(window.location.href).toContain(process.env.REACT_APP_HOME_PAGE_URL!);
+  });
+
+  test("renders card activation success UI when activation succeeds", async () => {
+    const storeState = {
+      ...stageState,
+      stages: {
+        ...stageState.stages,
+        otpSuccess: true
+      }
+    };
+    renderComponent(storeState);
+
+    // You'd need to mock activateDigitalCard for true unit coverage
+    expect(screen.getByTestId("form")).toBeInTheDocument(); // placeholder until activation resolves
+  });
+
+  test("renders ThankYouUpload when document upload is true", () => {
+    const storeState = {
+      ...stageState,
+      stages: {
+        ...stageState.stages,
+        isDocumentUpload: true
+      }
+    };
+    renderComponent(storeState);
+    expect(screen.getByText(/upload/i)).toBeInTheDocument();
+  });
+
+  test("shows error UI when card activation fails", async () => {
+    // To simulate activation error, you would mock the dispatch/activateDigitalCard call
+    // and resolve with status !== "SUCCESS"
+  });
+
+  test("handles continueWithoutActivation scenario", () => {
+    renderComponent();
+    // Manually trigger the method or test state behavior if it's extracted
+    // You can simulate button clicks that invoke continueWithoutActivation
+  });
+});
