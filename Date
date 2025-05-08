@@ -1,387 +1,326 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import "./thank-you.scss";
 import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import thankyouData from "../../../assets/_json/thankyou.json";
+import { useSelector, useDispatch } from "react-redux";
+import { getUrl } from "../../../utils/common/change.utils";
+import trackEvents from "../../../services/track-events";
 import {
-  fieldError,
-  getUrl,
-  isFieldUpdate,
-} from "../../../utils/common/change.utils";
-import errorMsg from "../../../assets/_json/error.json";
-import { lastAction } from "../../../utils/store/last-accessed-slice";
-import { postalCodeValidation } from "./number.utils";
-import { postalCodeAction } from "../../../utils/store/postal-code";
-import "./number.scss";
-import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+  redirectingToIbanking,
+  activateDigitalCard,
+} from "../../../services/common-service";
+import Model from "../../../shared/components/model/model";
+import PopupModel from "../../../shared/components/popup-model/popup-model";
+import ThankYouCASA from "./thankyou-casa";
+import ThankYouCC from "./thankyou-cc";
+//import ThankYouPL from "./thankyou-pl";
+import CCWithoutActivation from "./cc-without-activation";
+import gaTrackEvents from "../../../services/ga-track-events";
+import CCActivationSucess from "./cc-activation-success";
+import ThankyouError from "./thankyou-error";
+import { useNavigate } from "react-router-dom";
+import ThankYouUpload from "./thankyou-upload";
+import { store } from "../../../utils/store/store";
 
-const Number = (props: KeyWithAnyModel) => {
-  console.log("props in number",props)
-  const [error, setError] = useState("");  
+const ThankYou = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  /*istanbul ignore next */
   const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const store = useSelector((state: StoreModel) => state);
-  console.log(store,"store")
-  
-  const userInputSelector = useSelector(
-    (state: StoreModel) => state.stages.userInput
+  const applicationJourney = useSelector(
+    (state: StoreModel) => state.stages.journeyType
   );
-  const updatedStageInputsSelector = useSelector(
-    (state: StoreModel) => state.stages.updatedStageInputs
+  const otpSuccessSelector = useSelector(
+    (state: StoreModel) => state.stages.otpSuccess
   );
-  const fieldErrorSelector = useSelector(
-    (state: StoreModel) => state.fielderror.error
-  );
-    const dispatch = useDispatch();
-  const [defaultValue, setDefaultValue] = useState("");
-  const [valueUpdate, setValueUpdate] = useState("");
-  const [isPostalCodeFetch, setIsPostalCodeFetch] = useState(false);
-  const [isPostalValue , setPostalValue] = useState("");
-  // let inputValue;
-
-  const [checkforBank , setcheckforBamk] = useState(false);
-  const changeHandler = (
-    fieldName: string,
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    debugger;
-   let inputValue = event.target.value;
-    setDefaultValue(inputValue);
-    // let checkforBamk = false; 
-    if (fieldName === "reenter_other_bank_account_bt") {
-      const other_bank_account_bt_a_1 = userInputSelector.applicants["other_bank_account_bt_a_1"];
-      if (inputValue !== other_bank_account_bt_a_1) {
-        setcheckforBamk(true);
-        setError(errorMsg.sgBankAccountMismatch_RE);
-        // props.handleCallback(props.data, "");
-        // return;
-      }
-    }
-    
-    console.log(event.target.validity.valid, "bhar")
-     if (!event.target.validity.valid || checkforBank){
-      props.handleCallback(props.data, inputValue);        
-      if ((props.data.mandatory === "Yes" || props.data.mandatory ==="Conditional") && inputValue.length < 1) {
-        setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
-      } 
-      if(fieldName === "reenter_other_bank_account_bt"){
-        const scbAccountNo = userInputSelector.applicants["other_bank_account_bt"];
-        if (inputValue !== scbAccountNo) {
-          setError(errorMsg.sgBankAccountMismatch_RE);
-          return;
-        }
-      }
-      else if (props.data.regex && !(`${inputValue}`.match(props.data.regex))) {
-        if (fieldName === "re_enter_scb_account_no" || fieldName === "other_bank_account_bt" ) {
-          setError(`${props.data.rwb_label_name} ${errorMsg.accountNumber}`)
-        } else if (fieldName === "scb_account_no") {
-          setError(`${props.data.rwb_label_name} ${errorMsg.accountNumber}`)
-        }
-        else if (fieldName === "reenter_other_bank_account_bt" || fieldName === "scb_account_no_a_1") {
-          setError(`${props.data.rwb_label_name} ${errorMsg.accountNumber}`)
-        }else{
-        setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`)}
-      } else if (props.data.min_length && `${inputValue}`.length < props.data.min_length) {
-        setError(`${errorMsg.bankAccountMinLength} ${props.data.min_length} digits`)
-      } else {
-        setError((`${errorMsg.patterns} ${props.data.rwb_label_name}`));
-      }
-    } else {
-      setError("");
-      const fieldValue = event.target.value;
-      setValueUpdate(fieldValue);
-
-      if (fieldName === "re_enter_scb_account_no") {
-        const scbAccountNo = userInputSelector.applicants["scb_account_no_a_1"];
-        if (fieldValue !== scbAccountNo) {
-          setError(errorMsg.sgBankAccountMismatch_RE);
-          // props.handleCallback(props.data, "");
-          
-          return;
-        }
-      }
-
-      if (fieldName === "reenter_other_bank_account_bt") {
-        const scbAccountNo = userInputSelector.applicants["other_bank_account_bt_a_1"];
-        if (fieldValue !== scbAccountNo) {
-          setError(errorMsg.sgBankAccountMismatch_RE);
-
-          // fieldErrorAction.getFieldError(true)
-          return ;
-        }
-      }
-  
+  const thankyou: KeyWithAnyModel = thankyouData;
+  const applicationReferenceNo = getUrl.getChannelRefNo().applicationRefNo || stageSelector[0].stageInfo.application.application_reference;
+  const [applicationDetails, setApplicationDetails] = useState({
+    productCategory: [],
+    productName: [],
+    acct_details: [],
+    account_number: "",
+    thankyouProp: "NSTP",
+    accountNum: "",
+    thankyouText: "Common",
+    thankyouFeedback: "Feedback",
+    feedbackUrl: "",
+    isStp: false,
+    loanTenureMonths: "",
+    approvedLoan: 0,
+    productType: [],
+    feeAmount: "",
+    card_no: "",
+    cardNumber: "",
+    cardName: "",
+    productSequenceNo: [],
+  });
+  const saProducts = applicationDetails?.productCategory?.filter((product:any)=> product === "SA");
+  const caProducts = applicationDetails?.productCategory?.filter((product:any)=> product === "CA");
+  const [showContinueWithoutActivationMsg, setShowContinueWithoutActivationMsg] = useState<boolean>(false);
+  const [continueWithoutActivationUI, setContinueWithoutActivationUI] = useState(false);
+  const [cardActivationSuccessUI, setCardActivationSuccessUI] = useState(false);
+  const [showErrorUI, setShowerrorUI] = useState(false);
+  useEffect(() => {
+    setApplicationDetails((prevValue) => {
       if (
-        fieldValue &&
-        isPostalValue !== fieldValue && 
-        fieldName === "postal_code" &&
-        event.target.validity.valid
+        stageSelector &&
+        stageSelector[0].stageInfo && stageSelector[0].stageInfo.products &&
+        stageSelector[0].stageInfo.products.length >= 1
       ) {
-        setPostalValue(fieldValue)
-        const channelrefNumber =
-          stageSelector[0].stageInfo.application["channel_reference"];
-        setIsPostalCodeFetch(true);
-        dispatch(
-          postalCodeValidation(
-            fieldValue,
-            channelrefNumber,
-            stageSelector[0].stageInfo.applicants
-          )
-        ).then((response: any) => {
-          dispatch(postalCodeAction.setPostalCode(response));
-          setIsPostalCodeFetch(false);
-        });
-      }
-      // else if (stageSelector[0].stageId !== "ad-2") {
-      //   props.handleCallback(props.data, event.target.value);     
-      // } 
-      else {
-        dispatch(isFieldUpdate(props, event.target.value, fieldName));
-        if (accountNumValidation(inputValue,props)) {     
-          debugger;
-          props.handleCallback(props.data, inputValue);
-        } else {
-          debugger;
-          props.handleCallback(props.data, "");            
-          showAccountNumError();       
-        }           
-      }
-    } 
-  };
-  const showAccountNumError = () => {
-    debugger
-    if (        
-      props.data.logical_field_name === "scb_account_no" ||
-      props.data.logical_field_name === "other_bank_account_bt"
-    ) {
-      setError(errorMsg.sgBankAccountMismatch);
-    } else if (
-      props.data.logical_field_name === "re_enter_scb_account_no" ||
-      props.data.logical_field_name === "reenter_other_bank_account_bt"
-    ) {
-      setError(errorMsg.sgBankAccountMismatch_RE);
-    } else if (props.data.logical_field_name === "other_bank_credit_card_bt") {
-      setError(errorMsg.sgCreditCardNoMismatch);
-    }else if (props.data.logical_field_name === "reenter_other_bank_credit_card_bt") {
-      setError(errorMsg.sgCreditCardNoMismatch_RE);
-    } else {
-      setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
-    }
-  }
-  const isValidInput = (inputValue:string, props:KeyWithAnyModel) => {
-    debugger;
-    if (props.data.regex && !(`${inputValue}`.match(props.data.regex))) {
-      return false;
-    } else if (props.data.min_length && `${inputValue}`.length < props.data.min_length) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-  const accountNumValidation = (inputValue:string, props:KeyWithAnyModel) => {
-    debugger
-    const validFields = ["scb_account_no", "re_enter_scb_account_no", "other_bank_account_bt", "reenter_other_bank_account_bt", "other_bank_credit_card_bt", "reenter_other_bank_credit_card_bt"];
-    if (validFields.indexOf(props.data.logical_field_name) === -1) {
-      return true;
-    }
-    let storeValue: string | null = null;
-    let fieldName: string | null = null;
-    if (props.data.logical_field_name === "scb_account_no") {
-      fieldName = "re_enter_scb_account_no";              
-    } else if (props.data.logical_field_name === "re_enter_scb_account_no") {
-      fieldName = "scb_account_no";
-    } else if (props.data.logical_field_name === "other_bank_account_bt") {
-      fieldName = "reenter_other_bank_account_bt";   
-    } else if (props.data.logical_field_name === "reenter_other_bank_account_bt") {
-      fieldName = "other_bank_account_bt";
-    } else if (props.data.logical_field_name === "other_bank_credit_card_bt") {
-      fieldName = "reenter_other_bank_credit_card_bt";
-    } else if (props.data.logical_field_name === "reenter_other_bank_credit_card_bt") {
-      fieldName = "other_bank_credit_card_bt";      
-    }
-    fieldName = fieldName + "_a_1";
-    if (
-      stageSelector &&
-      stageSelector[0] &&
-      stageSelector[0].stageInfo &&
-      stageSelector[0].stageInfo.applicants
-    ) {
-      let userUpdateValue = null;
-      const userUpdateStageSelector = updatedStageInputsSelector.findIndex(
-        (ref: any) => ref && ref.stageId === stageSelector[0].stageId
-      );
-      if (userUpdateStageSelector > -1) {
-        userUpdateValue = updatedStageInputsSelector[userUpdateStageSelector].applicants[fieldName];
-      }
-      const userInputResponse = userInputSelector.applicants[fieldName];
-      storeValue =
-        userInputResponse ||
-        userUpdateValue ||
-        stageSelector[0].stageInfo.applicants[fieldName];
-    }    
-    return !(storeValue && (inputValue !== storeValue));
-  }; 
-  useEffect(() => {
-    if (
-      stageSelector &&
-      stageSelector[0] &&
-      stageSelector[0].stageInfo &&
-      stageSelector[0].stageInfo.applicants
-    ) {
-      const userInputResponse =
-        userInputSelector.applicants[props.data.logical_field_name + "_a_1"];
-
-      const stageIndex = getUrl
-        .getUpdatedStage()
-        .updatedStageInputs.findIndex(
-          (ref: any) => ref && ref.stageId === stageSelector[0].stageId
-        );
-      let updatedVal = null;
-      if (stageIndex > -1) {
-        updatedVal =
-          getUrl.getUpdatedStage().updatedStageInputs[stageIndex].applicants[
-            props.data.logical_field_name + "_a_1"
-          ];
-      }
-      
-      let fieldValue = "";
-      if (updatedVal) {
-        fieldValue = updatedVal;
-      } else if (userInputResponse) {
-        fieldValue = userInputResponse;
-      } else if (
-        stageSelector[0].stageInfo.applicants[
-          props.data.logical_field_name + "_a_1"
-        ] &&
-        updatedVal !== ""
-      ) {
-        fieldValue =
-          stageSelector[0].stageInfo.applicants[
-            props.data.logical_field_name + "_a_1"
-          ];
-      }
-
-      setDefaultValue(fieldValue);   
-      setValueUpdate(fieldValue)   
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);    
-useEffect(() => {  
-  if (
-    isValidInput(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props) &&
-    accountNumValidation(
-      userInputSelector.applicants[props.data.logical_field_name + "_a_1"],
-      props
-    )
-  ) {    
-    setError("");
-    props.handleCallback(
-      props.data,
-      userInputSelector.applicants[props.data.logical_field_name + "_a_1"]
-    );
-  }
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [userInputSelector.applicants]);
-  useEffect(() => {
-      dispatch(isFieldUpdate(props, defaultValue, props.data.logical_field_name));
-      if (stageSelector[0].stageId !== "ad-2") {
-        props.handleCallback(props.data, defaultValue);
-      }
-      props.handleFieldDispatch(props.data.logical_field_name, defaultValue);         
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [valueUpdate]);
-
-  const bindHandler = (
-    fieldName: string,
-    event: React.FocusEvent<HTMLInputElement>
-  ) => {    
-    const fieldValue = event.target.value;    
-    if (
-      fieldValue &&
-      fieldName !== "postal_code" &&
-      event.target.validity.valid
-    ) {
-      if (stageSelector[0].stageId !== "ad-2") {
-        props.handleCallback(props.data, event.target.value);
-      }   
-      setValueUpdate(fieldValue)
-    }    
-
-  };
-
-  useEffect(() => {
-    if (fieldError(fieldErrorSelector, props)) {
-      if (!error) { 
-        if (stageSelector[0].stageId !== "ad-2") {           
-          setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);        
-        } else if (isValidInput(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props) && !accountNumValidation(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props)){
-          showAccountNumError();
-        } else {
-          setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+        prevValue.productCategory =
+          stageSelector[0].stageInfo.products.map((product:any)=> product.product_category);
+        prevValue.productName = stageSelector[0].stageInfo.products.map((product:any)=> product.name);
+        prevValue.productSequenceNo =
+          stageSelector[0].stageInfo.products.map((product:any)=> product.product_sequence_number);
+        prevValue.productType =
+          stageSelector[0].stageInfo.products.map((product:any)=> product.product_type);
+        if (
+          stageSelector[0].stageInfo.products[0].acct_details &&
+          stageSelector[0].stageInfo.products[0].acct_details.length >= 1
+        ) {
+          prevValue.acct_details =
+            stageSelector[0].stageInfo.products[0].acct_details;
+          prevValue.account_number =
+            stageSelector[0].stageInfo.products[0].acct_details[0].account_number;
+          prevValue.card_no =
+            stageSelector[0].stageInfo.products[0].acct_details[0].card_no;
         }
       }
-    } else {
-      setError("");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldErrorSelector]);
-  useEffect(() => {
-    if (fieldError(fieldErrorSelector, props)) {
-      setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
-    } else {
-      setError("");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldErrorSelector]);
+      prevValue.thankyouProp = "NSTP";
+      if (
+        prevValue.acct_details &&
+        prevValue.acct_details[0] &&
+        prevValue.account_number
+      ) {
+        prevValue.thankyouProp = "STP";
+        prevValue.accountNum = prevValue.account_number;
+      }
+      if (
+        prevValue.acct_details &&
+        prevValue.acct_details[0] &&
+        prevValue.card_no
+      ) {
+        prevValue.thankyouProp = "STP";
+        prevValue.cardNumber = prevValue.card_no;
+      }
+      prevValue.isStp = prevValue.thankyouProp === "STP" ? true : false;
+      prevValue.feedbackUrl =
+        thankyou[prevValue.thankyouFeedback]["url_prefix"] +
+        thankyou[prevValue.thankyouFeedback]["casa"] +
+        thankyou[prevValue.thankyouFeedback]["url_suffix"] +
+        applicationReferenceNo!;
 
-  const placeHolderText = () => {
-    return props.data.rwb_label_name;
+      prevValue = setSTPData(prevValue);
+      if (prevValue.isStp) {
+        if (prevValue.productCategory[0] === "CC"
+        && (prevValue.productCategory[1] === "CA"
+        || prevValue.productCategory[1] === "SA"
+        ||prevValue.productCategory[0] ==="SA"
+        || prevValue.productCategory[0] === "CC")) {
+          prevValue.thankyouText="CCSTP"
+          
+          if (stageSelector[0].stageInfo.applicants) {
+            if (stageSelector[0].stageInfo.applicants.embossed_name_a_1) {
+              prevValue.cardName =
+                stageSelector[0].stageInfo.applicants.embossed_name_a_1.toUpperCase();
+            }
+            if (prevValue.card_no) {
+              prevValue.cardNumber = prevValue.card_no;
+            }
+          }
+        } 
+      }
+      return { ...prevValue };
+    });
+    /*istanbul ignore next */
+    if (stageSelector[0] && stageSelector[0].stageId && getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload) {
+      gaTrackEvents.pageView(stageSelector[0].stageId);
+    }
+    /* istanbul ignore else */
+    if(getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload){
+    trackEvents.triggerAdobeEvent("formSubmit");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (otpSuccessSelector) {
+      activateCard();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpSuccessSelector]);
+  const setSTPData = (prevValue: any) => {
+    if (prevValue.isStp && prevValue.productCategory) {
+      if (prevValue.productCategory[0] === "CC"
+        && (prevValue.productCategory[1] === "CA"
+        || prevValue.productCategory[1] === "SA"
+        ||prevValue.productCategory[0] ==="SA"
+        || prevValue.productCategory[0] === "CC")) {
+        prevValue.feedbackUrl =
+          thankyou[prevValue.thankyouFeedback]["url_prefix"] +
+          thankyou[prevValue.thankyouFeedback]["cc"] +
+          thankyou[prevValue.thankyouFeedback]["url_suffix"] +
+          applicationReferenceNo!;
+      } 
+      else if (prevValue.productCategory[1] === "PL") {
+        prevValue.feedbackUrl =
+          thankyou[prevValue.thankyouFeedback]["url_prefix"] +
+          thankyou[prevValue.thankyouFeedback]["pl"] +
+          thankyou[prevValue.thankyouFeedback]["url_suffix"] +
+          applicationReferenceNo!;
+      }
+    }
+    return prevValue;
   };
 
-  const onPasteHandler = (event:any) => {
+  const submitForm = (event:React.FormEvent<EventTarget>) => {
+    if (
+      stageSelector &&
+      (stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IX" || stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IM")
+    ) {
+      goToIBanking(event);
+    } else {
+      window.location.href = `${process.env.REACT_APP_HOME_PAGE_URL}`;
+    }
     event.preventDefault();
   };
 
-  const focusHandler = (
-    fieldName: string,
-    event: React.FocusEvent<HTMLInputElement>
-  ) => {
-    dispatch(lastAction.getField(fieldName));
+  const continueWithoutActivation = () => {
+    setShowContinueWithoutActivationMsg(false);
+    setContinueWithoutActivationUI(true);
   };
-  console.log(userInputSelector, userInputSelector.applicants.reenter_other_bank_account_bt_a_1, "userInputSelector.applicantsreenter_other_bank_account_bt",)
-  // if(userInputSelector.applicants["reenter_other_bank_account_bt_a_1"] !== ""){
-
-  // }else{
-
-  // }
+  const handlePopupBackButton = () => {
+    setShowContinueWithoutActivationMsg(false);
+    setContinueWithoutActivationUI(false);
+  };
+  const showOTPPopup = () => {
+    navigate("/otp");
+  };
+  const goToIBanking = (event: React.FormEvent<EventTarget>) => {
+    if (getUrl.getParameterByName("source") === "scm") {
+      //Ibanking redirection for app
+      window.location.href = `${process.env.REACT_APP_IBANKING_SC_MOBILE}`;
+    }  else if(getUrl.getUpdatedStage().ccplChannel=== "MBNK" || getUrl.getParameterByName("channel") === "MBNK") {
+      const redirectUrl =  `${process.env.REACT_APP_IBANKING_SC_MOBILE_TRANSFER}`;
+      window.location.href = redirectUrl;
+    }else {
+      redirectingToIbanking();
+    }
+    event.preventDefault();
+  };
+  const activateCard = () => {
+    setShowContinueWithoutActivationMsg(false);
+    setContinueWithoutActivationUI(false);
+    setShowerrorUI(false);
+    dispatch(activateDigitalCard(applicationDetails)).then((result: any) => {
+      if (result.status && result.status.toUpperCase() === "SUCCESS") {
+        setCardActivationSuccessUI(true);
+      } else {
+        setShowerrorUI(true);
+      }
+    });
+  };
   return (
     <>
-      <div className="number text">
-        <label htmlFor={props.data.logical_field_name}>
-          {props.data.rwb_label_name}
-        </label>
-        <input
-          type={props.data.type}
-          name={props.data.logical_field_name}
-          aria-label={props.data.logical_field_name}
-          id={props.data.logical_field_name + "_a_1"}
-          placeholder={placeHolderText()}
-          value={defaultValue}
-          minLength={props.data.min_length}
-          maxLength={props.data.length}
-          
-          pattern={userInputSelector.applicants["reenter_other_bank_account_bt_a_1"] !== "" ? `^${userInputSelector.applicants["other_bank_account_bt_a_1"]}$`  : props.data.regex}
-          onPaste={onPasteHandler}
-          onChange={changeHandler.bind(this, props.data.logical_field_name)}
-          onBlur={bindHandler.bind(this, props.data.logical_field_name)}
-          disabled={props.data.editable || stageSelector[0].stageId === "bd-1"}
-          onFocus={focusHandler.bind(this, props.data.logical_field_name)}
-          className={`${
-            isPostalCodeFetch ? "disabled" : ""
-          }`}
-        />
-        {isPostalCodeFetch && <span className={`${props.data.logical_field_name} circle-spinner`}></span>}
-        {error && <span className="error-msg">{error}</span>}
-      </div>
+      {applicationDetails && (
+        <form data-testid="form" className="form">
+          <div data-testid="app thankyou" className="app thankyou">
+            <div  data-testid="app__body" className="app__body">
+              <div className="app__right">
+                <div className="thankyou__container">
+                  {!showErrorUI &&
+                    !continueWithoutActivationUI &&
+                    !cardActivationSuccessUI && (
+                      <>
+                      {(getUrl.getParameterByName("auth") === "upload" || store.getState().stages.isDocumentUpload) &&(
+                          <ThankYouUpload
+                          applicationDetails={applicationDetails}
+                          thankyou={thankyou}
+                          applicationReferenceNo={applicationReferenceNo}
+                          submitForm={submitForm}
+                        />
+                        )}
+                        {(caProducts.length ||
+                          saProducts.length) && (
+                          <ThankYouCASA
+                            applicationDetails={applicationDetails}
+                            thankyou={thankyou}
+                            applicationReferenceNo={applicationReferenceNo}
+                            submitForm={submitForm}
+                          />
+                        )}
+                        {/* {applicationDetails.productCategory[1] === "CC" && (
+                          <ThankYouCC
+                            applicationDetails={applicationDetails}
+                            thankyou={thankyou}
+                            applicationReferenceNo={applicationReferenceNo}
+                            submitForm={submitForm}
+                            activateCard={activateCard}
+                            showContinuePopup={showContinuePopup}
+                            showOTPPopup={showOTPPopup}
+                          />
+                        )} */}
+                        {/* {applicationDetails.productCategory[1] === "PL" && (
+                          <ThankYouPL
+                            applicationDetails={applicationDetails}
+                            thankyou={thankyou}
+                            applicationReferenceNo={applicationReferenceNo}
+                            submitForm={submitForm}
+                            enableActivation={enableActivation}
+                            showPlatinum={showPlatinum}
+                            isCampaignBenefits={isCampaignBenefits}
+                          />
+                        )} */}
+                        {showContinueWithoutActivationMsg && (
+                          <PopupModel displayPopup={true}>
+                            <Model
+                              name="CCThankYou"
+                              handlebuttonClick={handlePopupBackButton}
+                              handleContinueWithoutActivation={
+                                continueWithoutActivation
+                              }
+                            />
+                          </PopupModel>
+                        )}
+                      </>
+                    )}
+                  {applicationDetails.productCategory[0] === "CC" && (
+                    <>
+                      {continueWithoutActivationUI && (
+                        <CCWithoutActivation
+                          applicationDetails={applicationDetails}
+                          thankyou={thankyou}
+                          applicationReferenceNo={applicationReferenceNo}
+                          goToIBanking={goToIBanking}
+                        />
+                      )}
+                      {cardActivationSuccessUI && (
+                        <CCActivationSucess
+                          applicationDetails={applicationDetails}
+                          thankyou={thankyou}
+                          applicationReferenceNo={applicationReferenceNo}
+                          goToIBanking={goToIBanking}
+                        />
+                      )}
+                    </>
+                  )}
+                  {showErrorUI && (
+                    <ThankyouError
+                      applicationDetails={applicationDetails}
+                      thankyou={thankyou}
+                      applicationReferenceNo={applicationReferenceNo}
+                      goToIBanking={goToIBanking}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      )}
     </>
   );
 };
 
-export default Number;
+export default ThankYou;
