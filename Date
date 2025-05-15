@@ -1,326 +1,10 @@
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  KeyWithAnyModel,
-  LovInputValModel,
-  StoreModel,
-} from "../../../utils/model/common-model";
-import "./type-ahead.scss";
-import {
-  fieldError,
-  isFieldUpdate,
-  fieldIdAppend,
-} from "../../../utils/common/change.utils";
-
-import { ValueUpdateAction } from "../../../utils/store/value-update-slice";
-import { defaultError, getLovData } from "../../../services/common-service";
-import { AxiosError } from "axios";
-import { getFields } from "../radio-with-label/radio-with-label.utils";
-import renderComponent from "../../../modules/dashboard/fields/renderer";
-
-const TypeAhead = (props: KeyWithAnyModel) => {
-  const [errors, setErrors] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<Array<LovInputValModel>>(
-    []
-  );
-  const lovSelector = useSelector((state: StoreModel) => state.lov);
-  const userInputSelector = useSelector(
-    (state: StoreModel) => state.stages.userInput
-  );
-  const fieldErrorSelector = useSelector(
-    (state: StoreModel) => state.fielderror.error
-  );
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const [show, hide] = useState(false);
-  const [showOption, setShowOption] = useState(true);
-  const [selectedValue, setSelectedValue] = useState<
-    Array<LovInputValModel> | any
-  >([]);
-  const [field, setField] = useState([]);
-  const [search, setSearch] = useState("");
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    let searchValue: any = null;
-    /*istanbul ignore else */
-    if (lovSelector) {
-      lovSelector.lov.forEach((item: any) => {
-        if (item.label === props.data.logical_field_name) {
-          item.value.forEach((lovItem: any) => {
-            if (
-              lovItem.CODE_DESC ===
-                stageSelector[0].stageInfo.applicants[
-                  props.data.logical_field_name + "_a_1"
-                ] ||
-              lovItem.CODE_VALUE ===
-                stageSelector[0].stageInfo.applicants[
-                  props.data.logical_field_name + "_a_1"
-                ]
-            ) {
-              searchValue = lovItem;
-            }
-          });
-          if(props.data.logical_field_name === "name_of_employer" && stageSelector[0].stageInfo.applicants[props.data.logical_field_name + "_a_1"] === "9999"){
-            searchValue ={CODE_DESC: "Others",
-            CODE_VALUE: "9999",}
-            const stageComponents = dispatch(
-              getFields(stageSelector, null, "name_of_employer_other")
-            );
-            setField(stageComponents);
-          }
-        }
-      });
-    }
-    if (searchValue) {
-      setSelectedValue([searchValue]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lovSelector]);
-
-  useEffect(() => {
-    if (search.length > 2) {
-      const getData = setTimeout(() => {
-        dispatch(getLovData("name_of_employer", search))
-          .then((res: any) => {
-            let options = res.data;
-            options = options.filter(
-              (option: LovInputValModel) => option.CODE_VALUE !== "9999"
-            );
-            if (search.toLowerCase() === "others") {
-              const otherOption = {
-                CODE_DESC: "Others",
-                CODE_VALUE: "9999",
-                checked: false,
-              };
-              options = [...options, otherOption];
-            }
-
-            if (!(options.length > 0)) {
-              setShowOption(false);
-            } else {
-              setShowOption(true);
-              setSelectedOption(options);
-            }
-          })
-          .catch((error: AxiosError) => {
-            defaultError();
-            return Promise.reject(error);
-          });
-      }, 500);
-      return () => clearTimeout(getData);
-    }
-  }, [search, dispatch]);
-
-  useEffect(() => {
-    setErrors(fieldError(fieldErrorSelector, props));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldErrorSelector]);
-
-  const dropdownHandler = (event: React.MouseEvent<any>) => {
-    event.currentTarget.firstChild.focus();
-    hide(true);
-  };
-
-  const close = () => {
-    hide(false);
-    setShowOption(false);
-  };
-
-  const addUserInput = (data: any) => {
-    if (data.CODE_VALUE === "9999") {
-      const stageComponents = dispatch(
-        getFields(stageSelector, null, "name_of_employer_other")
-      );
-      setField(stageComponents);
-      const otherVal = {
-        CODE_DESC: "Others",
-        CODE_VALUE: "9999",
-      };
-      setSelectedValue([otherVal]); 
-      props.handleCallback(props.data, "9999");  
-      dispatch(
-        isFieldUpdate(props, "9999", props.data.logical_field_name)
-      );
-    } else {
-      setField([]);
-      setSelectedValue([data]);
-      props.handleCallback(props.data, data.CODE_VALUE); 
-      dispatch(
-        isFieldUpdate(props, data.CODE_VALUE, props.data.logical_field_name)
-      );
-    }
-    hide(false);
-    setShowOption(false);
-    dispatch(
-      ValueUpdateAction.getChangeUpdate({
-        id: stageSelector[0].stageId,
-        changes: true,
-      })
-    );
-  };
-
-  useEffect(() => {
-    setErrors(false);
-    let val =
-      selectedValue.length > 0 &&
-      selectedValue.reduce((prev: Array<string>, acc: LovInputValModel) => {
-        prev.push(acc.CODE_VALUE);
-        return prev;
-      }, []);
-    if (props.data.logical_field_name === "name_of_employer") {
-      if (val) {
-        props.handleCallback(props.data, val.toString());
-        dispatch(
-          isFieldUpdate(props, val.toString(), props.data.logical_field_name)
-        );
-      }
-    } else {
-      props.handleCallback(props.data, val.toString());
-      dispatch(
-        isFieldUpdate(props, val.toString(), props.data.logical_field_name)
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedValue]);
-  return (
-    <>
-      <div className="typeahead">
-        <label htmlFor={props.data.logical_field_name}>
-          {props.data.rwb_label_name}
-        </label>
-        <div
-          className={`typeahead__field`}
-          onClick={(event) => dropdownHandler(event)}
-        >
-          {selectedValue &&
-            selectedValue.length > 0 &&
-            selectedValue.map((item: LovInputValModel) => {
-              return (
-                <div className="typeahead__fieldlabel" key={item.CODE_VALUE}>
-                  <span>{item.CODE_DESC}</span>
-                </div>
-              );
-            })}
-          {!(selectedValue && selectedValue.length > 0) && (
-            <input
-              type="text"
-              className="typeahead__input"
-              id={fieldIdAppend(props)}
-              placeholder={props.data.rwb_label_name}
-            />
-          )}
-        </div>
-        {show && selectedOption && (
-          <div className="typeahead__background">
-            <div className="typeahead__popup">
-              <div className="typeahead__header">
-                <div>{props.data.rwb_label_name}</div>
-                <div className="close" onClick={close}></div>
-              </div>
-
-              <div className="typeahead__search">
-                <input
-                  autoFocus
-                  name="search"
-                  className="typeahead__search"
-                  type="search"
-                  placeholder="Type here to search"
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-              <div className="typeahead__expand">
-                {!showOption && (
-                  <div
-                    className="typeahead__item"
-                    data-testid="others-option"
-                    onClick={() => {
-                      const otherOption = {
-                        CODE_DESC: "Others",
-                        CODE_VALUE: "9999",
-                        checked: false,
-                      };
-                      addUserInput(otherOption);
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      checked={selectedValue[0]?.CODE_VALUE === "9999"}
-                      onChange={() => {
-                        // do nothing
-                      }}
-                      value="9999"
-                      id="others"
-                    />
-                    <label htmlFor="others">Others</label>
-                  </div>
-                )}
-                {showOption &&
-                  selectedOption.map(
-                    (item: LovInputValModel, index: number) => (
-                      <div key={index} className="typeahead__item">
-                        <input
-                          type="radio"
-                          checked={
-                            item.CODE_VALUE === selectedValue[0]?.CODE_VALUE
-                          }
-                          onClick={() => addUserInput(item)}
-                          onChange={() => { 
-                          //do nothing 
-                        }}
-                          value={item.CODE_VALUE}
-                          id={item.CODE_VALUE}
-                        />
-                        <label htmlFor={item.CODE_VALUE}>
-                          {item.CODE_DESC}
-                        </label>
-                      </div>
-                    )
-                  )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      {errors && (
-        <span
-          className="error-msg"
-          data-testid="error-message"
-          role="error-msg"
-        >
-          Please enter {props.data.rwb_label_name}
-        </span>
-      )}
-      <div>
-        {field &&
-          field.map((currentSection: KeyWithAnyModel, index: number) => {
-            return renderComponent(
-              currentSection,
-              index,
-              props.handleCallback,
-              props.handleFieldDispatch,
-              props.value
-            );
-          })}
-      </div>
-    </>
-  );
-};
-
-export default TypeAhead;
-
-
-
-
-below are the test cases. Please correct them and help me get maximum coverage
-
-
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { useDispatch, useSelector } from 'react-redux';
 import TypeAhead from './type-ahead';
 import { ValueUpdateAction } from '../../../utils/store/value-update-slice';
 import { defaultError, getLovData } from '../../../services/common-service';
-import { isFieldUpdate } from '../../../utils/common/change.utils';
+import { isFieldUpdate, fieldError } from '../../../utils/common/change.utils';
 import renderComponent from '../../../modules/dashboard/fields/renderer';
 
 jest.mock('react-redux', () => ({
@@ -329,7 +13,7 @@ jest.mock('react-redux', () => ({
 }));
 
 const mockedUseSelector = useSelector as jest.Mock;
-const mockedUseDispatch= useDispatch as jest.Mock;
+const mockedUseDispatch = useDispatch as jest.Mock;
 
 jest.mock('../../../services/common-service', () => ({
   defaultError: jest.fn(),
@@ -337,7 +21,7 @@ jest.mock('../../../services/common-service', () => ({
 }));
 
 jest.mock('../../../utils/common/change.utils', () => ({
-  fieldError: jest.fn(),
+  fieldError: jest.fn(() => false),
   isFieldUpdate: jest.fn(),
   fieldIdAppend: jest.fn(() => 'field-id'),
 }));
@@ -348,7 +32,7 @@ jest.mock('../../../utils/store/value-update-slice', () => ({
   },
 }));
 
-jest.mock('../../../modules/dashboard/fields/renderer', () => jest.fn());
+jest.mock('../../../modules/dashboard/fields/renderer', () => jest.fn(() => null));
 
 describe('TypeAhead Component', () => {
   const props = {
@@ -361,75 +45,139 @@ describe('TypeAhead Component', () => {
     value: 'Test Value',
   };
 
-  let dispatch:any;
+  const mockStoreState = {
+    lov: { lov: [] },
+    fielderror: { error: {} },
+    stages: {
+      stages: [{
+        stageId: 'ssf-1',
+        stageInfo: {
+          applicants: { 'name_of_employer_a_1': 'Test Employer' },
+        },
+      }],
+    },
+  };
+
+  let dispatch: jest.Mock;
 
   beforeEach(() => {
     dispatch = jest.fn();
     mockedUseDispatch.mockReturnValue(dispatch);
-    mockedUseSelector.mockImplementation((selector) =>
-      selector({
-        lov: {
-          lov: [],
-        },
-        fielderror: {
-          error: false,
-        },
-        stages: {
-          stages: [
-            {
-              stageInfo: {
-                applicants: {
-                  name_of_employer_a_1: 'Test Employer',
-                },
-              },
-              stageId: 'ssf-1',
-            },
-          ],
-        },
-      })
-    );
+    mockedUseSelector.mockImplementation((selector) => selector(mockStoreState));
+    (fieldError as jest.Mock).mockReturnValue(false);
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
   });
 
-  // Test 1: Render the component successfully
-  it('should render the component successfully', () => {
+  // 1. Renders correctly
+  it('renders the component with label and placeholder', () => {
     render(<TypeAhead {...props} />);
+    expect(screen.getByText('Employer Name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Employer Name')).toBeInTheDocument();
   });
 
-  // Test 2: Label should show correct data.rwb_label_name
-  it('should show correct label text', () => {
+  // 2. Opens dropdown on click
+  it('opens dropdown when clicked', () => {
     render(<TypeAhead {...props} />);
-    expect(screen.getByText('Employer Name')).toBeInTheDocument();
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    expect(screen.getByText('Employer Name')).toBeInTheDocument(); // Popup header
   });
 
-  // Test 3: On click of drop-down should call dropdownHandler() successfully
-  it('should call dropdownHandler() on click of dropdown', () => {
+  // 3. Searches after debounce
+  it('triggers search after 500ms debounce', async () => {
     render(<TypeAhead {...props} />);
-    const dropdown = screen.getByPlaceholderText('Employer Name');
-    fireEvent.click(dropdown);
-    expect(dispatch).toHaveBeenCalledTimes(0);
-  });
-
-  // Test 4: If user-typed data is not found, show "No Data Found, Please try again"
-  it('should show "No Data Found, Please try again" if user-typed data is not found', async () => {
-    render(<TypeAhead {...props} />);
-    const dropdown = screen.getByPlaceholderText('Employer Name');
-    fireEvent.click(dropdown);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
     const input = screen.getByPlaceholderText('Type here to search');
-    fireEvent.change(input, { target: { value: 'nonexistent' } });
-    expect(input).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: 'abc' } });
+    act(() => jest.advanceTimersByTime(500));
+    await waitFor(() => expect(getLovData).toHaveBeenCalledWith('name_of_employer', 'abc'));
   });
 
-  // Test 5: If no data found, on click call addUserInput() method
-  it('should call addUserInput() method on clicking "Others" when no data is found', async () => {
+  // 4. Shows "Others" option when no data
+  it('displays "Others" option when no data found', async () => {
+    (getLovData as jest.Mock).mockResolvedValueOnce({ data: [] });
     render(<TypeAhead {...props} />);
-    const dropdown = screen.getByPlaceholderText('Employer Name');
-    fireEvent.click(dropdown);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
     const input = screen.getByPlaceholderText('Type here to search');
-    fireEvent.change(input, { target: { value: 'nonexistent' } });
+    fireEvent.change(input, { target: { value: 'xyz' } });
+    act(() => jest.advanceTimersByTime(500));
+    await waitFor(() => expect(screen.getByLabelText('Others')).toBeInTheDocument());
+  });
+
+  // 5. Selects "Others" option
+  it('handles selecting "Others" option', async () => {
+    (getLovData as jest.Mock).mockResolvedValueOnce({ data: [] });
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'others' } });
+    act(() => jest.advanceTimersByTime(500));
+    const othersOption = await screen.findByLabelText('Others');
+    fireEvent.click(othersOption);
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '9999');
+    expect(dispatch).toHaveBeenCalledWith(isFieldUpdate(props, '9999', 'name_of_employer'));
+    expect(renderComponent).toHaveBeenCalled(); // Checks additional fields
+  });
+
+  // 6. Selects a valid option
+  it('selects an option from the list', async () => {
+    const mockData = [{ CODE_DESC: 'Mock Employer', CODE_VALUE: '123' }];
+    (getLovData as jest.Mock).mockResolvedValueOnce({ data: mockData });
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'mock' } });
+    act(() => jest.advanceTimersByTime(500));
+    const option = await screen.findByLabelText('Mock Employer');
+    fireEvent.click(option);
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '123');
+  });
+
+  // 7. Closes dropdown
+  it('closes dropdown when close button clicked', async () => {
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeButton);
+    expect(screen.queryByText('Employer Name')).not.toBeInTheDocument(); // Popup header
+  });
+
+  // 8. Displays error message
+  it('shows error message when field has error', () => {
+    (fieldError as jest.Mock).mockReturnValueOnce(true);
+    render(<TypeAhead {...props} />);
+    expect(screen.getByRole('error-msg')).toHaveTextContent('Please enter Employer Name');
+  });
+
+  // 9. Initializes with existing value
+  it('initializes with value from the store', () => {
+    const customState = {
+      ...mockStoreState,
+      stages: {
+        stages: [{
+          stageId: 'ssf-1',
+          stageInfo: { applicants: { 'name_of_employer_a_1': '9999' } },
+        }],
+      },
+    };
+    mockedUseSelector.mockImplementationOnce((selector) => selector(customState));
+    render(<TypeAhead {...props} />);
+    expect(screen.getByText('Others')).toBeInTheDocument();
+  });
+
+  // 10. Handles API error
+  it('handles API errors gracefully', async () => {
+    const error = new Error('API Error');
+    (getLovData as jest.Mock).mockRejectedValueOnce(error);
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'error' } });
+    act(() => jest.advanceTimersByTime(500));
+    await waitFor(() => expect(defaultError).toHaveBeenCalled());
   });
 });
