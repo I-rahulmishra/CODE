@@ -124,3 +124,170 @@ describe('TypeAhead Component', () => {
     expect(screen.getByPlaceholderText('Employer Name')).toBeInTheDocument();
   });
 });
+
+
+
+
+
+
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act } from '@testing-library/react';
+import { useDispatch, useSelector } from 'react-redux';
+import TypeAhead from './type-ahead';
+import { getLovData } from '../../../services/common-service';
+
+jest.mock('react-redux', () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+const mockedUseSelector = useSelector as jest.Mock;
+const mockedUseDispatch = useDispatch as jest.Mock;
+
+describe('TypeAhead Component', () => {
+  const props = {
+    data: {
+      logical_field_name: 'name_of_employer',
+      rwb_label_name: 'Employer Name',
+    },
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+    value: 'Test Value',
+  };
+
+  let dispatch: jest.Mock;
+
+  beforeEach(() => {
+    dispatch = jest.fn();
+    mockedUseDispatch.mockReturnValue(dispatch);
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        lov: {
+          lov: [{
+            label: 'name_of_employer',
+            value: [{ CODE_DESC: 'Test Employer', CODE_VALUE: '123' }]
+          }]
+        },
+        fielderror: { error: {} },
+        stages: {
+          stages: [{
+            stageId: 'ssf-1',
+            stageInfo: {
+              applicants: {
+                'name_of_employer_a_1': '123',
+                'name_of_employer_other': 'Other Employer'
+              }
+            }
+          }]
+        }
+      })
+    );
+    (getLovData as jest.Mock).mockImplementation(() => 
+      Promise.resolve({
+        data: [{ CODE_DESC: 'Mock Employer', CODE_VALUE: '456' }]
+      })
+    );
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
+  });
+
+  it('renders initial value from store', () => {
+    render(<TypeAhead {...props} />);
+    expect(screen.getByText('Test Employer')).toBeInTheDocument();
+  });
+
+  it('opens dropdown and shows search input', async () => {
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    expect(screen.getByPlaceholderText('Type here to search')).toBeInTheDocument();
+  });
+
+  it('searches after debounce', async () => {
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'test' } });
+    
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+    
+    await waitFor(() => {
+      expect(getLovData).toHaveBeenCalledWith('name_of_employer', 'test');
+    });
+  });
+
+  it('selects an option from dropdown', async () => {
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'mock' } });
+    
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+    
+    await waitFor(() => {
+      const option = screen.getByText('Mock Employer');
+      fireEvent.click(option);
+      expect(props.handleCallback).toHaveBeenCalledWith(props.data, '456');
+    });
+  });
+
+  it('handles "Others" selection', async () => {
+    (getLovData as jest.Mock).mockResolvedValueOnce({ data: [] });
+    
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'other' } });
+    
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+    
+    await waitFor(() => {
+      const othersOption = screen.getByLabelText('Others');
+      fireEvent.click(othersOption);
+      expect(props.handleCallback).toHaveBeenCalledWith(props.data, '9999');
+    });
+  });
+
+  it('shows error message', () => {
+    mockedUseSelector.mockImplementationOnce((selector) =>
+      selector({
+        ...jest.requireActual('react-redux').useSelector,
+        fielderror: { error: { 'field-id': true } }
+      })
+    );
+    
+    render(<TypeAhead {...props} />);
+    expect(screen.getByText('Please enter Employer Name')).toBeInTheDocument();
+  });
+
+  it('handles API errors', async () => {
+    (getLovData as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
+    
+    render(<TypeAhead {...props} />);
+    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
+    
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'error' } });
+    
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+    
+    await waitFor(() => {
+      expect(require('../../../services/common-service').defaultError).toHaveBeenCalled();
+    });
+  });
+});
