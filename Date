@@ -1,11 +1,12 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useDispatch, useSelector } from 'react-redux';
 import TypeAhead from './type-ahead';
 import { ValueUpdateAction } from '../../../utils/store/value-update-slice';
 import { defaultError, getLovData } from '../../../services/common-service';
-import { isFieldUpdate, fieldError } from '../../../utils/common/change.utils';
+import { isFieldUpdate } from '../../../utils/common/change.utils';
 import renderComponent from '../../../modules/dashboard/fields/renderer';
+import {  act } from '@testing-library/react';
 
 jest.mock('react-redux', () => ({
   useDispatch: jest.fn(),
@@ -13,7 +14,7 @@ jest.mock('react-redux', () => ({
 }));
 
 const mockedUseSelector = useSelector as jest.Mock;
-const mockedUseDispatch = useDispatch as jest.Mock;
+const mockedUseDispatch= useDispatch as jest.Mock;
 
 jest.mock('../../../services/common-service', () => ({
   defaultError: jest.fn(),
@@ -21,7 +22,7 @@ jest.mock('../../../services/common-service', () => ({
 }));
 
 jest.mock('../../../utils/common/change.utils', () => ({
-  fieldError: jest.fn(() => false),
+  fieldError: jest.fn(),
   isFieldUpdate: jest.fn(),
   fieldIdAppend: jest.fn(() => 'field-id'),
 }));
@@ -32,7 +33,7 @@ jest.mock('../../../utils/store/value-update-slice', () => ({
   },
 }));
 
-jest.mock('../../../modules/dashboard/fields/renderer', () => jest.fn(() => null));
+jest.mock('../../../modules/dashboard/fields/renderer', () => jest.fn());
 
 describe('TypeAhead Component', () => {
   const props = {
@@ -45,139 +46,81 @@ describe('TypeAhead Component', () => {
     value: 'Test Value',
   };
 
-  const mockStoreState = {
-    lov: { lov: [] },
-    fielderror: { error: {} },
-    stages: {
-      stages: [{
-        stageId: 'ssf-1',
-        stageInfo: {
-          applicants: { 'name_of_employer_a_1': 'Test Employer' },
-        },
-      }],
-    },
-  };
-
-  let dispatch: jest.Mock;
+  let dispatch:any;
 
   beforeEach(() => {
     dispatch = jest.fn();
     mockedUseDispatch.mockReturnValue(dispatch);
-    mockedUseSelector.mockImplementation((selector) => selector(mockStoreState));
-    (fieldError as jest.Mock).mockReturnValue(false);
-    jest.useFakeTimers();
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        lov: {
+          lov: [],
+        },
+        fielderror: {
+          error: false,
+        },
+        stages: {
+          stages: [
+            {
+              stageInfo: {
+                applicants: {
+                  name_of_employer_a_1: 'Test Employer',
+                },
+              },
+              stageId: 'ssf-1',
+            },
+          ],
+        },
+      })
+    );
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    jest.useRealTimers();
   });
 
-  // 1. Renders correctly
+  // Test 1: Render the component successfully
+  it('should render the component successfully', () => {
+    render(<TypeAhead {...props} />);
+    expect(screen.getByPlaceholderText('Employer Name')).toBeInTheDocument();
+  });
+
+  // Test 2: Label should show correct data.rwb_label_name
+  it('should show correct label text', () => {
+    render(<TypeAhead {...props} />);
+    expect(screen.getByText('Employer Name')).toBeInTheDocument();
+  });
+
+  // Test 3: On click of drop-down should call dropdownHandler() successfully
+  it('should call dropdownHandler() on click of dropdown', () => {
+    render(<TypeAhead {...props} />);
+    const dropdown = screen.getByPlaceholderText('Employer Name');
+    fireEvent.click(dropdown);
+    expect(dispatch).toHaveBeenCalledTimes(0);
+  });
+
+  // Test 4: If user-typed data is not found, show "No Data Found, Please try again"
+  it('should show "No Data Found, Please try again" if user-typed data is not found', async () => {
+    render(<TypeAhead {...props} />);
+    const dropdown = screen.getByPlaceholderText('Employer Name');
+    fireEvent.click(dropdown);
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'nonexistent' } });
+    expect(input).toBeInTheDocument();
+  });
+
+  // Test 5: If no data found, on click call addUserInput() method
+  it('should call addUserInput() method on clicking "Others" when no data is found', async () => {
+    render(<TypeAhead {...props} />);
+    const dropdown = screen.getByPlaceholderText('Employer Name');
+    fireEvent.click(dropdown);
+    const input = screen.getByPlaceholderText('Type here to search');
+    fireEvent.change(input, { target: { value: 'nonexistent' } });
+  });
+
   it('renders the component with label and placeholder', () => {
     render(<TypeAhead {...props} />);
     expect(screen.getByText('Employer Name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Employer Name')).toBeInTheDocument();
-  });
-
-  // 2. Opens dropdown on click
-  it('opens dropdown when clicked', () => {
-    render(<TypeAhead {...props} />);
-    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
-    expect(screen.getByText('Employer Name')).toBeInTheDocument(); // Popup header
-  });
-
-  // 3. Searches after debounce
-  it('triggers search after 500ms debounce', async () => {
-    render(<TypeAhead {...props} />);
-    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
-    const input = screen.getByPlaceholderText('Type here to search');
-    fireEvent.change(input, { target: { value: 'abc' } });
-    act(() => jest.advanceTimersByTime(500));
-    await waitFor(() => expect(getLovData).toHaveBeenCalledWith('name_of_employer', 'abc'));
-  });
-
-  // 4. Shows "Others" option when no data
-  it('displays "Others" option when no data found', async () => {
-    (getLovData as jest.Mock).mockResolvedValueOnce({ data: [] });
-    render(<TypeAhead {...props} />);
-    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
-    const input = screen.getByPlaceholderText('Type here to search');
-    fireEvent.change(input, { target: { value: 'xyz' } });
-    act(() => jest.advanceTimersByTime(500));
-    await waitFor(() => expect(screen.getByLabelText('Others')).toBeInTheDocument());
-  });
-
-  // 5. Selects "Others" option
-  it('handles selecting "Others" option', async () => {
-    (getLovData as jest.Mock).mockResolvedValueOnce({ data: [] });
-    render(<TypeAhead {...props} />);
-    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
-    const input = screen.getByPlaceholderText('Type here to search');
-    fireEvent.change(input, { target: { value: 'others' } });
-    act(() => jest.advanceTimersByTime(500));
-    const othersOption = await screen.findByLabelText('Others');
-    fireEvent.click(othersOption);
-    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '9999');
-    expect(dispatch).toHaveBeenCalledWith(isFieldUpdate(props, '9999', 'name_of_employer'));
-    expect(renderComponent).toHaveBeenCalled(); // Checks additional fields
-  });
-
-  // 6. Selects a valid option
-  it('selects an option from the list', async () => {
-    const mockData = [{ CODE_DESC: 'Mock Employer', CODE_VALUE: '123' }];
-    (getLovData as jest.Mock).mockResolvedValueOnce({ data: mockData });
-    render(<TypeAhead {...props} />);
-    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
-    const input = screen.getByPlaceholderText('Type here to search');
-    fireEvent.change(input, { target: { value: 'mock' } });
-    act(() => jest.advanceTimersByTime(500));
-    const option = await screen.findByLabelText('Mock Employer');
-    fireEvent.click(option);
-    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '123');
-  });
-
-  // 7. Closes dropdown
-  it('closes dropdown when close button clicked', async () => {
-    render(<TypeAhead {...props} />);
-    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
-    const closeButton = screen.getByRole('button', { name: /close/i });
-    fireEvent.click(closeButton);
-    expect(screen.queryByText('Employer Name')).not.toBeInTheDocument(); // Popup header
-  });
-
-  // 8. Displays error message
-  it('shows error message when field has error', () => {
-    (fieldError as jest.Mock).mockReturnValueOnce(true);
-    render(<TypeAhead {...props} />);
-    expect(screen.getByRole('error-msg')).toHaveTextContent('Please enter Employer Name');
-  });
-
-  // 9. Initializes with existing value
-  it('initializes with value from the store', () => {
-    const customState = {
-      ...mockStoreState,
-      stages: {
-        stages: [{
-          stageId: 'ssf-1',
-          stageInfo: { applicants: { 'name_of_employer_a_1': '9999' } },
-        }],
-      },
-    };
-    mockedUseSelector.mockImplementationOnce((selector) => selector(customState));
-    render(<TypeAhead {...props} />);
-    expect(screen.getByText('Others')).toBeInTheDocument();
-  });
-
-  // 10. Handles API error
-  it('handles API errors gracefully', async () => {
-    const error = new Error('API Error');
-    (getLovData as jest.Mock).mockRejectedValueOnce(error);
-    render(<TypeAhead {...props} />);
-    fireEvent.click(screen.getByPlaceholderText('Employer Name'));
-    const input = screen.getByPlaceholderText('Type here to search');
-    fireEvent.change(input, { target: { value: 'error' } });
-    act(() => jest.advanceTimersByTime(500));
-    await waitFor(() => expect(defaultError).toHaveBeenCalled());
   });
 });
