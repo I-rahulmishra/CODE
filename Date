@@ -1,395 +1,297 @@
-import { useEffect, useState } from "react";
-import "./thank-you.scss";
+import './signature.scss';
+import { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { stagesAction } from "../../../utils/store/stages-slice";
 import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import thankyouData from "../../../assets/_json/thankyou.json";
-import { useSelector, useDispatch } from "react-redux";
-import { getUrl } from "../../../utils/common/change.utils";
-import trackEvents from "../../../services/track-events";
-import {
-  redirectingToIbanking,
-  activateDigitalCard,
-} from "../../../services/common-service";
-import Model from "../../../shared/components/model/model";
-import PopupModel from "../../../shared/components/popup-model/popup-model";
-import ThankYouCASA from "./thankyou-casa";
-import ThankYouCC from "./thankyou-cc";
-//import ThankYouPL from "./thankyou-pl";
-import CCWithoutActivation from "./cc-without-activation";
-import gaTrackEvents from "../../../services/ga-track-events";
-import CCActivationSucess from "./cc-activation-success";
-import ThankyouError from "./thankyou-error";
-import { useNavigate } from "react-router-dom";
-import ThankYouUpload from "./thankyou-upload";
-import { store } from "../../../utils/store/store";
+import ReactDOM from 'react-dom';
+import SignaturePreview from './signature-preview';
+import { getUrl } from "../../../utils/common/change.utils"
+import { postRequest, signatureSubmit } from '../../../services/common-service';
+import axios from 'axios';
+import { documentClientContext, getDocumentMetaData } from '../document-upload/document-upload.utils';
 
-const ThankYou = () => {
-  const navigate = useNavigate();
+const SignModel = (props: KeyWithAnyModel) => {
+  const { handlebuttonClick, show, viewSignature, fieldName, setValue, data, popupTitle } = props;
+  const [signature, setSignature] = useState<any>(null);
+  const [pngSignature, setPngSignature] = useState<any>(null);
   const dispatch = useDispatch();
-  /*istanbul ignore next */
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const applicationJourney = useSelector(
-    (state: StoreModel) => state.stages.journeyType
-  );
-  const otpSuccessSelector = useSelector(
-    (state: StoreModel) => state.stages.otpSuccess
-  );
-  const thankyou: KeyWithAnyModel = thankyouData;
-  const applicationReferenceNo = getUrl.getChannelRefNo().applicationRefNo || stageSelector[0].stageInfo.application.application_reference;
-  const [applicationDetails, setApplicationDetails] = useState({
-    productCategory: [],
-    productName: [],
-    acct_details: [],
-    account_number: "",
-    thankyouProp: "NSTP",
-    accountNum: "",
-    thankyouText: "Common",
-    thankyouFeedback: "Feedback",
-    feedbackUrl: "",
-    isStp: false,
-    loanTenureMonths: "",
-    approvedLoan: 0,
-    productType: [],
-    feeAmount: "",
-    card_no: "",
-    cardNumber: "",
-    cardName: "",
-    productSequenceNo: [],
-  });
-  const saProducts = applicationDetails?.productCategory?.filter((product:any)=> product === "SA");
-  const caProducts = applicationDetails?.productCategory?.filter((product:any)=> product === "CA");
-  const [showContinueWithoutActivationMsg, setShowContinueWithoutActivationMsg] = useState<boolean>(false);
-  const [continueWithoutActivationUI, setContinueWithoutActivationUI] = useState(false);
-  const [cardActivationSuccessUI, setCardActivationSuccessUI] = useState(false);
-  const [showErrorUI, setShowerrorUI] = useState(false);
-  useEffect(() => {
-    setApplicationDetails((prevValue) => {
-      if (
-        stageSelector &&
-        stageSelector[0].stageInfo && stageSelector[0].stageInfo.products &&
-        stageSelector[0].stageInfo.products.length >= 1
-      ) {
-        prevValue.productCategory =
-          stageSelector[0].stageInfo.products.map((product:any)=> product.product_category);
-        prevValue.productName = stageSelector[0].stageInfo.products.map((product:any)=> product.name);
-        prevValue.productSequenceNo =
-          stageSelector[0].stageInfo.products.map((product:any)=> product.product_sequence_number);
-        prevValue.productType =
-          stageSelector[0].stageInfo.products.map((product:any)=> product.product_type);
-        if (
-          stageSelector[0].stageInfo.products[0].acct_details &&
-          stageSelector[0].stageInfo.products[0].acct_details.length >= 1
-        ) {
-          prevValue.acct_details =
-            stageSelector[0].stageInfo.products[0].acct_details;
-          prevValue.account_number =
-            stageSelector[0].stageInfo.products[0].acct_details[0].account_number;
-          prevValue.card_no =
-            stageSelector[0].stageInfo.products[0].acct_details[0].card_no;
-        }
-      }
-      prevValue.thankyouProp = "NSTP";
-      if (
-        prevValue.acct_details &&
-        prevValue.acct_details[0] &&
-        prevValue.account_number
-      ) {
-        prevValue.thankyouProp = "STP";
-        prevValue.accountNum = prevValue.account_number;
-      }
-      if (
-        prevValue.acct_details &&
-        prevValue.acct_details[0] &&
-        prevValue.card_no
-      ) {
-        prevValue.thankyouProp = "STP";
-        prevValue.cardNumber = prevValue.card_no;
-      }
-      prevValue.isStp = prevValue.thankyouProp === "STP" ? true : false;
-      prevValue.feedbackUrl =
-        thankyou[prevValue.thankyouFeedback]["url_prefix"] +
-        thankyou[prevValue.thankyouFeedback]["casa"] +
-        thankyou[prevValue.thankyouFeedback]["url_suffix"] +
-        applicationReferenceNo!;
 
-      prevValue = setSTPData(prevValue);
-      if (prevValue.isStp) {
-        if (prevValue.productCategory[0] === "CC"
-        && (prevValue.productCategory[1] === "CA"
-        || prevValue.productCategory[1] === "SA"
-        ||prevValue.productCategory[0] ==="SA"
-        || prevValue.productCategory[0] === "CC")) {
-          prevValue.thankyouText="CCSTP"
-          
-          if (stageSelector[0].stageInfo.applicants) {
-            if (stageSelector[0].stageInfo.applicants.embossed_name_a_1) {
-              prevValue.cardName =
-                stageSelector[0].stageInfo.applicants.embossed_name_a_1.toUpperCase();
-            }
-            if (prevValue.card_no) {
-              prevValue.cardNumber = prevValue.card_no;
-            }
-          }
-        } 
-      }
-      return { ...prevValue };
-    });
-    /*istanbul ignore next */
-    if (stageSelector[0] && stageSelector[0].stageId && getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload) {
-      gaTrackEvents.pageView(stageSelector[0].stageId);
+  const [error, setError] = useState('');
+  const [charCount, setCharCount] = useState('');
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const userInputSelector = useSelector((state: StoreModel) => state.stages.userInput);
+  const channelReference = stageSelector[0].stageInfo.application.channel_reference;
+
+  const docRequest = {
+    origin: "front-line-supporting-document",
+    // getUrl.getFlow() === 'first-director-authorized' ||
+    // getUrl.getFlow() === 'single-director-authorized' ||
+    // getUrl.getFlow() === 'single-director-partnership-company-authorized'
+    //   ? '1'
+    //   : '2',
+    // docBytes: signature,
+    // docCategory: 'R0006',
+    // docType: 'T0308',
+    documentCategoryCode:"R0006",
+    documentTypeCode:"T0308",
+    // applicantNo: 1,
+    applicantId:1,
+    imageOrder: 1,
+    period: 0,
+    isWatermarkRequired: "N",
+    documentOptionSequence: 1
+  };
+
+  useEffect(() => {
+    if (viewSignature) {
+      setSignature(viewSignature);
     }
-    /* istanbul ignore else */
-    if(getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload){
-    trackEvents.triggerAdobeEvent("formSubmit");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (otpSuccessSelector) {
-      activateCard();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otpSuccessSelector]);
-  const setSTPData = (prevValue: any) => {
-    if (prevValue.isStp && prevValue.productCategory) {
-      if (prevValue.productCategory[0] === "CC"
-        && (prevValue.productCategory[1] === "CA"
-        || prevValue.productCategory[1] === "SA"
-        ||prevValue.productCategory[0] ==="SA"
-        || prevValue.productCategory[0] === "CC")) {
-        prevValue.feedbackUrl =
-          thankyou[prevValue.thankyouFeedback]["url_prefix"] +
-          thankyou[prevValue.thankyouFeedback]["cc"] +
-          thankyou[prevValue.thankyouFeedback]["url_suffix"] +
-          applicationReferenceNo!;
-      } 
-      else if (prevValue.productCategory[1] === "PL") {
-        prevValue.feedbackUrl =
-          thankyou[prevValue.thankyouFeedback]["url_prefix"] +
-          thankyou[prevValue.thankyouFeedback]["pl"] +
-          thankyou[prevValue.thankyouFeedback]["url_suffix"] +
-          applicationReferenceNo!;
-      }
-    }
-    return prevValue;
+  const clearSignature = () => {
+    setSignature(null);
+    setPngSignature(null);
   };
 
-  const submitForm = (event:React.FormEvent<EventTarget>) => {
-    if (
-      stageSelector &&
-      (stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IX" || stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IM")
-    ) {
-      goToIBanking(event);
+  const onclickEvent = () => {
+    if (fieldName === 'signUser') {
+      saveSignature();
     } else {
-      window.location.href = `${process.env.REACT_APP_HOME_PAGE_URL}`;
+      saveOthersTextarea(charCount);
     }
-    event.preventDefault();
   };
 
-  const continueWithoutActivation = () => {
-    setShowContinueWithoutActivationMsg(false);
-    setContinueWithoutActivationUI(true);
+  const saveSignature = () => {
+    signatureRequest();
   };
-  const handlePopupBackButton = () => {
-    setShowContinueWithoutActivationMsg(false);
-    setContinueWithoutActivationUI(false);
+
+  const handleSignatureEnd = (data: any) => {
+    setSignature(data.array);
+    setPngSignature(data.jpeg);
   };
-  const showOTPPopup = () => {
-    navigate("/otp");
-  };
-  const goToIBanking = (event: React.FormEvent<EventTarget>) => {
-    if (getUrl.getParameterByName("source") === "scm") {
-      //Ibanking redirection for app
-      window.location.href = `${process.env.REACT_APP_IBANKING_SC_MOBILE}`;
-    }  else if(getUrl.getUpdatedStage().ccplChannel=== "MBNK" || getUrl.getParameterByName("channel") === "MBNK") {
-      const redirectUrl =  `${process.env.REACT_APP_IBANKING_SC_MOBILE_TRANSFER}`;
-      window.location.href = redirectUrl;
-    }else {
-      redirectingToIbanking();
-    }
-    event.preventDefault();
-  };
-  const activateCard = () => {
-    setShowContinueWithoutActivationMsg(false);
-    setContinueWithoutActivationUI(false);
-    setShowerrorUI(false);
-    dispatch(activateDigitalCard(applicationDetails)).then((result: any) => {
-      if (result.status && result.status.toUpperCase() === "SUCCESS") {
-        setCardActivationSuccessUI(true);
+
+  /*textarea*/
+  const handleChange = (e: any) => {
+    if (e.target.value.length > 160) {
+      setError('Characters limit exceeded');
+    } else if (fieldName === 'purposeOther' || fieldName === 'fundReasonOther') {
+      const regex = /^[a-zA-Z0-9\s]*$/;
+      const isValid = regex.test(e.target.value);
+      if (!isValid) {
+        setError('Special Characters not allowed');
       } else {
-        setShowerrorUI(true);
+        setError('');
       }
-    });
+      setCharCount(e.target.value);
+    } else {
+      setError('');
+      setCharCount(e.target.value);
+    }
   };
-  return (
-    <>
-      {applicationDetails && (
-        <form data-testid="form" className="form">
-          <div data-testid="app thankyou" className="app thankyou">
-            <div  data-testid="app__body" className="app__body">
-              <div className="app__right">
-                <div className="thankyou__container">
-                  {!showErrorUI &&
-                    !continueWithoutActivationUI &&
-                    !cardActivationSuccessUI && (
-                      <>
-                      {(getUrl.getParameterByName("auth") === "upload" || store.getState().stages.isDocumentUpload) &&(
-                          <ThankYouUpload
-                          applicationDetails={applicationDetails}
-                          thankyou={thankyou}
-                          applicationReferenceNo={applicationReferenceNo}
-                          submitForm={submitForm}
-                        />
-                        )}
-                        {(caProducts.length ||
-                          saProducts.length) && (
-                          <ThankYouCASA
-                            applicationDetails={applicationDetails}
-                            thankyou={thankyou}
-                            applicationReferenceNo={applicationReferenceNo}
-                            submitForm={submitForm}
-                          />
-                        )}
-                        {/* {applicationDetails.productCategory[1] === "CC" && (
-                          <ThankYouCC
-                            applicationDetails={applicationDetails}
-                            thankyou={thankyou}
-                            applicationReferenceNo={applicationReferenceNo}
-                            submitForm={submitForm}
-                            activateCard={activateCard}
-                            showContinuePopup={showContinuePopup}
-                            showOTPPopup={showOTPPopup}
-                          />
-                        )} */}
-                        {/* {applicationDetails.productCategory[1] === "PL" && (
-                          <ThankYouPL
-                            applicationDetails={applicationDetails}
-                            thankyou={thankyou}
-                            applicationReferenceNo={applicationReferenceNo}
-                            submitForm={submitForm}
-                            enableActivation={enableActivation}
-                            showPlatinum={showPlatinum}
-                            isCampaignBenefits={isCampaignBenefits}
-                          />
-                        )} */}
-                        {showContinueWithoutActivationMsg && (
-                          <PopupModel displayPopup={true}>
-                            <Model
-                              name="CCThankYou"
-                              handlebuttonClick={handlePopupBackButton}
-                              handleContinueWithoutActivation={
-                                continueWithoutActivation
-                              }
-                            />
-                          </PopupModel>
-                        )}
-                      </>
-                    )}
-                  {applicationDetails.productCategory[0] === "CC" && (
-                    <>
-                      {continueWithoutActivationUI && (
-                        <CCWithoutActivation
-                          applicationDetails={applicationDetails}
-                          thankyou={thankyou}
-                          applicationReferenceNo={applicationReferenceNo}
-                          goToIBanking={goToIBanking}
-                        />
-                      )}
-                      {cardActivationSuccessUI && (
-                        <CCActivationSucess
-                          applicationDetails={applicationDetails}
-                          thankyou={thankyou}
-                          applicationReferenceNo={applicationReferenceNo}
-                          goToIBanking={goToIBanking}
-                        />
-                      )}
-                    </>
-                  )}
-                  {showErrorUI && (
-                    <ThankyouError
-                      applicationDetails={applicationDetails}
-                      thankyou={thankyou}
-                      applicationReferenceNo={applicationReferenceNo}
-                      goToIBanking={goToIBanking}
-                    />
-                  )}
-                </div>
+
+  const saveOthersTextarea = (char: any) => {
+    setValue(char);
+    handlebuttonClick(false);
+  };
+
+
+  const signatureRequest = () => {
+    dispatch(stagesAction.setSignatureDocument(signature));
+    dispatch(stagesAction.setActivateformData(true));
+    handlebuttonClick(false);
+    /** Single file upload -- child method */
+    let formData
+    const signatureUpload = async () => {
+      const dataURL = `data:image/jpeg;base64,${pngSignature}`;
+      const byteString = atob(dataURL.split(',')[1]);
+      const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const sendData: any = new Blob([ab], { type: mimeString });
+      formData = new FormData();
+      formData.append('file', sendData, "sign");
+      formData.append("documentJson", JSON.stringify(docRequest));
+      sendData&& formData && signatureSubmit(channelReference, formData, dispatch )
+    }
+    signatureUpload();
+  }
+
+  useEffect(() => {
+    if (
+      stageSelector[0].stageInfo.applicants[fieldName] ||
+      userInputSelector.applicants[fieldName]
+    ) {
+      const userData =
+        stageSelector[0].stageInfo.applicants[fieldName] || userInputSelector.applicants[fieldName];
+      setCharCount(userData);
+    }
+  }, []);
+  /*text area end*/
+
+  const portalElement: any = document.getElementById('model-root');
+  return ReactDOM.createPortal(
+    <div className="signModel">
+      <div className="sign__popup">
+        <div className="sign--header">
+          <div className="sign--header__left" onClick={() => handlebuttonClick()}></div>
+          <div className="sign--header__middle">
+            {' '}
+            {fieldName === 'countryTinOther' ||
+              fieldName === 'purposeOther' ||
+              fieldName === 'fundReasonOther'
+              ? popupTitle
+              : 'Signature'}
+          </div>
+          {fieldName === 'countryTinOther' ||
+            fieldName === 'purposeOther' ||
+            fieldName === 'fundReasonOther' ? (
+            ''
+          ) : (
+            <button
+              disabled={signature ? false : true}
+              className={signature ? 'sign--header__right--blue' : 'sign--header__right'}
+              onClick={() => clearSignature()}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        {fieldName === 'countryTinOther' ||
+          fieldName === 'purposeOther' ||
+          fieldName === 'fundReasonOther' ? (
+          <>
+            <div className="textarea__popup">
+              <div className="title__textarea">Please provide details</div>
+              <div className="char__textarea">
+                <textarea autoFocus={true} value={charCount} onChange={handleChange}></textarea>
+                <div className="char__count">{charCount.length + '/' + data.maxLength}</div>
               </div>
             </div>
+          </>
+        ) : (
+          <div className="sign--body">
+            <div className="sign--body__title">Sign in the box below</div>
+            <div className="sign--body__pad">
+              <SignaturePreview
+                clear={!signature}
+                viewSignature={viewSignature}
+                show={show}
+                handleSignatureEnd={handleSignatureEnd}
+              />
+            </div>
           </div>
-        </form>
-      )}
-    </>
+        )}
+        {fieldName === 'signUser' && (
+          <div className="sign--rotate">
+            <div className="sign--rotate__img"></div>
+            <div className="sign--rotate__desc">
+              Rotate your phone for a larger space to sign in
+            </div>
+          </div>
+        )}
+        <div className="sign--footer">
+          {/* {fieldName === 'purposeOther' || fieldName === 'fundReasonOther'? <button   disabled={charCount ? false : true }  className={charCount ? 'continue' : 'continue  form-invalid'}  onClick={() => saveOthersTextarea((charCount))}>Confirm</button> :
+          <button disabled={signature ? false : true } className={signature ? 'continue' : 'continue  form-invalid'} onClick={() => saveSignature()}>Confirm signature</button>
+        } */}
+          <button
+            disabled={fieldName === 'signUser' ? !signature : !charCount}
+            className={signature || charCount ? 'continue' : 'continue form-invalid'}
+            onClick={() => onclickEvent()}
+          >
+            {fieldName === 'signUser' ? <>Confirm signature</> : <>Confirm</>}
+          </button>
+        </div>
+        {error && <span className="error-msg">{error}</span>}
+      </div>
+    </div>,
+    portalElement
   );
 };
 
-export default ThankYou;
+export default SignModel;
 
 
 
-describe("ThankYou Component", () => {
-  test("renders ThankYou form", () => {
-    renderComponent();
-    expect(screen.getByTestId("form")).toBeInTheDocument();
-  });
 
-  test("renders CASA Thank You component when CA/SA products exist", () => {
-    renderComponent();
-    expect(screen.getByText(/Current Account/i)).toBeInTheDocument();
-  });
+these are the test cases .... we have to modify for maximum coverage
 
-  test("shows OTP popup navigation when showOTPPopup is triggered", () => {
-    // You can simulate navigation in an integration test setup
-    // Or test the effect of calling `navigate("/otp")`
-    // For now, placeholder: to be implemented if needed
-  });
 
-  test("submits form and redirects to homepage", () => {
-    delete window.location;
-    window.location = { href: "" } as any;
 
-    renderComponent();
+import React  from 'react';
+import SignModel from './sign-model';
+import { Provider } from 'react-redux';
+import { cleanup, render } from '@testing-library/react';
+import { store } from './../../../utils/store/store';
+// import { QueryClient, QueryClientProvider } from 'react-query';
 
-    const form = screen.getByTestId("form");
-    fireEvent.submit(form);
+jest.mock('axios', () => ({
+  __esModule: true,
+}));
+jest.mock('@lottiefiles/react-lottie-player', () => ({
+  __esModule: true,
+}));
 
-    expect(window.location.href).toContain(process.env.REACT_APP_HOME_PAGE_URL!);
-  });
 
-  test("renders card activation success UI when activation succeeds", async () => {
-    const storeState = {
-      ...stageState,
-      stages: {
-        ...stageState.stages,
-        otpSuccess: true
-      }
-    };
-    renderComponent(storeState);
+// const queryClient = new QueryClient({
+//   defaultOptions: {
+//       queries: {
+//           retry: false,
+//           refetchOnWindowFocus: false,
+//       },
+//       mutations: {
+//           retry: false,
+//       },
+//   },
+// });
 
-    // You'd need to mock activateDigitalCard for true unit coverage
-    expect(screen.getByTestId("form")).toBeInTheDocument(); // placeholder until activation resolves
-  });
+// jest.mock('./sign-model');
 
-  test("renders ThankYouUpload when document upload is true", () => {
-    const storeState = {
-      ...stageState,
-      stages: {
-        ...stageState.stages,
-        isDocumentUpload: true
-      }
-    };
-    renderComponent(storeState);
-    expect(screen.getByText(/upload/i)).toBeInTheDocument();
-  });
+afterEach(() => {
+  cleanup();
+  jest.resetAllMocks();
+});
+afterAll(() => {
+  jest.clearAllMocks();
+});
+beforeEach(() => {
+  jest.clearAllMocks();
+  const portalRoot = document.createElement('div');
+  portalRoot.id = 'model-root';
+  document.body.appendChild(portalRoot);
+const refDiv = document.createElement('div');
+refDiv.className= 'sign-previw'
+});
 
-  test("shows error UI when card activation fails", async () => {
-    // To simulate activation error, you would mock the dispatch/activateDigitalCard call
-    // and resolve with status !== "SUCCESS"
-  });
+afterEach(() => {
+  const portalRoot = document.getElementById('model-root');
+  if (portalRoot) {
+    document.body.removeChild(portalRoot);
+  }
+});
+const data = {
+  handlebuttonClick:jest.fn(), show:true, viewSignature:"", fieldName:"", setValue:"", data:{}, popupTitle:""
+}
 
-  test("handles continueWithoutActivation scenario", () => {
-    renderComponent();
-    // Manually trigger the method or test state behavior if it's extracted
-    // You can simulate button clicks that invoke continueWithoutActivation
+describe('SignModel component Testing', () => {
+  const ref = {
+    current: {
+      off: jest.fn()
+    }
+  }
+  test('Should render correctly', () => {
+    const useRefSpy = jest.spyOn(React, 'useRef').mockReturnValueOnce({ current: { focus } });
+    const { container, debug } = render(
+            <Provider store={store}>
+                {/* <QueryClientProvider client={queryClient}> */}
+                    <SignModel data={data}/>
+                {/* </QueryClientProvider> */}
+            </Provider>
+    );     
+    expect(useRefSpy).toHaveBeenCalledTimes(1);
+    expect(container).not.toBeNull();
   });
 });
+
