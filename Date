@@ -295,3 +295,174 @@ describe('SignModel component Testing', () => {
   });
 });
 
+
+
+
+
+
+
+
+
+
+import React from 'react';
+import { render, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import SignModel from '../SignModel'; // Adjust the path as needed
+
+const mockStore = configureStore([]);
+const store = mockStore({});
+
+describe('SignModel Component', () => {
+  test('Should render signature flow correctly', () => {
+    render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={jest.fn()}
+          show={true}
+          viewSignature="testSignature"
+          fieldName="signUser"
+          setValue={jest.fn()}
+          data={{}}
+          popupTitle=""
+        />
+      </Provider>
+    );
+    expect(document.querySelector('.sign--body')).toBeInTheDocument();
+  });
+
+  test('Should render textarea flow correctly', () => {
+    render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={jest.fn()}
+          show={true}
+          viewSignature=""
+          fieldName="purposeOther"
+          setValue={jest.fn()}
+          data={{ maxLength: 160 }}
+          popupTitle="Enter purpose"
+        />
+      </Provider>
+    );
+    expect(document.querySelector('.textarea__popup')).toBeInTheDocument();
+  });
+
+  test('Should accept valid textarea input', () => {
+    const { getByRole, queryByText } = render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={jest.fn()}
+          show={true}
+          viewSignature=""
+          fieldName="purposeOther"
+          setValue={jest.fn()}
+          data={{ maxLength: 160 }}
+          popupTitle="Purpose"
+        />
+      </Provider>
+    );
+
+    const textarea = getByRole('textbox');
+    textarea.focus();
+    fireEvent.change(textarea, { target: { value: 'Valid input' } });
+    expect(queryByText('Special Characters not allowed')).toBeNull();
+  });
+
+  test('Should show error on invalid textarea input', () => {
+    const { getByRole, getByText } = render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={jest.fn()}
+          show={true}
+          viewSignature=""
+          fieldName="purposeOther"
+          setValue={jest.fn()}
+          data={{ maxLength: 160 }}
+          popupTitle="Purpose"
+        />
+      </Provider>
+    );
+
+    const textarea = getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'Invalid!' } });
+    expect(getByText('Special Characters not allowed')).toBeInTheDocument();
+  });
+
+  test('Confirm button should be disabled without signature', () => {
+    const { getByText } = render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={jest.fn()}
+          show={true}
+          viewSignature=""
+          fieldName="signUser"
+          setValue={jest.fn()}
+          data={{}}
+          popupTitle=""
+        />
+      </Provider>
+    );
+    const confirmBtn = getByText('Confirm signature');
+    expect(confirmBtn).toBeDisabled();
+  });
+
+  test('Confirm button should be enabled with signature', () => {
+    const { getByText } = render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={jest.fn()}
+          show={true}
+          viewSignature="mockSignature"
+          fieldName="signUser"
+          setValue={jest.fn()}
+          data={{}}
+          popupTitle=""
+        />
+      </Provider>
+    );
+    const confirmBtn = getByText('Confirm signature');
+    expect(confirmBtn).not.toBeDisabled();
+  });
+
+  test('Clicking reset should clear the signature', () => {
+    const { getByText } = render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={jest.fn()}
+          show={true}
+          viewSignature="someSignature"
+          fieldName="signUser"
+          setValue={jest.fn()}
+          data={{}}
+          popupTitle=""
+        />
+      </Provider>
+    );
+
+    const resetButton = getByText('Reset');
+    fireEvent.click(resetButton);
+    expect(document.querySelector('.sign--body__pad')).toBeInTheDocument();
+  });
+
+  test('Clicking confirm button calls handlebuttonClick', () => {
+    const mockHandleClick = jest.fn();
+    const { getByText } = render(
+      <Provider store={store}>
+        <SignModel
+          handlebuttonClick={mockHandleClick}
+          show={true}
+          viewSignature="validSignature"
+          fieldName="signUser"
+          setValue={jest.fn()}
+          data={{}}
+          popupTitle=""
+        />
+      </Provider>
+    );
+
+    const confirmButton = getByText('Confirm signature');
+    fireEvent.click(confirmButton);
+    expect(mockHandleClick).toHaveBeenCalled();
+  });
+});
