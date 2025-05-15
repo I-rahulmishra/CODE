@@ -1,468 +1,191 @@
-import './signature.scss';
-import { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { stagesAction } from "../../../utils/store/stages-slice";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import ReactDOM from 'react-dom';
-import SignaturePreview from './signature-preview';
-import { getUrl } from "../../../utils/common/change.utils"
-import { postRequest, signatureSubmit } from '../../../services/common-service';
-import axios from 'axios';
-import { documentClientContext, getDocumentMetaData } from '../document-upload/document-upload.utils';
-
-const SignModel = (props: KeyWithAnyModel) => {
-  const { handlebuttonClick, show, viewSignature, fieldName, setValue, data, popupTitle } = props;
-  const [signature, setSignature] = useState<any>(null);
-  const [pngSignature, setPngSignature] = useState<any>(null);
-  const dispatch = useDispatch();
-
-  const [error, setError] = useState('');
-  const [charCount, setCharCount] = useState('');
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const userInputSelector = useSelector((state: StoreModel) => state.stages.userInput);
-  const channelReference = stageSelector[0].stageInfo.application.channel_reference;
-
-  const docRequest = {
-    origin: "front-line-supporting-document",
-    // getUrl.getFlow() === 'first-director-authorized' ||
-    // getUrl.getFlow() === 'single-director-authorized' ||
-    // getUrl.getFlow() === 'single-director-partnership-company-authorized'
-    //   ? '1'
-    //   : '2',
-    // docBytes: signature,
-    // docCategory: 'R0006',
-    // docType: 'T0308',
-    documentCategoryCode:"R0006",
-    documentTypeCode:"T0308",
-    // applicantNo: 1,
-    applicantId:1,
-    imageOrder: 1,
-    period: 0,
-    isWatermarkRequired: "N",
-    documentOptionSequence: 1
-  };
-
-  useEffect(() => {
-    if (viewSignature) {
-      setSignature(viewSignature);
-    }
-  }, []);
-
-  const clearSignature = () => {
-    setSignature(null);
-    setPngSignature(null);
-  };
-
-  const onclickEvent = () => {
-    if (fieldName === 'signUser') {
-      saveSignature();
-    } else {
-      saveOthersTextarea(charCount);
-    }
-  };
-
-  const saveSignature = () => {
-    signatureRequest();
-  };
-
-  const handleSignatureEnd = (data: any) => {
-    setSignature(data.array);
-    setPngSignature(data.jpeg);
-  };
-
-  /*textarea*/
-  const handleChange = (e: any) => {
-    if (e.target.value.length > 160) {
-      setError('Characters limit exceeded');
-    } else if (fieldName === 'purposeOther' || fieldName === 'fundReasonOther') {
-      const regex = /^[a-zA-Z0-9\s]*$/;
-      const isValid = regex.test(e.target.value);
-      if (!isValid) {
-        setError('Special Characters not allowed');
-      } else {
-        setError('');
-      }
-      setCharCount(e.target.value);
-    } else {
-      setError('');
-      setCharCount(e.target.value);
-    }
-  };
-
-  const saveOthersTextarea = (char: any) => {
-    setValue(char);
-    handlebuttonClick(false);
-  };
-
-
-  const signatureRequest = () => {
-    dispatch(stagesAction.setSignatureDocument(signature));
-    dispatch(stagesAction.setActivateformData(true));
-    handlebuttonClick(false);
-    /** Single file upload -- child method */
-    let formData
-    const signatureUpload = async () => {
-      const dataURL = `data:image/jpeg;base64,${pngSignature}`;
-      const byteString = atob(dataURL.split(',')[1]);
-      const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      const sendData: any = new Blob([ab], { type: mimeString });
-      formData = new FormData();
-      formData.append('file', sendData, "sign");
-      formData.append("documentJson", JSON.stringify(docRequest));
-      sendData&& formData && signatureSubmit(channelReference, formData, dispatch )
-    }
-    signatureUpload();
-  }
-
-  useEffect(() => {
-    if (
-      stageSelector[0].stageInfo.applicants[fieldName] ||
-      userInputSelector.applicants[fieldName]
-    ) {
-      const userData =
-        stageSelector[0].stageInfo.applicants[fieldName] || userInputSelector.applicants[fieldName];
-      setCharCount(userData);
-    }
-  }, []);
-  /*text area end*/
-
-  const portalElement: any = document.getElementById('model-root');
-  return ReactDOM.createPortal(
-    <div className="signModel">
-      <div className="sign__popup">
-        <div className="sign--header">
-          <div className="sign--header__left" onClick={() => handlebuttonClick()}></div>
-          <div className="sign--header__middle">
-            {' '}
-            {fieldName === 'countryTinOther' ||
-              fieldName === 'purposeOther' ||
-              fieldName === 'fundReasonOther'
-              ? popupTitle
-              : 'Signature'}
-          </div>
-          {fieldName === 'countryTinOther' ||
-            fieldName === 'purposeOther' ||
-            fieldName === 'fundReasonOther' ? (
-            ''
-          ) : (
-            <button
-              disabled={signature ? false : true}
-              className={signature ? 'sign--header__right--blue' : 'sign--header__right'}
-              onClick={() => clearSignature()}
-            >
-              Reset
-            </button>
-          )}
-        </div>
-        {fieldName === 'countryTinOther' ||
-          fieldName === 'purposeOther' ||
-          fieldName === 'fundReasonOther' ? (
-          <>
-            <div className="textarea__popup">
-              <div className="title__textarea">Please provide details</div>
-              <div className="char__textarea">
-                <textarea autoFocus={true} value={charCount} onChange={handleChange}></textarea>
-                <div className="char__count">{charCount.length + '/' + data.maxLength}</div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="sign--body">
-            <div className="sign--body__title">Sign in the box below</div>
-            <div className="sign--body__pad">
-              <SignaturePreview
-                clear={!signature}
-                viewSignature={viewSignature}
-                show={show}
-                handleSignatureEnd={handleSignatureEnd}
-              />
-            </div>
-          </div>
-        )}
-        {fieldName === 'signUser' && (
-          <div className="sign--rotate">
-            <div className="sign--rotate__img"></div>
-            <div className="sign--rotate__desc">
-              Rotate your phone for a larger space to sign in
-            </div>
-          </div>
-        )}
-        <div className="sign--footer">
-          {/* {fieldName === 'purposeOther' || fieldName === 'fundReasonOther'? <button   disabled={charCount ? false : true }  className={charCount ? 'continue' : 'continue  form-invalid'}  onClick={() => saveOthersTextarea((charCount))}>Confirm</button> :
-          <button disabled={signature ? false : true } className={signature ? 'continue' : 'continue  form-invalid'} onClick={() => saveSignature()}>Confirm signature</button>
-        } */}
-          <button
-            disabled={fieldName === 'signUser' ? !signature : !charCount}
-            className={signature || charCount ? 'continue' : 'continue form-invalid'}
-            onClick={() => onclickEvent()}
-          >
-            {fieldName === 'signUser' ? <>Confirm signature</> : <>Confirm</>}
-          </button>
-        </div>
-        {error && <span className="error-msg">{error}</span>}
-      </div>
-    </div>,
-    portalElement
-  );
-};
-
-export default SignModel;
-
-
-
-
-these are the test cases .... we have to modify for maximum coverage
-
-
-
-import React  from 'react';
+import React from 'react';
 import SignModel from './sign-model';
 import { Provider } from 'react-redux';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { store } from './../../../utils/store/store';
-// import { QueryClient, QueryClientProvider } from 'react-query';
+import axios from 'axios';
+import { stagesAction } from '../../../utils/store/stages-slice';
+import { signatureSubmit } from '../../../services/common-service';
 
-jest.mock('axios', () => ({
-  __esModule: true,
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useSelector: jest.fn(),
+  useDispatch: () => jest.fn(),
 }));
-jest.mock('@lottiefiles/react-lottie-player', () => ({
-  __esModule: true,
+
+jest.mock('../../../services/common-service', () => ({
+  signatureSubmit: jest.fn(),
 }));
 
+const mockDispatch = jest.fn();
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: () => mockDispatch,
+  useSelector: jest.fn(),
+}));
 
-// const queryClient = new QueryClient({
-//   defaultOptions: {
-//       queries: {
-//           retry: false,
-//           refetchOnWindowFocus: false,
-//       },
-//       mutations: {
-//           retry: false,
-//       },
-//   },
-// });
+const mockUseSelector = useSelector as jest.Mock;
 
-// jest.mock('./sign-model');
-
-afterEach(() => {
-  cleanup();
-  jest.resetAllMocks();
-});
-afterAll(() => {
-  jest.clearAllMocks();
-});
-beforeEach(() => {
-  jest.clearAllMocks();
+const createPortalSetup = () => {
   const portalRoot = document.createElement('div');
-  portalRoot.id = 'model-root';
+  portalRoot.setAttribute('id', 'model-root');
   document.body.appendChild(portalRoot);
-const refDiv = document.createElement('div');
-refDiv.className= 'sign-previw'
-});
+  return portalRoot;
+};
 
-afterEach(() => {
-  const portalRoot = document.getElementById('model-root');
-  if (portalRoot) {
-    document.body.removeChild(portalRoot);
-  }
-});
-const data = {
-  handlebuttonClick:jest.fn(), show:true, viewSignature:"", fieldName:"", setValue:"", data:{}, popupTitle:""
-}
+describe('SignModel component', () => {
+  const baseProps = {
+    handlebuttonClick: jest.fn(),
+    show: true,
+    viewSignature: null,
+    fieldName: 'signUser',
+    setValue: jest.fn(),
+    data: { maxLength: 160 },
+    popupTitle: 'Test Title',
+  };
 
-describe('SignModel component Testing', () => {
-  const ref = {
-    current: {
-      off: jest.fn()
+  beforeEach(() => {
+    createPortalSetup();
+    mockDispatch.mockClear();
+    (axios.post as jest.Mock).mockClear();
+    mockUseSelector.mockImplementation((selector) =>
+      selector({
+        stages: {
+          stages: [{
+            stageInfo: {
+              application: { channel_reference: 'test-ref' },
+              applicants: {}
+            }
+          }],
+          userInput: { applicants: {} }
+        }
+      })
+    );
+  });
+
+  afterEach(() => {
+    const portalRoot = document.getElementById('model-root');
+    if (portalRoot) document.body.removeChild(portalRoot);
+    cleanup();
+  });
+
+  test('renders signature interface for signUser field', () => {
+    render(
+      <Provider store={store}>
+        <SignModel {...baseProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText('Signature')).toBeInTheDocument();
+    expect(screen.getByText('Sign in the box below')).toBeInTheDocument();
+    expect(screen.getByText('Reset')).toBeInTheDocument();
+  });
+
+  test('renders textarea interface for purposeOther field', () => {
+    render(
+      <Provider store={store}>
+        <SignModel {...baseProps} fieldName="purposeOther" />
+      </Provider>
+    );
+
+    expect(screen.getByText('Test Title')).toBeInTheDocument();
+    expect(screen.getByText('Please provide details')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  test('handles textarea input and validation', async () => {
+    render(
+      <Provider store={store}>
+        <SignModel {...baseProps} fieldName="purposeOther" />
+      </Provider>
+    );
+
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'a'.repeat(161) } });
+    expect(screen.getByText('Characters limit exceeded')).toBeInTheDocument();
+    expect(screen.getByText('161/160')).toBeInTheDocument();
+
+    fireEvent.change(textarea, { target: { value: 'Test@' } });
+    expect(screen.getByText('Special Characters not allowed')).toBeInTheDocument();
+  });
+
+  test('handles signature confirmation', async () => {
+    const { container } = render(
+      <Provider store={store}>
+        <SignModel {...baseProps} />
+      </Provider>
+    );
+
+    // Mock signature data
+    const mockSignature = { array: [1,2,3], jpeg: 'test-jpeg' };
+    const signaturePad = container.querySelector('.sign-previw');
+    if (signaturePad) {
+      fireEvent.mouseUp(signaturePad);
     }
-  }
-  test('Should render correctly', () => {
-    const useRefSpy = jest.spyOn(React, 'useRef').mockReturnValueOnce({ current: { focus } });
-    const { container, debug } = render(
-            <Provider store={store}>
-                {/* <QueryClientProvider client={queryClient}> */}
-                    <SignModel data={data}/>
-                {/* </QueryClientProvider> */}
-            </Provider>
-    );     
-    expect(useRefSpy).toHaveBeenCalledTimes(1);
-    expect(container).not.toBeNull();
+
+    // Simulate signature end
+    await waitFor(() => {
+      const confirmBtn = screen.getByText('Confirm signature');
+      fireEvent.click(confirmBtn);
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith(stagesAction.setSignatureDocument(expect.any(Array)));
+    expect(signatureSubmit).toHaveBeenCalled();
   });
-});
 
-
-
-
-
-
-
-
-
-
-import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import SignModel from '../SignModel'; // Adjust the path as needed
-
-const mockStore = configureStore([]);
-const store = mockStore({});
-
-describe('SignModel Component', () => {
-  test('Should render signature flow correctly', () => {
+  test('handles text confirmation', () => {
     render(
       <Provider store={store}>
-        <SignModel
-          handlebuttonClick={jest.fn()}
-          show={true}
-          viewSignature="testSignature"
-          fieldName="signUser"
-          setValue={jest.fn()}
-          data={{}}
-          popupTitle=""
-        />
-      </Provider>
-    );
-    expect(document.querySelector('.sign--body')).toBeInTheDocument();
-  });
-
-  test('Should render textarea flow correctly', () => {
-    render(
-      <Provider store={store}>
-        <SignModel
-          handlebuttonClick={jest.fn()}
-          show={true}
-          viewSignature=""
-          fieldName="purposeOther"
-          setValue={jest.fn()}
-          data={{ maxLength: 160 }}
-          popupTitle="Enter purpose"
-        />
-      </Provider>
-    );
-    expect(document.querySelector('.textarea__popup')).toBeInTheDocument();
-  });
-
-  test('Should accept valid textarea input', () => {
-    const { getByRole, queryByText } = render(
-      <Provider store={store}>
-        <SignModel
-          handlebuttonClick={jest.fn()}
-          show={true}
-          viewSignature=""
-          fieldName="purposeOther"
-          setValue={jest.fn()}
-          data={{ maxLength: 160 }}
-          popupTitle="Purpose"
-        />
+        <SignModel {...baseProps} fieldName="purposeOther" />
       </Provider>
     );
 
-    const textarea = getByRole('textbox');
-    textarea.focus();
+    const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'Valid input' } });
-    expect(queryByText('Special Characters not allowed')).toBeNull();
+    fireEvent.click(screen.getByText('Confirm'));
+
+    expect(baseProps.setValue).toHaveBeenCalledWith('Valid input');
+    expect(baseProps.handlebuttonClick).toHaveBeenCalledWith(false);
   });
 
-  test('Should show error on invalid textarea input', () => {
-    const { getByRole, getByText } = render(
+  test('disables buttons when invalid', () => {
+    render(
       <Provider store={store}>
-        <SignModel
-          handlebuttonClick={jest.fn()}
-          show={true}
-          viewSignature=""
-          fieldName="purposeOther"
-          setValue={jest.fn()}
-          data={{ maxLength: 160 }}
-          popupTitle="Purpose"
-        />
+        <SignModel {...baseProps} />
       </Provider>
     );
 
-    const textarea = getByRole('textbox');
-    fireEvent.change(textarea, { target: { value: 'Invalid!' } });
-    expect(getByText('Special Characters not allowed')).toBeInTheDocument();
+    expect(screen.getByText('Confirm signature')).toBeDisabled();
   });
 
-  test('Confirm button should be disabled without signature', () => {
-    const { getByText } = render(
+  test('handles signature reset', () => {
+    render(
       <Provider store={store}>
-        <SignModel
-          handlebuttonClick={jest.fn()}
-          show={true}
-          viewSignature=""
-          fieldName="signUser"
-          setValue={jest.fn()}
-          data={{}}
-          popupTitle=""
-        />
-      </Provider>
-    );
-    const confirmBtn = getByText('Confirm signature');
-    expect(confirmBtn).toBeDisabled();
-  });
-
-  test('Confirm button should be enabled with signature', () => {
-    const { getByText } = render(
-      <Provider store={store}>
-        <SignModel
-          handlebuttonClick={jest.fn()}
-          show={true}
-          viewSignature="mockSignature"
-          fieldName="signUser"
-          setValue={jest.fn()}
-          data={{}}
-          popupTitle=""
-        />
-      </Provider>
-    );
-    const confirmBtn = getByText('Confirm signature');
-    expect(confirmBtn).not.toBeDisabled();
-  });
-
-  test('Clicking reset should clear the signature', () => {
-    const { getByText } = render(
-      <Provider store={store}>
-        <SignModel
-          handlebuttonClick={jest.fn()}
-          show={true}
-          viewSignature="someSignature"
-          fieldName="signUser"
-          setValue={jest.fn()}
-          data={{}}
-          popupTitle=""
-        />
+        <SignModel {...baseProps} viewSignature="existing-sig" />
       </Provider>
     );
 
-    const resetButton = getByText('Reset');
-    fireEvent.click(resetButton);
-    expect(document.querySelector('.sign--body__pad')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Reset'));
+    expect(screen.getByText('Confirm signature')).toBeDisabled();
   });
 
-  test('Clicking confirm button calls handlebuttonClick', () => {
-    const mockHandleClick = jest.fn();
-    const { getByText } = render(
+  test('initializes with existing signature', () => {
+    render(
       <Provider store={store}>
-        <SignModel
-          handlebuttonClick={mockHandleClick}
-          show={true}
-          viewSignature="validSignature"
-          fieldName="signUser"
-          setValue={jest.fn()}
-          data={{}}
-          popupTitle=""
-        />
+        <SignModel {...baseProps} viewSignature="existing-sig" />
       </Provider>
     );
 
-    const confirmButton = getByText('Confirm signature');
-    fireEvent.click(confirmButton);
-    expect(mockHandleClick).toHaveBeenCalled();
+    expect(screen.getByText('Confirm signature')).toBeEnabled();
+  });
+
+  test('handles mobile rotation message', () => {
+    render(
+      <Provider store={store}>
+        <SignModel {...baseProps} />
+      </Provider>
+    );
+
+    expect(screen.getByText('Rotate your phone for a larger space to sign in')).toBeInTheDocument();
   });
 });
